@@ -1,0 +1,47 @@
+[
+  {
+    "id": "foshan",
+    "name": "New FOSHAN",
+    "country": "Китай",
+    "flag": "🇨🇳",
+    "city": "Foshan",
+    "address": "Warehouse address: No. 18 Logistics Park, Nanhai",
+    "type": "Difreight",
+    "services": ["Зберігання", "Упаковка", "Маркування"],
+    "specialNotes": "Прийом великогабаритного вантажу за попереднім узгодженням",
+    "status": "active",
+    "archivedDate": "-",
+    "link": "warehouse/warehouse.html",
+    "isFulfillment": false
+  },
+  {
+    "id": "kyiv",
+    "name": "Склад Київ-1",
+    "country": "Україна",
+    "flag": "🇺🇦",
+    "city": "Київ",
+    "address": "Україна, м. Київ, вул. Академіка Заболотного, 150А, корпус 3, склад 12",
+    "type": "Difreight",
+    "services": ["Зберігання", "Упаковка", "Маркування"],
+    "specialNotes": "Прийом великогабаритного вантажу за попереднім узгодженням",
+    "status": "active",
+    "archivedDate": "-",
+    "link": null,
+    "isFulfillment": false
+  },
+  {
+    "id": "poland",
+    "name": "Склад Польща",
+    "country": "Польща",
+    "flag": "🇵🇱",
+    "city": "Варшава",
+    "address": "ul. Magazynowa 5, Pruszków",
+    "type": "Партнерський",
+    "services": ["Зберігання", "Упаковка", "Маркування"],
+    "specialNotes": "Прийом великогабаритного вантажу за попереднім узгодженням",
+    "status": "inactive",
+    "archivedDate": "-",
+    "link": null,
+    "isFulfillment": false
+  }
+]

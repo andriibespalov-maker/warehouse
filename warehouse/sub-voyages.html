@@ -1,0 +1,54 @@
+<!-- 2. Sub-voyage Tabs & Capacity Meters with Logist Filter -->
+<section class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+  <div class="flex flex-wrap items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-100">
+    <div>
+      <h2 class="text-base font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+        <i class="fa-solid fa-truck-loading text-brand-600"></i>
+        Підрейси та контроль місткості (Sub-voyage Capacity Meters)
+      </h2>
+      <span class="text-xs text-slate-500">Оберіть вкладку для фільтрації вантажів за підрейсами</span>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <!-- Filter Subvoyages by Logist (Multi-select) -->
+      <div class="relative flex items-center gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-200 text-xs">
+        <i class="fa-solid fa-user-gear text-brand-600 ml-1"></i>
+        <span class="font-medium text-slate-600">Логіст підрейсу:</span>
+
+        <div class="relative inline-block text-left">
+          <button id="subvoyage-logist-dropdown-btn" type="button"
+                  class="bg-white border border-slate-300 rounded px-2.5 py-1 text-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-brand-500 flex items-center gap-2 cursor-pointer">
+            <span id="subvoyage-logist-btn-text">Усі логісти</span>
+            <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
+          </button>
+
+          <div id="subvoyage-logist-dropdown-menu"
+               class="filter-menu hidden absolute right-0 mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-lg z-30 p-2 space-y-1">
+            <div class="flex items-center justify-between pb-1.5 mb-1 border-b border-slate-100 text-[11px]">
+              <button id="subvoyage-logist-select-all" type="button" class="text-brand-600 hover:underline font-medium">
+                Обрати всіх
+              </button>
+              <button id="subvoyage-logist-clear-all" type="button"
+                      class="text-slate-400 hover:text-slate-600 hover:underline">Скинути
+              </button>
+            </div>
+            <div id="subvoyage-logist-checkboxes-container" class="max-h-48 overflow-y-auto space-y-1">
+              <!-- Динамічно заповнюється чекбоксами -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <a id="btn-manage-subvoyages" href="sub-voyages-management.html"
+       class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm flex items-center gap-2 transition-colors whitespace-nowrap">
+      <i class="fa-solid fa-sliders"></i>
+      Управління Підрейсами
+    </a>
+  </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3" id="subvoyage-tabs-container">
+    <!-- Dynamically generated subvoyage tabs -->
+  </div>
+</section>

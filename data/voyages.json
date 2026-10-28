@@ -1,0 +1,666 @@
+{
+  "subvoyagesData": [
+    {
+      "id": "SUB-2609-01/1",
+      "name": "SUB-2609-01/1",
+      "mode": "Авіа",
+      "logist": "І. Сидоренко",
+      "capacity": {
+        "volMax": 50.0,
+        "weightMax": 10.0,
+        "placesMax": 250
+      }
+    },
+    {
+      "id": "SUB-2609-05/1",
+      "name": "SUB-2609-05/1",
+      "mode": "Авто",
+      "logist": "І. Сидоренко",
+      "capacity": {
+        "volMax": 5.1,
+        "weightMax": 10.0,
+        "placesMax": 100
+      }
+    },
+    {
+      "id": "SUB-2609-02/1",
+      "name": "SUB-2609-02/1",
+      "mode": "Залізниця",
+      "logist": "І. Сидоренко",
+      "capacity": {
+        "volMax": 85.0,
+        "weightMax": 26.0,
+        "placesMax": 600
+      }
+    },
+    {
+      "id": "SUB-2609-03/1",
+      "name": "SUB-2609-03/1",
+      "mode": "Залізниця",
+      "logist": "В. Василенко",
+      "capacity": {
+        "volMax": 85.0,
+        "weightMax": 26.0,
+        "placesMax": 600
+      }
+    },
+    {
+      "id": "SUB-2609-04/1",
+      "name": "SUB-2609-04/1",
+      "mode": "Авто",
+      "logist": "М. Коваленко",
+      "capacity": {
+        "volMax": 60.0,
+        "weightMax": 15.0,
+        "placesMax": 400
+      }
+    }
+  ],
+  "cargoesData": [
+    {
+      "id": "DF540-101",
+      "trackNumber": "SF1428930192841",
+      "dfPromise": "DF540-101TR",
+      "dfShipment": "DF540-101TR",
+      "statusCode": "ready_for_loading",
+      "status": "Готовий до завантаження",
+      "statusClass": "bg-emerald-100 text-emerald-800 border-emerald-300",
+      "warehouse": "New FOSHAN",
+      "client": "ТОВ \"Мідіа Україна\"",
+      "trademark": "Midea Group",
+      "titleUa": "Кондиціонери спліт-системи інверторні",
+      "titleCn": "变频空调",
+      "titleEn": "Inverter Split Air Conditioners",
+      "origin": "Китай",
+      "destination": "Україна",
+      "mode": "Авіа",
+      "subvoyage": "SUB-2609-01/1",
+      "receiveDate": "2026-09-20",
+      "arrivalDate": "2026-09-21",
+      "createdStatus": "Створено",
+      "places": 12,
+      "weight": 0.31,
+      "volume": 2.4,
+      "isOversized": false,
+      "oversizeComment": "Стандартний габарит (120x80x160)",
+      "packageType": "Дерев'яний піддон + картон",
+      "extraServices": "Стрейчування піддону",
+      "manager": "О. Ковальчук",
+      "logist": "І. Сидоренко",
+      "logistNote": "Перевірено, розбіжностей за вагою немає",
+      "photoUrl": "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=400&q=80",
+      "tasks": [
+        {
+          "id": "TSK-101",
+          "title": "Маркування етикетками DF",
+          "logist": "І. Сидоренко",
+          "status": "Завершено"
+        },
+        {
+          "id": "TSK-102",
+          "title": "Контрольне зважування",
+          "logist": "І. Сидоренко",
+          "status": "Завершено"
+        }
+      ],
+      "photoStages": [
+        {
+          "warehouseName": "Склад 1: New FOSHAN Hub (Китай)",
+          "stageType": "При прибутті на склад",
+          "condition": "Норма (Без пошкоджень)",
+          "conditionClass": "bg-emerald-100 text-emerald-800 border-emerald-200",
+          "statusBadge": "Прийнято на складі",
+          "date": "2026-09-21 09:15",
+          "operator": "L. Wei (ID-882)",
+          "photos": [
+            {
+              "url": "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=400&q=80",
+              "caption": "Вхідний огляд упаковки на воротах №3"
+            }
+          ],
+          "comment": "Упаковка без зауважень, маркування відповідає інвойсу.",
+          "tags": ["#New_FOSHAN", "#Норма"]
+        }
+      ],
+      "timeline": [
+        {
+          "time": "2026-09-20 14:00",
+          "title": "Створено ерайв",
+          "desc": "Вантаж оформлено у системі LOGIX-ERP",
+          "icon": "fa-file-signature"
+        },
+        {
+          "time": "2026-09-21 09:15",
+          "title": "Прибуття: Склад New FOSHAN",
+          "desc": "Прийнято на воротах №3. Вхідне зважування (0.31 т)",
+          "icon": "fa-warehouse"
+        }
+      ]
+    },
+    {
+      "id": "DF540-102",
+      "trackNumber": "SF1428930192842",
+      "dfPromise": "",
+      "dfShipment": "",
+      "statusCode": "at_origin_warehouse",
+      "status": "На складі відправки",
+      "statusClass": "bg-blue-100 text-blue-800 border-blue-300",
+      "warehouse": "New FOSHAN",
+      "client": "ПП \"Фошань Керамікс\"",
+      "trademark": "Foshan Ceramics",
+      "titleUa": "Керамограніт великоформатний 120x60",
+      "titleCn": "大板瓷砖",
+      "titleEn": "Large Format Porcelain Tiles",
+      "origin": "",
+      "destination": "",
+      "mode": "",
+      "subvoyage": "",
+      "receiveDate": "2026-09-21",
+      "arrivalDate": "2026-09-22",
+      "createdStatus": "Створено",
+      "places": 4,
+      "weight": 4.2,
+      "volume": 8.6,
+      "isOversized": true,
+      "oversizeComment": "Перевищення ваги та висоти (>4т)",
+      "packageType": "Посилений дерев'яний каркас",
+      "extraServices": "Ообрешітка посилена, навантаження 5T",
+      "manager": "М. Гриценко",
+      "logist": "В. Василенко",
+      "logistNote": "Потрібен вилковий навантажувач при вивантаженні",
+      "photoUrl": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=400&q=80",
+      "tasks": [
+        {
+          "id": "TSK-103",
+          "title": "Перевірка дерев'яної обрешітки",
+          "logist": "В. Василенко",
+          "status": "В роботі"
+        }
+      ],
+      "photoStages": [],
+      "timeline": [
+        {
+          "time": "2026-09-22 11:40",
+          "title": "Прибуття: Склад New FOSHAN",
+          "desc": "Прийнято важковаговий керамограніт (4.2 т)",
+          "icon": "fa-warehouse"
+        }
+      ]
+    },
+    {
+      "id": "DF540-103",
+      "trackNumber": "YT9283746192831",
+      "dfPromise": "DF540-103TR",
+      "dfShipment": "",
+      "statusCode": "received_unmarked",
+      "status": "Отримано непромаркованим",
+      "statusClass": "bg-amber-100 text-amber-800 border-amber-300",
+      "warehouse": "New FOSHAN",
+      "client": "ТОВ \"Сяомі Трейдинг\"",
+      "trademark": "Xiaomi Eco",
+      "titleUa": "Роботи-пилососи та смарт-пристрої",
+      "titleCn": "扫地机器人",
+      "titleEn": "Robot Vacuum Cleaners",
+      "origin": "",
+      "destination": "",
+      "mode": "",
+      "subvoyage": "",
+      "receiveDate": "2026-09-22",
+      "arrivalDate": "2026-09-23",
+      "createdStatus": "Створено",
+      "places": 45,
+      "weight": 1.15,
+      "volume": 5.1,
+      "isOversized": false,
+      "oversizeComment": "Стандартний габарит",
+      "packageType": "Заводські гофроящики на піддоні",
+      "extraServices": "Потрібне додаткове маркування",
+      "manager": "К. Бондаренко",
+      "logist": "І. Сидоренко",
+      "logistNote": "Очікується ідентифікація клієнтом та призначення перевезення",
+      "photoUrl": "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=400&q=80",
+      "tasks": [
+        {
+          "id": "TSK-104",
+          "title": "Наклейка стікерів DF на 45 коробок",
+          "logist": "І. Сидоренко",
+          "status": "Нова"
+        }
+      ],
+      "photoStages": [],
+      "timeline": [
+        {
+          "time": "2026-09-23 08:30",
+          "title": "Прибуття на склад",
+          "desc": "Заїзд без DF-маркування",
+          "icon": "fa-warehouse"
+        }
+      ]
+    },
+    {
+      "id": "DF540-105-2",
+      "trackNumber": "781293847120351",
+      "dfPromise": "DF540-105TR",
+      "dfShipment": "DF540-105TR",
+      "statusCode": "storaging_in_warehouse",
+      "status": "Зберігання на складі",
+      "statusClass": "bg-slate-100 text-slate-800 border-slate-300",
+      "warehouse": "New FOSHAN",
+      "client": "ФОП Мельник Р.О.",
+      "trademark": "Leiling Furniture",
+      "titleUa": "Журнальні столики та крісла до гарнітуру",
+      "titleCn": "茶几和椅子",
+      "titleEn": "Coffee Tables & Armchairs",
+      "origin": "Китай",
+      "destination": "Німеччина",
+      "mode": "Залізниця",
+      "subvoyage": "SUB-2609-03/1",
+      "receiveDate": "2026-09-21",
+      "arrivalDate": "2026-09-21",
+      "createdStatus": "Створено",
+      "places": 5,
+      "weight": 0.48,
+      "volume": 3.6,
+      "isOversized": false,
+      "oversizeComment": "Стандартний габарит у коробках",
+      "packageType": "П'ятишаровий картон + захисні кутики",
+      "extraServices": "Маркування та палетування",
+      "manager": "М. Гриценко",
+      "logist": "В. Василенко",
+      "logistNote": "Друга частина меблевого гарнітуру, зберігається разом з DF540-105",
+      "photoUrl": "https://images.unsplash.com/photo-1538688525198-9b88f6f53126?auto=format&fit=crop&w=400&q=80",
+      "tasks": [
+        {
+          "id": "TSK-108",
+          "title": "Перевірити цілісність коробок при комплектації",
+          "logist": "В. Василенко",
+          "status": "Завершено"
+        }
+      ],
+      "photoStages": [],
+      "timeline": [
+        {
+          "time": "2026-09-21 10:15",
+          "title": "Прийнято на зберігання",
+          "desc": "Розміщено у секторі B-12 разом із першою частиною партії",
+          "icon": "fa-boxes-packing"
+        }
+      ]
+    },
+    {
+      "id": "DF540-104",
+      "trackNumber": "YT9283746192832",
+      "dfPromise": "DF540-104TR",
+      "dfShipment": "DF540-104TR",
+      "statusCode": "in_transit",
+      "status": "В дорозі",
+      "statusClass": "bg-purple-100 text-purple-800 border-purple-300",
+      "warehouse": "New FOSHAN",
+      "client": "ТОВ \"Хуавей Технолоджіс\"",
+      "trademark": "Huawei Network",
+      "titleUa": "Серверні шафи та мережеве обладнання",
+      "titleCn": "服务器机柜",
+      "titleEn": "Server Cabinets & Hardware",
+      "origin": "Китай",
+      "destination": "Україна",
+      "mode": "Авіа",
+      "subvoyage": "SUB-2609-01/1",
+      "receiveDate": "2026-09-18",
+      "arrivalDate": "2026-09-25",
+      "createdStatus": "Відправлено",
+      "places": 3,
+      "weight": 0.89,
+      "volume": 4.2,
+      "isOversized": true,
+      "oversizeComment": "Висота > 200 см",
+      "packageType": "Алюмінієвий кейс / дерев'яний піддон",
+      "extraServices": "Датчик нахилу та удару",
+      "manager": "О. Ковальчук",
+      "logist": "І. Сидоренко",
+      "logistNote": "В дорозі до складу призначення",
+      "photoUrl": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=400&q=80",
+      "tasks": [],
+      "photoStages": [],
+      "timeline": [
+        {
+          "time": "2026-09-20 10:00",
+          "title": "Вибуття зі склада відправки",
+          "desc": "Відправлено в аеропорт",
+          "icon": "fa-plane-departure"
+        }
+      ]
+    },
+    {
+      "id": "DF540-105",
+      "trackNumber": "781293847120349",
+      "dfPromise": "DF540-105TR",
+      "dfShipment": "DF540-105TR",
+      "statusCode": "storaging_in_warehouse",
+      "status": "Зберігання на складі",
+      "statusClass": "bg-slate-100 text-slate-800 border-slate-300",
+      "warehouse": "New FOSHAN",
+      "client": "ФОП Мельник Р.О.",
+      "trademark": "Leiling Furniture",
+      "titleUa": "Дивани шкіряні та м'які меблі",
+      "titleCn": "真皮沙发",
+      "titleEn": "Leather Sofas & Furniture",
+      "origin": "Китай",
+      "destination": "Німеччина",
+      "mode": "Залізниця",
+      "subvoyage": "SUB-2609-03/1",
+      "receiveDate": "2026-09-21",
+      "arrivalDate": "2026-09-21",
+      "createdStatus": "Створено",
+      "places": 8,
+      "weight": 1.4,
+      "volume": 12.8,
+      "isOversized": true,
+      "oversizeComment": "Великогабаритні дивани",
+      "packageType": "Вакуумна термоплівка + картон",
+      "extraServices": "Додаткова вакуумна упаковка",
+      "manager": "М. Гриценко",
+      "logist": "В. Василенко",
+      "logistNote": "На тривалому зберіганні за проханням клієнта",
+      "photoUrl": "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=400&q=80",
+      "tasks": [],
+      "photoStages": [],
+      "timeline": [
+        {
+          "time": "2026-09-21 10:00",
+          "title": "Прийнято на зберігання",
+          "desc": "Розміщено у секторі B-12",
+          "icon": "fa-boxes-packing"
+        }
+      ]
+    },
+    {
+      "id": "DF320-101",
+      "trackNumber": "781293847120350",
+      "dfPromise": "DF320-101TR",
+      "dfShipment": "DF320-101TR",
+      "statusCode": "awaiting_readiness",
+      "status": "Очікує готовності",
+      "statusClass": "bg-indigo-100 text-indigo-800 border-indigo-300",
+      "warehouse": "New FOSHAN",
+      "client": "ТОВ \"СпецТех Партс\"",
+      "trademark": "Sunward Machinery",
+      "titleUa": "Запасні частини до екскаваторів",
+      "titleCn": "挖掘机配件",
+      "titleEn": "Excavator Spare Parts",
+      "origin": "Китай",
+      "destination": "Україна",
+      "mode": "Авто",
+      "subvoyage": "",
+      "receiveDate": "2026-09-22",
+      "arrivalDate": "2026-09-23",
+      "createdStatus": "Створено",
+      "places": 2,
+      "weight": 0.65,
+      "volume": 1.1,
+      "isOversized": false,
+      "oversizeComment": "Компактний важкий вантаж",
+      "packageType": "Дерев'яний ящик",
+      "extraServices": "Без додаткових послуг",
+      "manager": "К. Бондаренко",
+      "logist": "М. Коваленко",
+      "logistNote": "Узгоджується митна декларація",
+      "photoUrl": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=400&q=80",
+      "tasks": [
+        {
+          "id": "TSK-105",
+          "title": "Перевірити митні документи",
+          "logist": "М. Коваленко",
+          "status": "В роботі"
+        }
+      ],
+      "photoStages": [],
+      "timeline": [
+        {
+          "time": "2026-09-23 11:20",
+          "title": "Прибуття на склад",
+          "desc": "Прийнято 2 ящики",
+          "icon": "fa-warehouse"
+        }
+      ]
+    },
+    {
+      "id": "DF320-102",
+      "trackNumber": "ZTO539102847192",
+      "dfPromise": "DF320-102TR",
+      "dfShipment": "DF320-102TR",
+      "statusCode": "ready_for_loading",
+      "status": "Готовий до завантаження",
+      "statusClass": "bg-emerald-100 text-emerald-800 border-emerald-300",
+      "warehouse": "New FOSHAN",
+      "client": "ТОВ \"АвтоСвіт Лайт\"",
+      "trademark": "Osram Lighting",
+      "titleUa": "Автомобільні LED-лампи та оптика",
+      "titleCn": "汽车LED车灯",
+      "titleEn": "Automotive LED Bulbs & Optics",
+      "origin": "Туреччина",
+      "destination": "Україна",
+      "mode": "Авто",
+      "subvoyage": "SUB-2609-04/1",
+      "receiveDate": "2026-09-22",
+      "arrivalDate": "2026-09-23",
+      "createdStatus": "Створено",
+      "places": 25,
+      "weight": 0.48,
+      "volume": 3.2,
+      "isOversized": false,
+      "oversizeComment": "Стандартний габарит",
+      "packageType": "Брендовані ящики на піддоні",
+      "extraServices": "Маркування штрихкодами",
+      "manager": "О. Ковальчук",
+      "logist": "М. Коваленко",
+      "logistNote": "Готовий до консолідації у авто",
+      "photoUrl": "https://images.unsplash.com/photo-1517524206127-48bbd363f3d7?auto=format&fit=crop&w=400&q=80",
+      "tasks": [
+        {
+          "id": "TSK-107",
+          "title": "Оформити CMR для авто",
+          "logist": "М. Коваленко",
+          "status": "Завершено"
+        }
+      ],
+      "photoStages": [],
+      "timeline": [
+        {
+          "time": "2026-09-23 12:00",
+          "title": "Прибуття на склад",
+          "desc": "Промарковано та розміщено в зоні завантаження",
+          "icon": "fa-warehouse"
+        }
+      ]
+    },
+    {
+      "id": "DF320-103",
+      "trackNumber": "ZTO539102847193",
+      "dfPromise": "DF320-103TR",
+      "dfShipment": "DF320-103TR",
+      "statusCode": "at_destination_warehouse",
+      "status": "На складі призначення",
+      "statusClass": "bg-teal-100 text-teal-800 border-teal-300",
+      "warehouse": "New FOSHAN",
+      "client": "ТОВ \"Солар Енерджі\"",
+      "trademark": "Growatt Inverters",
+      "titleUa": "Сонячні інвертори та акумулятори",
+      "titleCn": "光伏逆变器",
+      "titleEn": "Solar Inverters & Batteries",
+      "origin": "Китай",
+      "destination": "Україна",
+      "mode": "Авто",
+      "subvoyage": "SUB-2609-05/1",
+      "receiveDate": "2026-09-15",
+      "arrivalDate": "2026-09-24",
+      "createdStatus": "Прибув",
+      "places": 18,
+      "weight": 3.8,
+      "volume": 7.4,
+      "isOversized": false,
+      "oversizeComment": "Небезпечний вантаж (Lithium Batteries)",
+      "packageType": "UN-сертифікована упаковка",
+      "extraServices": "Сертифікація UN38.3",
+      "manager": "М. Гриценко",
+      "logist": "В. Василенко",
+      "logistNote": "Прибув у термінал призначення",
+      "photoUrl": "https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=400&q=80",
+      "tasks": [],
+      "photoStages": [],
+      "timeline": [
+        {
+          "time": "2026-09-24 13:10",
+          "title": "Прибуття на склад призначення",
+          "desc": "Розвантажено у терміналі",
+          "icon": "fa-warehouse"
+        }
+      ]
+    },
+    {
+      "id": "DF115-101",
+      "trackNumber": "JT2093847102938",
+      "dfPromise": "DF115-101TR",
+      "dfShipment": "DF115-101TR",
+      "statusCode": "waiting_for_other_parts",
+      "status": "Очікує інші частини",
+      "statusClass": "bg-amber-100 text-amber-800 border-amber-300",
+      "warehouse": "New FOSHAN",
+      "client": "ТОВ \"Хайєр Техніка\"",
+      "trademark": "Haier Smart",
+      "titleUa": "Пральні машини та побутова техніка",
+      "titleCn": "海尔洗衣机",
+      "titleEn": "Washing Machines & Home Tech",
+      "origin": "Китай",
+      "destination": "Україна",
+      "mode": "Авто",
+      "subvoyage": "SUB-2609-04/1",
+      "receiveDate": "2026-09-23",
+      "arrivalDate": "2026-09-24",
+      "createdStatus": "Створено",
+      "places": 16,
+      "weight": 0.92,
+      "volume": 6.8,
+      "isOversized": false,
+      "oversizeComment": "Стандартні заводські короби",
+      "packageType": "Картонні коробки на піддоні",
+      "extraServices": "Маркування стікерами",
+      "manager": "О. Ковальчук",
+      "logist": "М. Коваленко",
+      "logistNote": "Очікуємо 2-у машину від постачальника",
+      "photoUrl": "https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?auto=format&fit=crop&w=400&q=80",
+      "tasks": [
+        {
+          "id": "TSK-106",
+          "title": "Очікувати заїзд машини №2",
+          "logist": "М. Коваленко",
+          "status": "В роботі"
+        }
+      ],
+      "photoStages": [],
+      "timeline": [
+        {
+          "time": "2026-09-24 09:00",
+          "title": "Частковий заїзд (16 місць)",
+          "desc": "Очікується друга частина партії",
+          "icon": "fa-truck"
+        }
+      ]
+    },
+    {
+      "id": "DF115-102",
+      "trackNumber": "JT2093847102939",
+      "dfPromise": "DF115-102TR",
+      "dfShipment": "DF115-102TR",
+      "statusCode": "issued",
+      "status": "Виданий",
+      "statusClass": "bg-emerald-200 text-emerald-900 border-emerald-400",
+      "warehouse": "New FOSHAN",
+      "client": "ТОВ \"Дрон Сервіс\"",
+      "trademark": "DJI Enterprise",
+      "titleUa": "Квадрокоптери та тепловізійні камери",
+      "titleCn": "无人机配件",
+      "titleEn": "Drones & Thermal Imaging Cameras",
+      "origin": "Китай",
+      "destination": "Польща",
+      "mode": "Авіа",
+      "subvoyage": "",
+      "receiveDate": "2026-09-22",
+      "arrivalDate": "2026-09-24",
+      "createdStatus": "Завершено",
+      "places": 6,
+      "weight": 0.24,
+      "volume": 1.8,
+      "isOversized": false,
+      "oversizeComment": "Високоцінний вантаж у захисних кейсах",
+      "packageType": "Захисні ударостійкі кейси",
+      "extraServices": "Страхування 100%, сейф-зона",
+      "manager": "К. Бондаренко",
+      "logist": "І. Сидоренко",
+      "logistNote": "Успішно видано отримувачу",
+      "photoUrl": "https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=400&q=80",
+      "tasks": [],
+      "photoStages": [
+        {
+          "warehouseName": "Склад видачі",
+          "stageType": "Вибуття зі складу",
+          "condition": "Норма (Без пошкоджень)",
+          "conditionClass": "bg-emerald-100 text-emerald-800 border-emerald-200",
+          "statusBadge": "Видано",
+          "date": "2026-09-24 10:45",
+          "operator": "Vault Operator",
+          "photos": [
+            {
+              "url": "https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=400&q=80",
+              "caption": "Передача кейсів представнику за довіреністю"
+            }
+          ],
+          "comment": "Акт приймання-передачі підписано.",
+          "tags": ["#Видача_клієнту"]
+        }
+      ],
+      "timeline": [
+        {
+          "time": "2026-09-24 10:45",
+          "title": "Видано отримувачу",
+          "desc": "Процес завершено",
+          "icon": "fa-circle-check"
+        }
+      ]
+    },
+    {
+      "id": "DF540-106",
+      "trackNumber": "SF1428930192899",
+      "dfPromise": "DF540-106TR",
+      "dfShipment": "DF540-106TR",
+      "statusCode": "at_destination_warehouse",
+      "status": "На складі призначення",
+      "statusClass": "bg-teal-100 text-teal-800 border-teal-300",
+      "warehouse": "Terminal Kyiv",
+      "client": "ТОВ \"Логістик Плюс\"",
+      "titleUa": "Мережеве обладнання та комутатори",
+      "titleCn": "网络设备",
+      "titleEn": "Network Switches",
+      "origin": "Китай",
+      "destination": "Україна",
+      "mode": "Авіа",
+      "subvoyage": "SUB-2609-01/1",
+      "receiveDate": "2026-09-24",
+      "arrivalDate": "2026-09-26",
+      "createdStatus": "Прибув",
+      "places": 5,
+      "weight": 0.45,
+      "volume": 1.2,
+      "isOversized": false,
+      "oversizeComment": "Стандартний габарит",
+      "packageType": "Заводські коробки",
+      "extraServices": "Без додаткових послуг",
+      "manager": "О. Ковальчук",
+      "logist": "І. Сидоренко",
+      "logistNote": "Готовий до видачі або відправки останньою милею",
+      "photoUrl": "",
+      "tasks": [],
+      "photoStages": [],
+      "timeline": []
+    }
+  ]
+}

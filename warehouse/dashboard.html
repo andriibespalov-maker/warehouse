@@ -1,0 +1,353 @@
+<!-- Top Navigation Header -->
+<header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md">
+  <div class="max-w-[1700px] mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="bg-brand-600 p-2 rounded-lg text-white font-bold text-xl tracking-wider flex items-center gap-2">
+        <i class="fa-solid fa-boxes-packing"></i> LOGIX-ERP
+      </div>
+      <div class="h-6 w-[1px] bg-slate-700 hidden sm:block"></div>
+      <span class="text-xs uppercase tracking-widest text-slate-400 font-semibold hidden sm:inline">Складський модуль (Стан TO-BE)</span>
+    </div>
+
+    <div class="flex items-center gap-4 text-sm">
+      <div class="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700">
+        <i class="fa-solid fa-user-shield text-brand-500"></i>
+        <span class="text-slate-300 font-medium">Senior Warehouse Operator: <strong
+          class="text-white">L. Wei (ID-882)</strong></span>
+      </div>
+      <div class="text-slate-400 text-xs font-mono">
+        <i class="fa-solid fa-clock mr-1"></i> <span id="live-clock">--:--:--</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Main Workspace -->
+<main class="max-w-[1700px] w-full mx-auto p-4 sm:p-6 flex-1 flex flex-col gap-6">
+
+  <!-- ЄДИНИЙ ОСНОВНИЙ БЛОК СКЛАДУ -->
+  <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+
+    <!-- Постійна верхня панель (Завжди видима) -->
+    <div class="p-5 flex flex-wrap items-center justify-between gap-6">
+      <div class="flex items-center gap-5">
+        <div
+          class="w-14 h-14 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-center text-emerald-600 text-2xl shadow-inner">
+          <i class="fa-solid fa-warehouse"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <!-- Назва Складу -->
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight" id="wh-display-name">New FOSHAN</h1>
+
+            <!-- Тип Складу -->
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+              Difreight
+            </span>
+
+            <!-- Підрядник -->
+            <div id="wh-display-contractor"></div>
+          </div>
+
+          <!-- Адреса (без часового поясу) -->
+          <p class="text-xs text-slate-500 mt-1 flex items-center gap-2 flex-wrap">
+            <i class="fa-solid fa-location-dot text-rose-500 mr-0.5"></i>
+            <span id="wh-display-address">Китай, провінція Гуандун, м. Фошань, р-н Наньхай, No. 88 Logistics Avenue, Gate 3</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Розгортальний блок Дашборду -->
+      <details class="group w-full bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden">
+
+        <!-- ПОСТІЙНО ВИДИМИЙ ЗАГОЛОВОК (Об'єм, Вантажі, Підрейси) -->
+        <summary class="w-full p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-4 cursor-pointer select-none bg-slate-50/80 hover:bg-slate-100/80 transition list-none [&::-webkit-details-marker]:hidden">
+
+          <!-- Ліва частина: Іконка + Основні показники -->
+          <div class="flex items-center gap-3.5">
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/60 flex items-center justify-center shrink-0 shadow-2xs">
+              <i class="fa-solid fa-warehouse text-base"></i>
+            </div>
+
+            <!-- Блок показників з розділювачами -->
+            <div class="flex flex-wrap items-center gap-4 sm:gap-6 divide-x divide-slate-200">
+
+              <!-- 1. Об'єм на складі -->
+              <div>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Об'єм на складі</span>
+                <div class="text-lg sm:text-xl font-black text-slate-900 tracking-tight" id="stat-total-volume">
+                  0.0 <span class="text-xs font-normal text-slate-500">/ 400.0 m³</span>
+                </div>
+              </div>
+
+              <!-- 2. Вантажів -->
+              <div class="pl-4 sm:pl-6">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Вантажів</span>
+                <div class="text-lg sm:text-xl font-black text-slate-800 tracking-tight" id="stat-total-cargoes">
+                  0
+                </div>
+              </div>
+
+              <!-- 3. Підрейсів -->
+              <div class="pl-4 sm:pl-6">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Підрейсів</span>
+                <div class="text-lg sm:text-xl font-black text-indigo-600 tracking-tight" id="stat-active-subvoyages">
+                  0
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Права частина: Статус та кнопка згортання/розгортання -->
+          <div class="flex items-center gap-3">
+            <!-- Плашка "Активний склад" -->
+            <span class="px-3 py-1 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-full text-xs font-bold inline-flex items-center gap-1.5 shadow-2xs">
+      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+      Активний склад
+    </span>
+
+            <!-- Кнопка Показники дашборду -->
+            <div class="flex items-center gap-2 text-xs font-bold text-slate-600 bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-2xs group-hover:border-slate-300 transition">
+              <i class="fa-solid fa-chart-simple text-slate-400"></i>
+              <span class="group-open:hidden">Показники дашборду</span>
+              <span class="hidden group-open:inline">Сховати показники</span>
+              <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 transition-transform duration-200 group-open:rotate-180 ml-1"></i>
+            </div>
+          </div>
+
+        </summary>
+
+        <!-- ПРИХОВАНИЙ ВМІСТ ДАШБОРДУ (2 рівномірні блоки) -->
+        <div class="p-4 border-t border-slate-200/80 bg-slate-50/50">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+
+            <!-- БЛОК 1: РОЗПОДІЛ ОБ'ЄМУ -->
+            <div class="bg-white border border-slate-200/90 rounded-xl p-4 shadow-2xs flex flex-col justify-between gap-3.5">
+              <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                <div class="flex items-center gap-2">
+                  <i class="fa-solid fa-chart-pie text-blue-600 text-sm"></i>
+                  <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Розподіл об'єму</h3>
+                </div>
+                <span class="text-[10px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">Статус складування</span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1 items-center">
+                <!-- Завантажені на рейси -->
+                <div class="bg-blue-50/60 border border-blue-100 rounded-xl p-3.5 flex flex-col justify-between h-full">
+                  <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <i class="fa-solid fa-truck-ramps text-blue-600 text-xs"></i> Завантажені на рейси
+            </span>
+                  </div>
+                  <div class="text-xl font-black text-blue-700 tracking-tight" id="stat-allocated-volume">
+                    0.0 <span class="text-xs font-normal text-slate-500">m³</span>
+                  </div>
+                  <span class="text-[10px] text-blue-600/80 mt-1 block">Чекають відвантаження</span>
+                </div>
+
+                <!-- В роботі / Обробка -->
+                <div class="bg-amber-50/60 border border-amber-100 rounded-xl p-3.5 flex flex-col justify-between h-full">
+                  <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <i class="fa-solid fa-boxes-packing text-amber-600 text-xs"></i> В роботі
+            </span>
+                  </div>
+                  <div class="text-xl font-black text-amber-700 tracking-tight" id="stat-in-work-volume">
+                    0.0 <span class="text-xs font-normal text-slate-500">m³</span>
+                  </div>
+                  <span class="text-[10px] text-amber-600/80 mt-1 block">Не розподілені по рейсам</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- БЛОК 2: ОПЕРАТИВНИЙ РУХ -->
+            <div class="bg-white border border-slate-200/90 rounded-xl p-4 shadow-2xs flex flex-col justify-between gap-3.5">
+              <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                <div class="flex items-center gap-2">
+                  <i class="fa-solid fa-arrows-rotate text-violet-600 text-sm"></i>
+                  <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Оперативний рух</h3>
+                </div>
+                <span class="text-[10px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">Динаміка m³</span>
+              </div>
+
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 flex-1">
+                <!-- Отримано сьогодні -->
+                <div class="bg-slate-50 border border-slate-200/70 rounded-xl p-2.5 flex flex-col justify-between">
+                  <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
+                    <span>Отримано</span>
+                    <i class="fa-solid fa-arrow-down text-emerald-500"></i>
+                  </div>
+                  <div class="text-base font-black text-slate-800 mt-1.5" id="stat-received-today">
+                    0.0
+                  </div>
+                  <div class="text-[9px] text-slate-400 font-medium mt-1">Сьогодні</div>
+                </div>
+
+                <!-- Відправлено сьогодні -->
+                <div class="bg-slate-50 border border-slate-200/70 rounded-xl p-2.5 flex flex-col justify-between">
+                  <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
+                    <span>Відправлено</span>
+                    <i class="fa-solid fa-arrow-up text-sky-500"></i>
+                  </div>
+                  <div class="text-base font-black text-slate-800 mt-1.5" id="stat-shipped-today">
+                    0.0
+                  </div>
+                  <div class="text-[9px] text-slate-400 font-medium mt-1">Сьогодні</div>
+                </div>
+
+                <!-- Очікуємо (3 дні) -->
+                <div class="bg-slate-50 border border-slate-200/70 rounded-xl p-2.5 flex flex-col justify-between">
+                  <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
+                    <span>Очікуємо</span>
+                    <i class="fa-regular fa-calendar-check text-indigo-500"></i>
+                  </div>
+                  <div class="text-base font-black text-indigo-600 mt-1.5" id="stat-expected-arrival-3days">
+                    0.0
+                  </div>
+                  <div class="text-[9px] text-slate-400 font-medium mt-1">План (3 дні)</div>
+                </div>
+
+                <!-- Відправка (3 дні) -->
+                <div class="bg-slate-50 border border-slate-200/70 rounded-xl p-2.5 flex flex-col justify-between">
+                  <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
+                    <span>Відправка</span>
+                    <i class="fa-solid fa-truck-fast text-rose-500"></i>
+                  </div>
+                  <div class="text-base font-black text-rose-600 mt-1.5" id="stat-expected-shipment-3days">
+                    0.0
+                  </div>
+                  <div class="text-[9px] text-slate-400 font-medium mt-1">План (3 дні)</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </details>
+
+      <!-- Внутрішній розгортальний блок (Сховано за замовчуванням) -->
+      <details class="group border-t border-slate-200 w-full block">
+        <summary
+          class="w-full px-5 py-3.5 flex items-center justify-between cursor-pointer select-none bg-slate-50 hover:bg-slate-100/90 transition text-xs font-semibold text-slate-700 list-none [&::-webkit-details-marker]:hidden">
+
+          <!-- Ліва частина: Іконка та назва -->
+          <div class="flex items-center gap-2.5">
+            <i class="fa-solid fa-circle-info text-brand-600 text-sm"></i>
+            <span class="font-bold text-slate-800 text-xs sm:text-sm">Детальна інформація та правила складу</span>
+          </div>
+
+          <!-- Права частина: Кнопка перемикання (притиснута до правого краю) -->
+          <div
+            class="flex items-center gap-1.5 text-brand-600 font-bold bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs group-hover:border-brand-200 transition shrink-0">
+            <span class="group-open:hidden">Розгорнути деталі</span>
+            <span class="hidden group-open:inline">Згорнути деталі</span>
+            <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200 group-open:rotate-180"></i>
+          </div>
+
+        </summary>
+
+        <!-- Вміст детальної інформації -->
+        <div class="p-5 space-y-6 bg-white border-t border-slate-100">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Ліва колонка: Послуги, Умови, Примітки -->
+            <div class="space-y-4">
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                  <i class="fa-solid fa-list-check mr-1"></i> Доступні послуги складу
+                </label>
+                <div class="flex flex-wrap gap-1.5" id="wh-display-services"></div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  <i class="fa-solid fa-clipboard-list mr-1"></i> Умови роботи та правила прийому
+                </label>
+                <div
+                  class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-700 whitespace-pre-line leading-relaxed font-sans"
+                  id="wh-display-rules"></div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  <i class="fa-solid fa-note-sticky mr-1 text-amber-500"></i> Особливі примітки
+                </label>
+                <div
+                  class="bg-amber-50/60 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 leading-relaxed italic"
+                  id="wh-display-special-notes"></div>
+              </div>
+            </div>
+
+            <!-- Центральна колонка: Графік роботи та Контакти -->
+            <div class="space-y-4">
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                  <i class="fa-regular fa-calendar-days mr-1"></i> Графік роботи (по днях)
+                </label>
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1"
+                     id="wh-display-schedule"></div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                  <i class="fa-solid fa-address-book mr-1"></i> Контактні особи на складі
+                </label>
+                <div class="space-y-2" id="wh-display-contacts"></div>
+              </div>
+            </div>
+
+            <!-- Права колонка: Інструкція для клієнта -->
+            <div class="space-y-4">
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <i class="fa-solid fa-file-lines mr-1 text-brand-600"></i> Інструкція для клієнта по відправці
+                  </label>
+                  <div class="flex items-center gap-1.5">
+                    <button onclick="DashboardModule.copyInstruction()"
+                            class="px-2 py-1 bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 rounded-md text-[11px] font-bold transition inline-flex items-center gap-1">
+                      <i class="fa-regular fa-copy"></i> Скопіювати
+                    </button>
+                    <button onclick="DashboardModule.downloadInstruction()"
+                            class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-md text-[11px] font-bold transition inline-flex items-center gap-1">
+                      <i class="fa-solid fa-download"></i> Файл
+                    </button>
+                  </div>
+                </div>
+                <textarea id="wh-display-instruction" readonly rows="11"
+                          class="w-full text-xs font-mono bg-slate-900 text-slate-100 border border-slate-800 rounded-xl p-3 focus:outline-none resize-none leading-normal"></textarea>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Тарифи та Прайс-лист -->
+          <div class="border-t border-slate-200 pt-4">
+            <div class="flex items-center justify-between mb-3">
+              <label class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                <i class="fa-solid fa-tags text-emerald-600"></i> Прайс та Тарифи послуг
+              </label>
+            </div>
+
+            <div class="overflow-x-auto rounded-xl border border-slate-200">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                <tr
+                  class="bg-slate-100 text-slate-700 font-bold text-[11px] uppercase tracking-wider border-b border-slate-200">
+                  <th class="p-2.5">Послуга</th>
+                  <th class="p-2.5">Ціна</th>
+                  <th class="p-2.5">Одиниця</th>
+                  <th class="p-2.5">Примітка</th>
+                  <th class="p-2.5">Період дії</th>
+                </tr>
+                </thead>
+                <tbody id="wh-display-pricing-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </details>
+
+  </section>
+

@@ -1,0 +1,300 @@
+<!-- 4. Dynamic Cargo Table -->
+<section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col">
+  <div class="overflow-x-auto custom-scrollbar flex-1">
+    <table class="w-full text-left border-collapse text-xs sm:text-sm whitespace-nowrap">
+      <thead>
+      <tr class="bg-slate-800 text-slate-200 uppercase text-[11px] font-bold tracking-wider sticky top-0 z-30">
+        <!-- Чекбокс -->
+        <th class="p-3 text-center w-12 min-w-[48px] max-w-[48px] sticky left-0 top-0 z-40 bg-slate-800">
+          <input type="checkbox" id="select-all-rows" class="rounded text-brand-600 focus:ring-brand-500">
+        </th>
+
+        <!-- DF номер Обіцянки -->
+        <th class="p-3 sticky left-12 top-0 z-40 bg-slate-800 border-r border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)]">
+          <button type="button" class="flex items-center justify-between w-full gap-2 hover:text-white transition cursor-pointer group">
+            <span>DF номер Обіцянки</span>
+            <i class="fa-solid fa-sort text-[10px] text-slate-400 group-hover:text-indigo-400 transition"></i>
+          </button>
+        </th>
+
+        <!-- DF номер ерайва -->
+        <th class="p-3">
+          <button type="button" class="flex items-center justify-between w-full gap-2 hover:text-white transition cursor-pointer group">
+            <span>DF номер ерайва</span>
+            <i class="fa-solid fa-sort text-[10px] text-slate-400 group-hover:text-indigo-400 transition"></i>
+          </button>
+        </th>
+
+        <!-- Трек-номер -->
+        <th class="p-3">
+          <button type="button" class="flex items-center justify-between w-full gap-2 hover:text-white transition cursor-pointer group">
+            <span>Трек-номер</span>
+            <i class="fa-solid fa-sort text-[10px] text-slate-400 group-hover:text-indigo-400 transition"></i>
+          </button>
+        </th>
+
+        <!-- DF номер перевезення -->
+        <th class="p-3">
+          <button type="button" class="flex items-center justify-between w-full gap-2 hover:text-white transition cursor-pointer group">
+            <span>DF номер перевезення</span>
+            <i class="fa-solid fa-sort text-[10px] text-slate-400 group-hover:text-indigo-400 transition"></i>
+          </button>
+        </th>
+
+        <!-- Статус -->
+        <th class="p-3">
+          <button type="button" class="flex items-center justify-between w-full gap-2 hover:text-white transition cursor-pointer group">
+            <span>Статус</span>
+            <i class="fa-solid fa-sort text-[10px] text-slate-400 group-hover:text-indigo-400 transition"></i>
+          </button>
+        </th>
+
+        <!-- Тип вантажу (Нова колонка) -->
+        <th class="p-3">
+          <button type="button" class="flex items-center justify-between w-full gap-2 hover:text-white transition cursor-pointer group">
+            <span>Тип вантажу</span>
+            <i class="fa-solid fa-sort text-[10px] text-slate-400 group-hover:text-indigo-400 transition"></i>
+          </button>
+        </th>
+
+        <!-- Док. експортеру (Нова колонка) -->
+        <th class="p-3">
+          <button type="button" class="flex items-center justify-between w-full gap-2 hover:text-white transition cursor-pointer group">
+            <span>Закрити Док. експортеру</span>
+            <i class="fa-solid fa-sort text-[10px] text-slate-400 group-hover:text-indigo-400 transition"></i>
+          </button>
+        </th>
+
+        <!-- Задачі -->
+        <th class="p-3 text-center">Задачі</th>
+
+        <!-- Дата прибуття -->
+        <th class="p-3">
+          <button type="button" class="flex items-center justify-between w-full gap-2 hover:text-white transition cursor-pointer group">
+            <span>Дата прибуття</span>
+            <i class="fa-solid fa-sort text-[10px] text-slate-400 group-hover:text-indigo-400 transition"></i>
+          </button>
+        </th>
+
+        <!-- Склад -->
+        <th class="p-3">
+          <button type="button" class="flex items-center justify-between w-full gap-2 hover:text-white transition cursor-pointer group">
+            <span>Склад</span>
+            <i class="fa-solid fa-sort text-[10px] text-slate-400 group-hover:text-indigo-400 transition"></i>
+          </button>
+        </th>
+
+        <!-- Клієнт -->
+        <th class="p-3">
+          <button type="button" class="flex items-center justify-between w-full gap-2 hover:text-white transition cursor-pointer group">
+            <span>Клієнт</span>
+            <i class="fa-solid fa-sort text-[10px] text-slate-400 group-hover:text-indigo-400 transition"></i>
+          </button>
+        </th>
+
+        <!-- Назва товару (укр) -->
+        <th class="p-3">
+          <button type="button" class="flex items-center justify-between w-full gap-2 hover:text-white transition cursor-pointer group">
+            <span>Назва товару (укр)</span>
+            <i class="fa-solid fa-sort text-[10px] text-slate-400 group-hover:text-indigo-400 transition"></i>
+          </button>
+        </th>
+
+        <!-- Назва товару (кит) -->
+        <th class="p-3">Назва товару (кит)</th>
+
+        <!-- Назва товару (англ) -->
+        <th class="p-3">Назва товару (англ)</th>
+
+        <!-- Відправлення -->
+        <th class="p-3">
+          <button type="button" class="flex items-center justify-between w-full gap-2 hover:text-white transition cursor-pointer group">
+            <span>Відправлення</span>
+            <i class="fa-solid fa-sort text-[10px] text-slate-400 group-hover:text-indigo-400 transition"></i>
+          </button>
+        </th>
+
+        <!-- Прибуття -->
+        <th class="p-3">
+          <button type="button" class="flex items-center justify-between w-full gap-2 hover:text-white transition cursor-pointer group">
+            <span>Прибуття</span>
+            <i class="fa-solid fa-sort text-[10px] text-slate-400 group-hover:text-indigo-400 transition"></i>
+          </button>
+        </th>
+
+        <!-- Спосіб перевезення -->
+        <th class="p-3">
+          <button type="button" class="flex items-center justify-between w-full gap-2 hover:text-white transition cursor-pointer group">
+            <span>Спосіб перевезення</span>
+            <i class="fa-solid fa-sort text-[10px] text-slate-400 group-hover:text-indigo-400 transition"></i>
+          </button>
+        </th>
+
+        <!-- Підрейс -->
+        <th class="p-3">
+          <button type="button" class="flex items-center justify-between w-full gap-2 hover:text-white transition cursor-pointer group">
+            <span>Підрейс</span>
+            <i class="fa-solid fa-sort text-[10px] text-slate-400 group-hover:text-indigo-400 transition"></i>
+          </button>
+        </th>
+
+        <!-- Дата отримання -->
+        <th class="p-3">
+          <button type="button" class="flex items-center justify-between w-full gap-2 hover:text-white transition cursor-pointer group">
+            <span>Дата отримання</span>
+            <i class="fa-solid fa-sort text-[10px] text-slate-400 group-hover:text-indigo-400 transition"></i>
+          </button>
+        </th>
+
+        <!-- Створено / Завантажено -->
+        <th class="p-3">Створено / Завантажено</th>
+
+        <!-- Кількість місць -->
+        <th class="p-3 text-right">
+          <button type="button" class="flex items-center justify-end w-full gap-2 hover:text-white transition cursor-pointer group">
+            <span>Кількість місць</span>
+            <i class="fa-solid fa-sort text-[10px] text-slate-400 group-hover:text-indigo-400 transition"></i>
+          </button>
+        </th>
+
+        <!-- Вага брутто (кг) -->
+        <th class="p-3 text-right">
+          <button type="button" class="flex items-center justify-end w-full gap-2 hover:text-white transition cursor-pointer group">
+            <span>Вага брутто (кг)</span>
+            <i class="fa-solid fa-sort text-[10px] text-slate-400 group-hover:text-indigo-400 transition"></i>
+          </button>
+        </th>
+
+        <!-- Об’єм (m³) -->
+        <th class="p-3 text-right">
+          <button type="button" class="flex items-center justify-end w-full gap-2 hover:text-white transition cursor-pointer group">
+            <span>Об’єм (m³)</span>
+            <i class="fa-solid fa-sort text-[10px] text-slate-400 group-hover:text-indigo-400 transition"></i>
+          </button>
+        </th>
+
+        <!-- Негабарит -->
+        <th class="p-3">Негабарит (коментар)</th>
+
+        <!-- Тип пакування -->
+        <th class="p-3">Тип пакування</th>
+
+        <!-- Додаткові послуги -->
+        <th class="p-3">Додаткові послуги</th>
+
+        <!-- Відповідальний менеджер -->
+        <th class="p-3">
+          <button type="button" class="flex items-center justify-between w-full gap-2 hover:text-white transition cursor-pointer group">
+            <span>Відповідальний менеджер</span>
+            <i class="fa-solid fa-sort text-[10px] text-slate-400 group-hover:text-indigo-400 transition"></i>
+          </button>
+        </th>
+
+        <!-- Відповідальний логіст -->
+        <th class="p-3">
+          <button type="button" class="flex items-center justify-between w-full gap-2 hover:text-white transition cursor-pointer group">
+            <span>Відповідальний логіст</span>
+            <i class="fa-solid fa-sort text-[10px] text-slate-400 group-hover:text-indigo-400 transition"></i>
+          </button>
+        </th>
+
+        <!-- Примітка логіста -->
+        <th class="p-3">Примітка логіста</th>
+
+        <!-- Посилання на фото -->
+        <th class="p-3 text-center">Посилання на фото</th>
+
+        <!-- Дії -->
+        <th class="p-3 text-center sticky right-0 top-0 z-40 bg-slate-800 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.3)]">
+          Дії
+        </th>
+      </tr>
+      </thead>
+      <tbody id="cargo-table-body" class="divide-y divide-slate-200 bg-white">
+      <!-- Table rows generated dynamically by JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Table Footer & Pagination -->
+  <div class="flex flex-col md:flex-row items-center justify-between gap-4 px-4 py-3 bg-white border-t border-slate-200 rounded-b-2xl text-xs text-slate-600">
+    <div class="flex items-center gap-3">
+      <span class="font-medium text-slate-500">Показувати на сторінці:</span>
+      <select id="items-per-page" class="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 font-bold text-slate-700 focus:outline-none focus:border-brand-500 cursor-pointer shadow-2xs">
+        <option value="10">10</option>
+        <option value="20" selected>20</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+      </select>
+      <span id="pagination-info" class="text-slate-400 font-medium ml-2">Показано 0 з 0</span>
+    </div>
+
+    <!-- Кнопки пагінації -->
+    <div id="pagination-controls" class="flex items-center gap-1">
+      <!-- Генерується у JS -->
+    </div>
+  </div>
+</section>
+
+<!-- Плаваюча панель дій при виділенні чекбоксів -->
+<div id="bulk-actions-panel" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white rounded-full shadow-2xl px-6 py-3 border border-slate-700 flex items-center gap-4 transition-all duration-300">
+  <div class="text-xs font-medium text-slate-300">
+    Вибрано: <strong id="bulk-selected-count" class="text-white font-bold text-sm">0</strong>
+  </div>
+
+  <div class="h-4 w-px bg-slate-700"></div>
+
+  <div class="flex items-center gap-2">
+    <button id="btn-bulk-transfer" type="button" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition shadow-sm">
+      <i class="fa-solid fa-angles-right"></i>
+      <span>Перемістити на інший склад</span>
+    </button>
+
+    <button id="btn-bulk-delete" type="button" class="bg-rose-600 hover:bg-rose-700 text-white px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition shadow-sm">
+      <i class="fa-solid fa-trash-can"></i>
+      <span>Видалити</span>
+    </button>
+  </div>
+
+  <div class="h-4 w-px bg-slate-700"></div>
+
+  <button id="btn-bulk-cancel" type="button" class="text-slate-400 hover:text-white text-xs transition font-medium">
+    × Скасувати
+  </button>
+</div>
+
+<!-- Модальне вікно для вибору складу при переміщенні -->
+<div id="modal-transfer-warehouse" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+  <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-100">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+      <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+        <i class="fa-solid fa-angles-right text-indigo-600"></i>
+        Перемістити на інший склад
+      </h3>
+      <button class="close-transfer-modal text-slate-400 hover:text-slate-600 text-lg">×</button>
+    </div>
+
+    <p class="text-xs text-slate-600">
+      Оберіть склад, на який необхідно перемістити обрані вантажі (<strong id="transfer-items-count">0</strong> шт.):
+    </p>
+
+    <div>
+      <label class="block text-xs font-semibold text-slate-700 mb-1">Склад призначення:</label>
+      <select id="transfer-target-warehouse" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <option value="Склад №1 (Київ)">Склад №1 (Київ)</option>
+        <option value="Склад №2 (Львів)">Склад №2 (Львів)</option>
+        <option value="Транзитний склад (Одеса)">Транзитний склад (Одеса)</option>
+        <option value="Закордонний склад (Варшава)">Закордонний склад (Варшава)</option>
+      </select>
+    </div>
+
+    <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+      <button type="button" class="close-transfer-modal px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
+        Скасувати
+      </button>
+      <button id="btn-confirm-transfer" type="button" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm">
+        Підтвердити переміщення
+      </button>
+    </div>
+  </div>
+</div>
