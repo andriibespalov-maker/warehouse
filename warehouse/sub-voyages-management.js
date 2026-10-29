@@ -1,12 +1,12 @@
-document.addEventListener('DOMContentLoaded', () => {
+function initSubvoyagesPlannerModule() {
   // Опорна поточна дата для розрахунку дедлайнів (≤ 3 дні до відправки = Critical)
   const REFERENCE_TODAY = '2026-10-18';
 
   const headerUnassignedCount = document.getElementById('header-unassigned-count');
 
   // Фільтри перевезень
-  const searchInput = document.getElementById('search-input');
-  const btnQuickResetFilters = document.getElementById('btn-quick-reset-filters');
+  const searchInput = document.getElementById('search-input-sv') || document.getElementById('search-input');
+  const btnQuickResetFilters = document.getElementById('btn-quick-reset-filters-sv') || document.getElementById('btn-quick-reset-filters');
   const btnQuickFilterReady = document.getElementById('btn-quick-filter-ready');
   const btnQuickFilterAttached = document.getElementById('btn-quick-filter-attached');
   const btnQuickFilterLastmile = document.getElementById('btn-quick-filter-lastmile');
@@ -117,6 +117,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let selectedUnassignedIds = new Set();
   let selectedDestinationHub = 'all';
   let selectedSubvoyageUrgency = 'all';
+  let selectedSubvoyageStatuses = new Set();
+  let selectedSubvoyageLogists = new Set();
+  let isAssignedShipmentsCollapsed = false;
 
   let sortField = 'departureDate';
   let sortDirection = 'asc';
@@ -252,6 +255,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderStatusBadge(status) {
     const styles = {
+      'Формування': 'bg-amber-50 text-amber-800 border-amber-300',
+      'Завантажений': 'bg-emerald-50 text-emerald-800 border-emerald-300',
       'Формується': 'bg-amber-50 text-amber-800 border-amber-300',
       'Готовий до завантаження': 'bg-sky-50 text-sky-800 border-sky-300',
       'В дорозі': 'bg-indigo-50 text-indigo-800 border-indigo-300',
@@ -351,7 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function syncSubvoyageAndShipmentsStatuses() {
     subVoyagesData.forEach(sv => {
       if (sv.status === 'Відкритий') sv.status = 'В дорозі';
-      if (sv.status === 'Заплановано') sv.status = 'Формується';
+      if (sv.status === 'Заплановано' || sv.status === 'Формується') sv.status = 'Формування';
     });
 
     transportsData.forEach(tr => {
@@ -482,8 +487,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       setupHubFilterOptions();
       setupSubvoyageDestinationHubOptions();
+      setupSubvoyageBoardFilters();
       setupSubvoyageStatusSelect();
       setupSubvoyageCommentActions();
+      setupAssignedShipmentsToggle();
       setupAdvancedFilterOptions();
       updateActiveSubvoyageState();
       renderAll();
@@ -533,6 +540,64 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Можливість ховати / показувати перевезення в підрейсі (із розширенням блоку підрейсів)
+  function setupAssignedShipmentsToggle() {
+    const btnToggle = document.getElementById('btn-toggle-assigned-shipments');
+    const tableWrapper = document.getElementById('subvoyage-assigned-shipments-table-wrapper');
+    const toggleIcon = document.getElementById('icon-toggle-assigned-shipments');
+    const toggleText = document.getElementById('text-toggle-assigned-shipments');
+    const timelineBlock = document.getElementById('subvoyages-timeline-block');
+    const timelineCards = document.getElementById('subvoyages-timeline-cards');
+
+    if (!btnToggle || !tableWrapper) return;
+
+    // Якщо немає id="subvoyages-timeline-block", беремо батьківський блок карток
+    const resolvedTimelineBlock = timelineBlock || (timelineCards ? timelineCards.parentElement : null);
+
+    function updateExpandedLayout() {
+      if (isAssignedShipmentsCollapsed) {
+        tableWrapper.classList.add('hidden');
+        if (toggleIcon) toggleIcon.classList.add('-rotate-90');
+        if (toggleText) toggleText.textContent = 'Показати перевезення';
+        btnToggle.classList.add('bg-slate-100', 'text-brand-700');
+        btnToggle.classList.remove('bg-white', 'text-slate-700');
+
+        // Збільшуємо блок підрейсів на всю вивільнену висоту, щоб було видно значно більше підрейсів
+        if (resolvedTimelineBlock) {
+          resolvedTimelineBlock.classList.remove('shrink-0');
+          resolvedTimelineBlock.classList.add('flex-1', 'min-h-0', 'flex', 'flex-col');
+        }
+        if (timelineCards) {
+          timelineCards.classList.remove('max-h-60');
+          timelineCards.classList.add('flex-1', 'min-h-0', 'max-h-[560px]');
+        }
+      } else {
+        tableWrapper.classList.remove('hidden');
+        if (toggleIcon) toggleIcon.classList.remove('-rotate-90');
+        if (toggleText) toggleText.textContent = 'Сховати перевезення';
+        btnToggle.classList.remove('bg-slate-100', 'text-brand-700');
+        btnToggle.classList.add('bg-white', 'text-slate-700');
+
+        // Повертаємо стандартну компактну висоту блоку підрейсів
+        if (resolvedTimelineBlock) {
+          resolvedTimelineBlock.classList.add('shrink-0');
+          resolvedTimelineBlock.classList.remove('flex-1', 'min-h-0', 'flex', 'flex-col');
+        }
+        if (timelineCards) {
+          timelineCards.classList.add('max-h-60');
+          timelineCards.classList.remove('flex-1', 'min-h-0', 'max-h-[560px]');
+        }
+      }
+    }
+
+    updateExpandedLayout();
+
+    btnToggle.onclick = () => {
+      isAssignedShipmentsCollapsed = !isAssignedShipmentsCollapsed;
+      updateExpandedLayout();
+    };
+  }
+
   function setupSubvoyageDestinationHubOptions() {
     if (!subvoyageDestinationHubFilter) return;
     const hubs = Array.from(new Set(subVoyagesData.map(sv => sv.hub))).filter(Boolean);
@@ -547,6 +612,167 @@ document.addEventListener('DOMContentLoaded', () => {
       updateActiveSubvoyageState();
       renderAll();
     });
+  }
+
+  // Налаштування multiselect фільтрів Дошки Підрейсів: Статуси та Логісти
+  function setupSubvoyageBoardFilters() {
+    const allStatuses = Array.from(new Set(subVoyagesData.map(s => s.status))).filter(Boolean);
+    const allLogists = Array.from(new Set(subVoyagesData.map(s => s.logist))).filter(Boolean);
+
+    selectedSubvoyageStatuses = new Set(allStatuses);
+    selectedSubvoyageLogists = new Set(allLogists);
+
+    // 1. Статуси
+    const statusBtn = document.getElementById('sv-status-multiselect-btn');
+    const statusMenu = document.getElementById('sv-status-multiselect-menu');
+    const statusContainer = document.getElementById('sv-status-checkboxes-container');
+    const statusSelectAll = document.getElementById('sv-status-select-all');
+    const statusClearAll = document.getElementById('sv-status-clear-all');
+
+    if (statusContainer) {
+      statusContainer.innerHTML = allStatuses.map(st => `
+        <label class="flex items-center gap-2 text-xs text-slate-700 hover:bg-slate-50 p-1 rounded cursor-pointer select-none">
+          <input type="checkbox" value="${st}" checked class="sv-status-cb rounded text-brand-600 focus:ring-brand-500 cursor-pointer">
+          <span class="truncate">${st}</span>
+        </label>
+      `).join('');
+
+      statusContainer.querySelectorAll('.sv-status-cb').forEach(cb => {
+        cb.addEventListener('change', () => {
+          if (cb.checked) selectedSubvoyageStatuses.add(cb.value);
+          else selectedSubvoyageStatuses.delete(cb.value);
+          updateSubvoyageStatusFilterLabel(allStatuses.length);
+          updateActiveSubvoyageState();
+          renderAll();
+        });
+      });
+    }
+
+    if (statusBtn && statusMenu) {
+      statusBtn.onclick = (e) => {
+        e.stopPropagation();
+        const logistMenu = document.getElementById('sv-logist-multiselect-menu');
+        if (logistMenu) logistMenu.classList.add('hidden');
+        statusMenu.classList.toggle('hidden');
+      };
+      statusMenu.onclick = (e) => e.stopPropagation();
+    }
+
+    if (statusSelectAll && statusContainer) {
+      statusSelectAll.onclick = () => {
+        statusContainer.querySelectorAll('.sv-status-cb').forEach(cb => cb.checked = true);
+        selectedSubvoyageStatuses = new Set(allStatuses);
+        updateSubvoyageStatusFilterLabel(allStatuses.length);
+        updateActiveSubvoyageState();
+        renderAll();
+      };
+    }
+
+    if (statusClearAll && statusContainer) {
+      statusClearAll.onclick = () => {
+        statusContainer.querySelectorAll('.sv-status-cb').forEach(cb => cb.checked = false);
+        selectedSubvoyageStatuses.clear();
+        updateSubvoyageStatusFilterLabel(allStatuses.length);
+        updateActiveSubvoyageState();
+        renderAll();
+      };
+    }
+
+    updateSubvoyageStatusFilterLabel(allStatuses.length);
+
+    // 2. Логісти
+    const logistBtn = document.getElementById('sv-logist-multiselect-btn');
+    const logistMenu = document.getElementById('sv-logist-multiselect-menu');
+    const logistContainer = document.getElementById('sv-logist-checkboxes-container');
+    const logistSelectAll = document.getElementById('sv-logist-select-all');
+    const logistClearAll = document.getElementById('sv-logist-clear-all');
+
+    if (logistContainer) {
+      logistContainer.innerHTML = allLogists.map(lg => `
+        <label class="flex items-center gap-2 text-xs text-slate-700 hover:bg-slate-50 p-1 rounded cursor-pointer select-none">
+          <input type="checkbox" value="${lg}" checked class="sv-logist-cb rounded text-brand-600 focus:ring-brand-500 cursor-pointer">
+          <span class="truncate">${lg}</span>
+        </label>
+      `).join('');
+
+      logistContainer.querySelectorAll('.sv-logist-cb').forEach(cb => {
+        cb.addEventListener('change', () => {
+          if (cb.checked) selectedSubvoyageLogists.add(cb.value);
+          else selectedSubvoyageLogists.delete(cb.value);
+          updateSubvoyageLogistFilterLabel(allLogists.length);
+          updateActiveSubvoyageState();
+          renderAll();
+        });
+      });
+    }
+
+    if (logistBtn && logistMenu) {
+      logistBtn.onclick = (e) => {
+        e.stopPropagation();
+        const smenu = document.getElementById('sv-status-multiselect-menu');
+        if (smenu) smenu.classList.add('hidden');
+        logistMenu.classList.toggle('hidden');
+      };
+      logistMenu.onclick = (e) => e.stopPropagation();
+    }
+
+    if (logistSelectAll && logistContainer) {
+      logistSelectAll.onclick = () => {
+        logistContainer.querySelectorAll('.sv-logist-cb').forEach(cb => cb.checked = true);
+        selectedSubvoyageLogists = new Set(allLogists);
+        updateSubvoyageLogistFilterLabel(allLogists.length);
+        updateActiveSubvoyageState();
+        renderAll();
+      };
+    }
+
+    if (logistClearAll && logistContainer) {
+      logistClearAll.onclick = () => {
+        logistContainer.querySelectorAll('.sv-logist-cb').forEach(cb => cb.checked = false);
+        selectedSubvoyageLogists.clear();
+        updateSubvoyageLogistFilterLabel(allLogists.length);
+        updateActiveSubvoyageState();
+        renderAll();
+      };
+    }
+
+    updateSubvoyageLogistFilterLabel(allLogists.length);
+
+    // Закриття випадних меню при кліку зовні
+    document.addEventListener('click', () => {
+      if (statusMenu) statusMenu.classList.add('hidden');
+      if (logistMenu) logistMenu.classList.add('hidden');
+    });
+  }
+
+  function updateSubvoyageStatusFilterLabel(totalCount) {
+    const label = document.getElementById('sv-status-multiselect-label');
+    if (!label) return;
+    const count = selectedSubvoyageStatuses.size;
+    if (count === totalCount) {
+      label.textContent = 'Усі статуси';
+    } else if (count === 0) {
+      label.textContent = 'Не обрано (0)';
+    } else if (count <= 2) {
+      label.textContent = Array.from(selectedSubvoyageStatuses).join(', ');
+    } else {
+      label.textContent = `Статусів: ${count}`;
+    }
+  }
+
+  function updateSubvoyageLogistFilterLabel(totalCount) {
+    const label = document.getElementById('sv-logist-multiselect-label');
+    if (!label) return;
+    const count = selectedSubvoyageLogists.size;
+    if (count === totalCount) {
+      label.textContent = 'Усі логісти';
+    } else if (count === 0) {
+      label.textContent = 'Не обрано (0)';
+    } else if (count <= 2) {
+      label.textContent = Array.from(selectedSubvoyageLogists).join(', ');
+    } else {
+      label.textContent = `Логістів: ${count}`;
+    }
   }
 
   function setupHubFilterOptions() {
@@ -591,6 +817,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (selectedSubvoyageUrgency !== 'all') {
         const u = getSubvoyageUrgencyInfo(sv);
         if (u.level !== selectedSubvoyageUrgency) return false;
+      }
+      if (selectedSubvoyageStatuses.size > 0 && !selectedSubvoyageStatuses.has(sv.status)) {
+        return false;
+      }
+      if (selectedSubvoyageLogists.size > 0 && !selectedSubvoyageLogists.has(sv.logist)) {
+        return false;
       }
       return true;
     });
@@ -1140,6 +1372,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const cap = calculateSubvoyageCapacity(activeSubvoyageId);
     const themeVol = getCapacityColorTheme(cap.projPctVol);
+    const themeWeight = getCapacityColorTheme(cap.projPctWeight);
+    const themePlaces = getCapacityColorTheme(cap.projPctPlaces);
 
     if (currentSubvoyageSpecialAttributesSummary) {
       currentSubvoyageSpecialAttributesSummary.innerHTML = renderSubvoyageSpecialAttributesBadges(activeSubvoyageId);
@@ -1159,6 +1393,59 @@ document.addEventListener('DOMContentLoaded', () => {
         </span>
       `;
     }
+
+    // Оновлюємо закріплений блок заповнення рейсу (Capacity Details Block)
+    const svSummaryBadge = document.getElementById('active-sv-capacity-summary-badge');
+    if (svSummaryBadge) {
+      svSummaryBadge.textContent = `${cap.projPctVol}% ${cap.isOverloaded ? '⚠️ ПЕРЕЛІМІТ' : ''}`;
+      svSummaryBadge.className = `font-mono text-[10px] px-2 py-0.2 rounded-full font-extrabold border ${themeVol.badge}`;
+    }
+    const svCargoCountEl = document.getElementById('active-sv-cargo-count');
+    if (svCargoCountEl) svCargoCountEl.textContent = assigned.length;
+    const svDatesEl = document.getElementById('active-sv-dates');
+    if (svDatesEl) {
+      svDatesEl.innerHTML = `<i class="fa-regular fa-calendar-check text-brand-600 mr-1"></i>Відпр: <strong>${currentSv.plannedDeparture || '—'}</strong> ➔ Приб: ${currentSv.plannedArrival || '—'}`;
+    }
+
+    // Метрики Об'єму
+    const svVolPct = document.getElementById('active-sv-vol-pct');
+    if (svVolPct) { svVolPct.textContent = `${cap.projPctVol}%`; svVolPct.className = `font-extrabold ${themeVol.text}`; }
+    const svVolBar = document.getElementById('active-sv-vol-bar');
+    if (svVolBar) { svVolBar.style.width = `${Math.min(cap.projPctVol, 100)}%`; svVolBar.className = `h-1.5 rounded-full transition-all duration-300 ${themeVol.bar}`; }
+    const svVolText = document.getElementById('active-sv-vol-text');
+    if (svVolText) svVolText.textContent = cap.vol.toFixed(1);
+    const svVolMax = document.getElementById('active-sv-vol-max');
+    if (svVolMax) svVolMax.textContent = currentSv.maxVolume.toFixed(1);
+    const svVolDelta = document.getElementById('active-sv-vol-delta');
+    if (svVolDelta) svVolDelta.textContent = cap.deltaVol > 0 ? `(+${cap.deltaVol.toFixed(1)})` : '';
+
+    // Метрики Ваги
+    const svWeightPct = document.getElementById('active-sv-weight-pct');
+    if (svWeightPct) { svWeightPct.textContent = `${cap.projPctWeight}%`; svWeightPct.className = `font-extrabold ${themeWeight.text}`; }
+    const svWeightBar = document.getElementById('active-sv-weight-bar');
+    if (svWeightBar) { svWeightBar.style.width = `${Math.min(cap.projPctWeight, 100)}%`; svWeightBar.className = `h-1.5 rounded-full transition-all duration-300 ${themeWeight.bar}`; }
+    const svWeightText = document.getElementById('active-sv-weight-text');
+    if (svWeightText) svWeightText.textContent = cap.weight.toFixed(1);
+    const svWeightMax = document.getElementById('active-sv-weight-max');
+    if (svWeightMax) svWeightMax.textContent = currentSv.maxWeight.toFixed(1);
+    const svWeightDelta = document.getElementById('active-sv-weight-delta');
+    if (svWeightDelta) svWeightDelta.textContent = cap.deltaWeight > 0 ? `(+${cap.deltaWeight.toFixed(1)})` : '';
+
+    // Метрики Місць
+    const svPlacesPct = document.getElementById('active-sv-places-pct');
+    if (svPlacesPct) { svPlacesPct.textContent = `${cap.projPctPlaces}%`; svPlacesPct.className = `font-extrabold ${themePlaces.text}`; }
+    const svPlacesBar = document.getElementById('active-sv-places-bar');
+    if (svPlacesBar) { svPlacesBar.style.width = `${Math.min(cap.projPctPlaces, 100)}%`; svPlacesBar.className = `h-1.5 rounded-full transition-all duration-300 ${themePlaces.bar}`; }
+    const svPlacesText = document.getElementById('active-sv-places-text');
+    if (svPlacesText) svPlacesText.textContent = cap.places;
+    const svPlacesMax = document.getElementById('active-sv-places-max');
+    if (svPlacesMax) svPlacesMax.textContent = currentSv.maxPlaces;
+    const svPlacesDelta = document.getElementById('active-sv-places-delta');
+    if (svPlacesDelta) svPlacesDelta.textContent = cap.deltaPlaces > 0 ? `(+${cap.deltaPlaces})` : '';
+
+    // Оновлюємо лічильник перевезень біля кнопки згортання
+    const assignedCountBadge = document.getElementById('subvoyage-assigned-count-badge');
+    if (assignedCountBadge) assignedCountBadge.textContent = assigned.length;
 
     if (subvoyageTotalCargoCount) subvoyageTotalCargoCount.textContent = assigned.length;
     if (subvoyageTotalVol) subvoyageTotalVol.textContent = cap.vol.toFixed(1);
@@ -1537,6 +1824,16 @@ document.addEventListener('DOMContentLoaded', () => {
       selectedDestinationHub = 'all';
       if (subvoyageDestinationHubFilter) subvoyageDestinationHubFilter.value = 'all';
       if (searchInput) searchInput.value = '';
+
+      const allStatuses = Array.from(new Set(subVoyagesData.map(s => s.status))).filter(Boolean);
+      const allLogists = Array.from(new Set(subVoyagesData.map(s => s.logist))).filter(Boolean);
+      selectedSubvoyageStatuses = new Set(allStatuses);
+      selectedSubvoyageLogists = new Set(allLogists);
+      document.querySelectorAll('.sv-status-cb').forEach(cb => cb.checked = true);
+      document.querySelectorAll('.sv-logist-cb').forEach(cb => cb.checked = true);
+      updateSubvoyageStatusFilterLabel(allStatuses.length);
+      updateSubvoyageLogistFilterLabel(allLogists.length);
+
       renderAll();
       showToast('Фільтри скинуто');
     });
@@ -1577,4 +1874,19 @@ document.addEventListener('DOMContentLoaded', () => {
   setupUrgencyButtons();
   setupQuickFilters();
   loadData();
+
+  window.reloadSubvoyagesPlannerData = function() {
+    loadData();
+  };
+}
+
+window.initSubvoyagesPlanner = function() {
+  initSubvoyagesPlannerModule();
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  // If standing alone on sub-voyages-management.html, auto-init
+  if (document.getElementById('panel-shipments-master') && !document.getElementById('cargo-registry-container')) {
+    initSubvoyagesPlannerModule();
+  }
 });

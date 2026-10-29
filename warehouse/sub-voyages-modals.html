@@ -1,0 +1,220 @@
+<!-- Context Drawer (Модальне вікно з усією інформацією про Перевезення та Вантаж/Ерайв) -->
+<div id="context-drawer-backdrop" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 transition-opacity"></div>
+<div id="context-drawer"
+  class="fixed top-0 right-0 h-full w-full max-w-2xl bg-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300 flex flex-col border-l border-slate-200">
+
+  <div class="p-4 bg-slate-900 text-white flex justify-between items-center shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center font-bold">
+        <i class="fa-solid fa-boxes-stacked"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <h3 class="font-bold text-sm" id="drawer-shipment-id">DF73-229</h3>
+          <span id="drawer-status-badge"></span>
+          <span id="drawer-urgency-badge"></span>
+        </div>
+        <p class="text-[11px] text-slate-400" id="drawer-shipment-promise">Пов'язана Обіцянка: --</p>
+      </div>
+    </div>
+    <button id="btn-close-drawer"
+      class="w-8 h-8 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer">
+      <i class="fa-solid fa-xmark text-base"></i>
+    </button>
+  </div>
+
+  <div class="p-4 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs">
+
+    <!-- 1. Клієнт, Логіст, Спосіб доставки та Контакти відправника -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
+      <div>
+        <span class="text-slate-400 block text-[10px] uppercase font-bold">Клієнт:</span>
+        <a id="drawer-client-link" href="#" class="font-bold text-brand-700 hover:underline text-xs flex items-center gap-1 mt-0.5">
+          <i class="fa-solid fa-building"></i> <span id="drawer-client-name">--</span>
+        </a>
+      </div>
+      <div>
+        <span class="text-slate-400 block text-[10px] uppercase font-bold">Логіст:</span>
+        <div class="font-bold text-slate-800 text-xs flex items-center gap-1 mt-0.5">
+          <i class="fa-regular fa-user text-slate-500"></i> <span id="drawer-logist-name">--</span>
+        </div>
+      </div>
+      <div>
+        <span class="text-slate-400 block text-[10px] uppercase font-bold">Спосіб доставки:</span>
+        <div class="font-bold text-slate-800 text-xs mt-0.5" id="drawer-delivery-method">--</div>
+      </div>
+      <div>
+        <span class="text-slate-400 block text-[10px] uppercase font-bold">Контакти відправника:</span>
+        <div class="font-semibold text-slate-700 text-[11px] mt-0.5" id="drawer-sender-contacts">--</div>
+      </div>
+    </div>
+
+    <!-- 2. Маршрут, Адреси, Склад прибуття та Дати -->
+    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2.5">
+      <div class="flex justify-between items-center border-b border-slate-200/60 pb-2 flex-wrap gap-2">
+        <div>
+          <span class="text-slate-400 block text-[10px] uppercase font-bold">Маршрут та спосіб перевезення:</span>
+          <strong id="drawer-route" class="text-slate-900 font-bold text-xs">-- ➔ --</strong>
+        </div>
+        <div id="drawer-hub-badge"
+          class="inline-flex items-center gap-1.5 bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-1 rounded-lg font-bold text-[11px]">
+          <i class="fa-solid fa-warehouse text-amber-700"></i>
+          <span>--</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+        <div class="bg-white p-2 rounded-lg border border-slate-200">
+          <span class="text-slate-400 block text-[9px] uppercase font-bold">Адреса відправлення:</span>
+          <span id="drawer-origin-address" class="text-slate-800 font-medium">--</span>
+        </div>
+        <div class="bg-white p-2 rounded-lg border border-slate-200">
+          <span class="text-slate-400 block text-[9px] uppercase font-bold">Адреса призначення:</span>
+          <span id="drawer-destination-address" class="text-slate-800 font-medium">--</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2 pt-1 font-mono text-[11px]">
+        <div class="bg-white p-2 rounded-lg border border-slate-200">
+          <span class="text-slate-400 block text-[9px] uppercase font-sans font-bold">Дата готовності:</span>
+          <strong id="drawer-date-ready" class="text-emerald-700 font-bold text-xs">--</strong>
+        </div>
+        <div class="bg-brand-50 p-2 rounded-lg border border-brand-200">
+          <span class="text-brand-700 block text-[9px] uppercase font-sans font-bold">Дата відправки:</span>
+          <strong id="drawer-date-shipped" class="text-brand-900 font-extrabold text-xs">--</strong>
+        </div>
+        <div class="bg-white p-2 rounded-lg border border-slate-200">
+          <span class="text-slate-400 block text-[9px] uppercase font-sans font-bold">Прибуття (план):</span>
+          <strong id="drawer-date-arrival" class="text-slate-800 font-bold text-xs">--</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Параметри логістики, Митне оформлення, Митні умови та Дозволи -->
+    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2.5">
+      <span class="text-slate-400 block text-[10px] uppercase font-bold">Параметри логістики, Митниця та Специфіка:</span>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+        <div class="bg-white p-2 rounded-lg border border-slate-200">
+          <span class="text-slate-400 block text-[9px] uppercase font-bold">Митне оформлення:</span>
+          <strong id="drawer-customs-clearance" class="text-indigo-900 font-bold">--</strong>
+        </div>
+        <div class="bg-white p-2 rounded-lg border border-slate-200">
+          <span class="text-slate-400 block text-[9px] uppercase font-bold">Митні умови (Incoterms):</span>
+          <strong id="drawer-customs-terms" class="text-indigo-700 font-mono font-bold">--</strong>
+        </div>
+        <div class="bg-white p-2 rounded-lg border border-slate-200">
+          <span class="text-slate-400 block text-[9px] uppercase font-bold">Тип перевезення / Завант.:</span>
+          <strong id="drawer-transport-type" class="text-slate-800 font-bold">--</strong>
+        </div>
+        <div class="bg-white p-2 rounded-lg border border-slate-200">
+          <span class="text-slate-400 block text-[9px] uppercase font-bold">Планові габарити:</span>
+          <strong id="drawer-planned-metrics" class="text-slate-800 font-mono font-bold">--</strong>
+        </div>
+      </div>
+
+      <div class="bg-white p-2 rounded-lg border border-slate-200 text-[11px]">
+        <span class="text-slate-400 text-[9px] uppercase font-bold mr-1">Додаткові параметри доставки:</span>
+        <span id="drawer-additional-delivery-params" class="text-slate-700 font-medium">--</span>
+      </div>
+
+      <div id="drawer-conditional-logistics" class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] font-mono">
+        <div class="bg-white p-2 rounded-lg border border-slate-200">
+          <span class="text-slate-400 block text-[9px] font-sans uppercase font-bold">Транзитний склад:</span>
+          <span id="drawer-warehouse-address" class="text-slate-700">--</span>
+        </div>
+        <div class="bg-white p-2 rounded-lg border border-slate-200">
+          <span class="text-slate-400 block text-[9px] font-sans uppercase font-bold">Номер накладної:</span>
+          <span id="drawer-waybill-number" class="text-slate-700 font-bold">--</span>
+        </div>
+        <div class="bg-white p-2 rounded-lg border border-slate-200">
+          <span class="text-slate-400 block text-[9px] font-sans uppercase font-bold">Дані кур'єра:</span>
+          <span id="drawer-courier-details" class="text-slate-700">--</span>
+        </div>
+      </div>
+
+      <div id="drawer-property-badges" class="flex items-center gap-1.5 flex-wrap pt-1">
+      </div>
+    </div>
+
+    <!-- 4. Остання Миля (якщо є) -->
+    <div id="drawer-lastmile-block" class="bg-purple-50 p-3 rounded-xl border border-purple-200 space-y-2 hidden">
+      <div class="flex items-center justify-between font-bold text-purple-900 border-b border-purple-200/80 pb-1">
+        <span class="flex items-center gap-1.5"><i class="fa-solid fa-truck-ramp-box text-purple-600"></i> Остання Миля (Доставка клієнту)</span>
+        <span id="drawer-lastmile-type" class="px-2 py-0.5 bg-purple-200 text-purple-900 rounded text-[10px]">--</span>
+      </div>
+      <div class="space-y-1 text-purple-950 font-mono text-[11px]">
+        <div>Отримувач: <strong id="drawer-lastmile-recipient">--</strong></div>
+        <div>Телефон: <strong id="drawer-lastmile-phone">--</strong></div>
+        <div>Адреса / Відділення: <strong id="drawer-lastmile-address">--</strong></div>
+      </div>
+    </div>
+
+    <!-- 5. Вантажі / Ерайви -->
+    <div>
+      <div class="flex justify-between items-center mb-2">
+        <h4 class="font-bold text-slate-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+          <i class="fa-solid fa-warehouse text-emerald-600"></i>
+          <span>Вантажі / Ерайви (Кількість місць, Вага, Об'єм, Пакування, Дод. послуги, Примітка логіста)</span>
+        </h4>
+        <span id="drawer-cargo-count"
+          class="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded-full border border-emerald-200">0 вантажів</span>
+      </div>
+      <div id="drawer-cargoes-list" class="space-y-2.5">
+      </div>
+    </div>
+
+  </div>
+
+  <div class="p-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center shrink-0">
+    <button id="drawer-btn-detach"
+      class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-xs font-semibold border border-rose-200 transition cursor-pointer">
+      <i class="fa-solid fa-xmark mr-1"></i> Відкріпити від підрейсу
+    </button>
+    <button id="drawer-btn-assign"
+      class="px-4 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold shadow-xs transition cursor-pointer">
+      <i class="fa-solid fa-link mr-1"></i> Додати до активного підрейсу
+    </button>
+  </div>
+
+</div>
+
+<!-- Розширені фільтри планувальника підрейсів -->
+<div id="filter-modal"
+  class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[85vh] flex flex-col border border-slate-200 overflow-hidden">
+    <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-brand-100 text-brand-700 flex items-center justify-center">
+          <i class="fa-solid fa-sliders"></i>
+        </div>
+        <h3 class="font-bold text-sm text-slate-900">Розширені критерії фільтрації</h3>
+      </div>
+      <button id="btn-close-filter-modal"
+        class="w-8 h-8 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition cursor-pointer">
+        <i class="fa-solid fa-xmark text-base"></i>
+      </button>
+    </div>
+    <div class="p-4 overflow-y-auto custom-scrollbar flex-1 space-y-3 text-xs">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <label class="font-bold text-slate-800">Логіст / Менеджер</label>
+          <div id="list-filter-logist"
+            class="max-h-32 overflow-y-auto custom-scrollbar border border-slate-200 rounded-lg p-1.5 space-y-1 bg-white">
+          </div>
+        </div>
+        <div class="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <label class="font-bold text-slate-800">Спосіб перевезення</label>
+          <div id="list-filter-transport"
+            class="max-h-32 overflow-y-auto custom-scrollbar border border-slate-200 rounded-lg p-1.5 space-y-1 bg-white">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="px-5 py-3 border-t border-slate-200 bg-slate-50 flex justify-between items-center">
+      <button id="btn-reset-filters-sv-modal"
+        class="px-3 py-1.5 bg-white text-slate-700 rounded-lg text-xs font-bold border border-slate-200 cursor-pointer">Скинути</button>
+      <button id="btn-apply-filter-modal"
+        class="px-4 py-1.5 bg-brand-600 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer">Застосувати</button>
+    </div>
+  </div>
+</div>

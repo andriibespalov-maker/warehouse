@@ -228,12 +228,18 @@ function renderSubvoyageTabs() {
   const btnManageText = document.getElementById('btn-manage-subvoyages-text');
   if (btnManage) {
     if (activeSubvoyageId && activeSubvoyageId !== 'ALL') {
-      btnManage.href = `sub-voyages-management.html?subvoyageId=${activeSubvoyageId}`;
       if (btnManageText) btnManageText.innerText = `Управління (${activeSubvoyageId})`;
     } else {
-      btnManage.href = 'sub-voyages-management.html';
       if (btnManageText) btnManageText.innerText = 'Управління Підрейсами';
     }
+    btnManage.onclick = () => {
+      if (typeof window.toggleSubvoyagePlannerMode === 'function') {
+        window.toggleSubvoyagePlannerMode(true);
+        if (activeSubvoyageId && activeSubvoyageId !== 'ALL' && typeof window.selectActiveSubvoyage === 'function') {
+          window.selectActiveSubvoyage(activeSubvoyageId);
+        }
+      }
+    };
   }
 
   let visibleSubvoyages = subvoyagesData;
@@ -1015,7 +1021,7 @@ function buildCargoRowHtml(c) {
 
   // 4. Підрейс (Посилання)
   const subvoyageDisplay = (hasShipment && c.subvoyage)
-    ? `<a href="sub-voyages-management.html?subvoyageId=${encodeURIComponent(c.subvoyage)}" onclick="event.stopPropagation();" class="inline-flex items-center gap-1 text-brand-600 hover:text-brand-800 hover:underline font-mono font-semibold transition">
+    ? `<a href="javascript:void(0)" onclick="event.stopPropagation(); if (typeof window.openSubvoyageInPlanner === 'function') window.openSubvoyageInPlanner('${encodeURIComponent(c.subvoyage)}');" class="inline-flex items-center gap-1 text-brand-600 hover:text-brand-800 hover:underline font-mono font-semibold transition">
          <i class="fa-solid fa-truck-fast text-[10px]"></i> ${c.subvoyage}
        </a>`
     : `<span class="text-slate-400 italic font-sans text-xs">—</span>`;
@@ -1602,10 +1608,24 @@ function resetAllFilters() {
   }
 
   const groupingText = document.getElementById('grouping-btn-text');
-  if (groupingText) groupingText.innerText = 'Групувати за перевезенням: Вимк';
+  if (groupingText) groupingText.innerText = 'Групувати за перевезенням';
 
   const groupingBtn = document.getElementById('btn-toggle-grouping');
-  if (groupingBtn) groupingBtn.classList.remove('bg-brand-600', 'text-white');
+  if (groupingBtn) groupingBtn.classList.remove('bg-indigo-600', 'text-white', 'shadow-xs');
+  if (groupingBtn) groupingBtn.classList.add('text-slate-600');
+
+  const listBtn = document.getElementById('btn-view-mode-list');
+  if (listBtn) {
+    listBtn.classList.add('bg-white', 'text-slate-800', 'shadow-xs');
+    listBtn.classList.remove('text-slate-500');
+  }
+
+  // Показуємо фільтри списку при скиданні
+  const listViewFilters = document.getElementById('list-view-filters');
+  if (listViewFilters) listViewFilters.classList.remove('hidden');
+
+  const badge = document.getElementById('grouping-active-badge');
+  if (badge) badge.classList.add('hidden');
 
   if (typeof renderSubvoyageTabs === 'function') renderSubvoyageTabs();
   if (typeof renderTable === 'function') renderTable();
@@ -1725,19 +1745,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await Promise.all([
     loadComponent('dashboard-container', 'dashboard.html'),
-    loadComponent('sub-voyages-container', 'sub-voyages.html'),
     loadComponent('filters-container', 'filters.html'),
     loadComponent('cargo-registry-container', 'cargo-registry.html'),
+    loadComponent('subvoyages-workspace-container', 'sub-voyages-workspace.html'),
+    loadComponent('subvoyages-modals-container', 'sub-voyages-modals.html'),
     loadVoyagesData()
   ]);
+
+  if (typeof window.initSubvoyagesPlanner === 'function') {
+    window.initSubvoyagesPlanner();
+  }
 
   if (window.DashboardModule) {
     DashboardModule.renderWarehouseInfo();
     DashboardModule.updateStats(cargoesData, subvoyagesData);
   }
 
-  populateSubvoyageLogistFilter();
-  renderSubvoyageTabs();
+  // Ініціалізуємо subvoyageLogistFilter — включаємо всіх логістів (щоб isCargoInSubvoyageScope не фільтрував нічого зайвого)
+  if (Array.isArray(subvoyagesData)) {
+    const allLogists = Array.from(new Set(subvoyagesData.map(s => s.logist))).filter(Boolean);
+    subvoyageLogistFilter = [...allLogists];
+  }
 
   const btnCargoSettings = document.getElementById('btn-cargo-settings');
   const modalCargoSettings = document.getElementById('modal-cargo-settings');
@@ -1898,20 +1926,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   const toggleGroupingBtn = document.getElementById('btn-toggle-grouping');
   if (toggleGroupingBtn) {
     toggleGroupingBtn.addEventListener('click', () => {
-      isGroupedByShipment = !isGroupedByShipment;
-      const btnText = document.getElementById('grouping-btn-text');
-      const btn = document.getElementById('btn-toggle-grouping');
-
-      if (isGroupedByShipment) {
-        if (btnText) btnText.innerText = 'Групувати за перевезенням: Увімк';
-        btn.classList.add('bg-brand-600', 'text-white');
-        btn.classList.remove('bg-slate-100', 'text-slate-700');
-      } else {
-        if (btnText) btnText.innerText = 'Групувати за перевезенням: Вимк';
-        btn.classList.remove('bg-brand-600', 'text-white');
-        btn.classList.add('bg-slate-100', 'text-slate-700');
+      // Делегуємо всю логіку в toggleSubvoyagePlannerMode
+      if (typeof window.toggleSubvoyagePlannerMode === 'function') {
+        window.toggleSubvoyagePlannerMode(true);
       }
-      renderTable();
+    });
+  }
+
+  // Кнопка "Список" — повернення до режиму списку
+  const viewModeListBtn = document.getElementById('btn-view-mode-list');
+  if (viewModeListBtn) {
+    viewModeListBtn.addEventListener('click', () => {
+      if (typeof window.toggleSubvoyagePlannerMode === 'function') {
+        window.toggleSubvoyagePlannerMode(false);
+      }
     });
   }
 
@@ -1934,6 +1962,65 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   document.getElementById('btn-save-arrive')?.addEventListener('click', handleSaveArrive);
+
+  // Перемикання між Реєстром Ерайвів та Планувальником Підрейсів
+  window.toggleSubvoyagePlannerMode = function(showPlanner) {
+    const registryContainer = document.getElementById('cargo-registry-container');
+    const plannerWorkspace = document.getElementById('sub-voyages-management-workspace');
+    // Фільтри списку — показуємо тільки в режимі "Список"
+    const listViewFilters = document.getElementById('list-view-filters');
+    const btnText = document.getElementById('grouping-btn-text');
+    const btn = document.getElementById('btn-toggle-grouping');
+    const listBtn = document.getElementById('btn-view-mode-list');
+
+    if (showPlanner) {
+      isGroupedByShipment = true;
+      // Приховуємо реєстр і фільтри списку
+      if (registryContainer) registryContainer.classList.add('hidden');
+      if (listViewFilters) listViewFilters.classList.add('hidden');
+      // Показуємо планувальник (він має свої фільтри)
+      if (plannerWorkspace) plannerWorkspace.classList.remove('hidden');
+
+      // Стилі перемикача: кнопка "Групувати" — активна
+      if (btn) {
+        btn.classList.add('bg-indigo-600', 'text-white', 'shadow-xs');
+        btn.classList.remove('text-slate-600', 'hover:text-slate-900');
+      }
+      if (listBtn) {
+        listBtn.classList.remove('bg-white', 'text-slate-800', 'shadow-xs');
+        listBtn.classList.add('text-slate-500');
+      }
+
+      if (typeof window.reloadSubvoyagesPlannerData === 'function') {
+        window.reloadSubvoyagesPlannerData();
+      }
+    } else {
+      isGroupedByShipment = false;
+      // Показуємо реєстр і фільтри списку
+      if (registryContainer) registryContainer.classList.remove('hidden');
+      if (listViewFilters) listViewFilters.classList.remove('hidden');
+      // Приховуємо планувальник
+      if (plannerWorkspace) plannerWorkspace.classList.add('hidden');
+
+      // Стилі перемикача: кнопка "Список" — активна
+      if (btn) {
+        btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-xs');
+        btn.classList.add('text-slate-600', 'hover:text-slate-900');
+      }
+      if (listBtn) {
+        listBtn.classList.add('bg-white', 'text-slate-800', 'shadow-xs');
+        listBtn.classList.remove('text-slate-500');
+      }
+      renderTable();
+    }
+  };
+
+  window.openSubvoyageInPlanner = function(svId) {
+    window.toggleSubvoyagePlannerMode(true);
+    if (typeof window.selectActiveSubvoyage === 'function') {
+      window.selectActiveSubvoyage(svId);
+    }
+  };
 
   renderTable();
 });
