@@ -2,28 +2,369 @@
   {
     "id": "foshan",
     "name": "New FOSHAN",
+    "contractor": "Global Cargo Logistics",
     "country": "Китай",
     "flag": "🇨🇳",
     "city": "Foshan",
-    "address": "Warehouse address: No. 18 Logistics Park, Nanhai",
+    "address": "м. Фошань (Foshan), No. 18 Logistics Park, Nanhai District",
     "type": "Difreight",
-    "services": ["Зберігання", "Упаковка", "Маркування"],
+    "isConsolidation": true,
+    "volume": 500,
+    "occupiedVolume": 120,
+    "expectedVolume": 300,
+    "activeArrives": 14,
+    "expectedSubflights": 3,
+    "lastArrivalDate": "2026-10-25",
+    "tariffs": [
+      {
+        "service": "Відповідальне зберігання (CBM / доба)",
+        "unitPrice": "1.50",
+        "currency": "USD",
+        "standard": "per CBM per day",
+        "dateFrom": "2026-01-01",
+        "dateTo": "2026-12-31",
+        "remark": "Перші 3 дні безкоштовно при консолідації"
+      },
+      {
+        "service": "Палетування вантажу (формування палети)",
+        "unitPrice": "12.00",
+        "currency": "USD",
+        "standard": "per pallet",
+        "dateFrom": "2026-01-01",
+        "dateTo": "2026-12-31",
+        "remark": "Включаючи стретч-плівку та кутники"
+      }
+    ],
+    "tariffType": "document",
+    "tariffDocuments": [
+      {
+        "id": "doc-foshan-1",
+        "name": "Tariff_Foshan_GlobalCargo_2026.pdf",
+        "size": "420 KB",
+        "uploadedAt": "15.01.2026",
+        "validUntil": "2026-11-25",
+        "isActive": true,
+        "comment": "Офіційний прайс-лист від підрядника Global Cargo Logistics на 2026 рік"
+      },
+      {
+        "id": "doc-foshan-prev",
+        "name": "Tariff_Foshan_GlobalCargo_2025_Archive.pdf",
+        "size": "385 KB",
+        "uploadedAt": "10.01.2025",
+        "validUntil": "2025-12-31",
+        "isActive": false,
+        "comment": "Попередній прайс-лист на 2025 рік (архівний)"
+      }
+    ],
+    "tariffText": "Приймання вантажу: $15/палета\nЗберігання: $1.50/CBM/доба\nПалетування: $12/палета\nМаркування DF-кодом: $0.20/коробка",
+    "tariffTextValidUntil": "2026-12-31",
+    "services": [
+      "Зберігання",
+      "Пакування та обробка",
+      "Маркування та Фулфілмент",
+      "Крос-докінг та ПРР"
+    ],
+    "selectedSubServices": [
+      "Відповідальне зберігання (CBM / доба)",
+      "Палетне зберігання (європалета / доба)",
+      "Підлогове / коміркове зберігання дрібних вантажів",
+      "Палетування вантажу (формування палети)",
+      "Обмотка стретч-плівкою (прозора / чорна)",
+      "Перепакування в нові картонні коробки",
+      "Маркування кожної коробки (DF-код клієнта)",
+      "Друк та поклейка транспортних етикеток / штрих-кодів",
+      "Крос-докінг (пряме перевантаження фура-фура)",
+      "Механізоване вивантаження / завантаження (карою за палету)"
+    ],
+    "workRules": "Тільки палети. Наявна рампа для фур. Без негабариту понад 3м.",
     "specialNotes": "Прийом великогабаритного вантажу за попереднім узгодженням",
+    "schedule": {
+      "Mon": "09:00 - 18:00",
+      "Tue": "09:00 - 18:00",
+      "Wed": "09:00 - 18:00",
+      "Thu": "09:00 - 18:00",
+      "Fri": "09:00 - 18:00",
+      "Sat": "10:00 - 15:00",
+      "Sun": "Вихідний"
+    },
+    "contacts": [
+      {
+        "fullName": "Чжан Вей",
+        "position": "Старший комірник",
+        "email": "zhang.wei@foshan-wh.cn",
+        "comment": "Відповідає за приймання негабаритних вантажів та перевірку пакування LCL.",
+        "isPrimary": true,
+        "phones": [
+          {
+            "number": "+86 138 0013 8000",
+            "socials": [
+              {
+                "type": "WeChat",
+                "value": "wxid_foshan_zhang"
+              },
+              {
+                "type": "Telegram",
+                "value": "@zhang_foshan"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "shippingInstructions": "Маркування обов'язкове на кожній коробці: DF-КОД КЛІЄНТА. Відправка тільки після погодження з менеджером. Адреса для GPS: 佛山市南海区物流园18号.",
     "status": "active",
     "archivedDate": "-",
     "link": "warehouse/warehouse.html",
     "isFulfillment": false
   },
   {
+    "id": "shenzhen",
+    "name": "Shenzhen Hub",
+    "contractor": "Shenzhen Partner Express",
+    "country": "Китай",
+    "flag": "🇨🇳",
+    "city": "Shenzhen",
+    "address": "м. Шеньчжень (Shenzhen), Building 4, Baoan Airport Logistics Center",
+    "type": "Партнерський",
+    "isConsolidation": true,
+    "volume": null,
+    "occupiedVolume": 85,
+    "expectedVolume": 25,
+    "activeArrives": 9,
+    "expectedSubflights": 2,
+    "lastArrivalDate": "2026-10-18",
+    "tariffs": [],
+    "tariffType": "document",
+    "tariffDocuments": [
+      {
+        "id": "doc-shenzhen-1",
+        "name": "Tariff_Shenzhen_PartnerExpress_2026.pdf",
+        "size": "290 KB",
+        "uploadedAt": "05.01.2026",
+        "validUntil": "2026-12-31",
+        "isActive": true,
+        "comment": "Тарифи на авіа-обробку та приймання вантажу в Шеньчжені"
+      }
+    ],
+    "tariffText": "Приймання товару: $10/палета\nЗберігання: $0.65/CBM/доба\nЕкспрес-відвантаження авіа: $25/палета\nСтікерування FBA: $0.10/шт",
+    "tariffTextValidUntil": "2026-12-31",
+    "services": [
+      "Маркування та Фулфілмент",
+      "Крос-докінг та ПРР",
+      "Пакування та обробка"
+    ],
+    "selectedSubServices": [
+      "Маркування кожної коробки (DF-код клієнта)",
+      "Поштучне стікерування товару (FBA / FBM / EAN / UPC)",
+      "Крос-докінг (пряме перевантаження фура-фура)",
+      "Механізоване вивантаження / завантаження (карою за палету)",
+      "Палетування вантажу (формування палети)",
+      "Обмотка стретч-плівкою (прозора / чорна)"
+    ],
+    "workRules": "Тільки палети, без небезпечних вантажів (ADR). Обов'язковий пакувальний лист.",
+    "specialNotes": "Працює біля аеропорту SZX, швидке відвантаження авіа.",
+    "schedule": {
+      "Mon": "08:30 - 19:00",
+      "Tue": "08:30 - 19:00",
+      "Wed": "08:30 - 19:00",
+      "Thu": "08:30 - 19:00",
+      "Fri": "08:30 - 19:00",
+      "Sat": "09:00 - 16:00",
+      "Sun": "Вихідний"
+    },
+    "contacts": [
+      {
+        "fullName": "Лі Мін",
+        "position": "Менеджер зміни",
+        "email": "liming@sz-cargo.com",
+        "comment": "Координує експрес-відвантаження в аеропорт Шеньчжень (SZX).",
+        "isPrimary": true,
+        "phones": [
+          {
+            "number": "+86 139 2233 4455",
+            "socials": [
+              {
+                "type": "WeChat",
+                "value": "sz_liming_cargo"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "shippingInstructions": "Перед відправкою на склад обов'язково надіслати трек-номер у WeChat. Приймання з 08:30 до 18:30.",
+    "status": "active",
+    "archivedDate": "-",
+    "link": null,
+    "isFulfillment": false
+  },
+  {
     "id": "kyiv",
     "name": "Склад Київ-1",
+    "contractor": "ТОВ Логістік Груп",
     "country": "Україна",
     "flag": "🇺🇦",
     "city": "Київ",
-    "address": "Україна, м. Київ, вул. Академіка Заболотного, 150А, корпус 3, склад 12",
+    "address": "м. Київ, вул. Академіка Заболотного, 150А, корпус 3, склад 12",
     "type": "Difreight",
-    "services": ["Зберігання", "Упаковка", "Маркування"],
-    "specialNotes": "Прийом великогабаритного вантажу за попереднім узгодженням",
+    "isConsolidation": true,
+    "volume": 300,
+    "occupiedVolume": 245,
+    "expectedVolume": 40,
+    "activeArrives": 28,
+    "expectedSubflights": 4,
+    "lastArrivalDate": "2026-11-01",
+    "tariffs": [
+      {
+        "service": "Відповідальне зберігання (CBM / доба)",
+        "unitPrice": "45.00",
+        "currency": "UAH",
+        "standard": "per CBM per day",
+        "dateFrom": "2026-01-01",
+        "dateTo": "2026-12-31",
+        "remark": "Стандартний тариф для внутрішнього терміналу"
+      }
+    ],
+    "tariffType": "document",
+    "tariffDocuments": [
+      {
+        "id": "doc-kyiv-1",
+        "name": "Price_Kyiv1_Terminal_2026.pdf",
+        "size": "310 KB",
+        "uploadedAt": "01.01.2026",
+        "validUntil": "2026-12-31",
+        "isActive": true,
+        "comment": "Тарифи внутрішнього терміналу Difreight Київ"
+      }
+    ],
+    "tariffText": "Зберігання: 45 грн/куб.м/доба\nПалетування: 250 грн/палета\nПРР механізовані: 180 грн/палета",
+    "tariffTextValidUntil": "2026-12-31",
+    "services": [
+      "Зберігання",
+      "Пакування та обробка",
+      "Маркування та Фулфілмент",
+      "Інспекція та Сортування"
+    ],
+    "selectedSubServices": [
+      "Відповідальне зберігання (CBM / доба)",
+      "Палетне зберігання (європалета / доба)",
+      "Палетування вантажу (формування палети)",
+      "Перепакування в нові картонні коробки",
+      "Маркування кожної коробки (DF-код клієнта)",
+      "Сортування вантажу за артикулами / розмірами / клієнтами",
+      "Контрольне зважування та обмір габаритів кожного місця"
+    ],
+    "workRules": "Рампа + гідроборт. Прийом великогабаритного вантажу за попереднім узгодженням.",
+    "specialNotes": "Центральний розподiльчий термінал у Києві",
+    "schedule": {
+      "Mon": "09:00 - 18:00",
+      "Tue": "09:00 - 18:00",
+      "Wed": "09:00 - 18:00",
+      "Thu": "09:00 - 18:00",
+      "Fri": "09:00 - 18:00",
+      "Sat": "10:00 - 15:00",
+      "Sun": "Вихідний"
+    },
+    "contacts": [
+      {
+        "fullName": "Олександр Бондаренко",
+        "position": "Керівник складу",
+        "email": "kyiv1@difreight.com",
+        "comment": "Узгодження графіків вивантаження магістральних фур та видачі клієнтам.",
+        "isPrimary": true,
+        "phones": [
+          {
+            "number": "+380 67 500 12 34",
+            "socials": [
+              {
+                "type": "Telegram",
+                "value": "@alex_warehouse_kyiv"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "shippingInstructions": "Заїзд з боку Кільцевої дороги. Для пропуску на територію повідомити номер авто за 1 годину до прибуття.",
+    "status": "active",
+    "archivedDate": "-",
+    "link": null,
+    "isFulfillment": false
+  },
+  {
+    "id": "chelm",
+    "name": "Склад Холм (Транзит)",
+    "contractor": "Партнер-Логістик PL",
+    "country": "Польща",
+    "flag": "🇵🇱",
+    "city": "Холм",
+    "address": "м. Холм (Chełm), ul. Przemysłowa 24, 22-100",
+    "type": "Партнерський",
+    "isConsolidation": false,
+    "volume": null,
+    "occupiedVolume": 0,
+    "expectedVolume": 15,
+    "activeArrives": 0,
+    "expectedSubflights": 1,
+    "lastArrivalDate": "2026-09-12",
+    "tariffs": [],
+    "tariffType": "document",
+    "tariffDocuments": [
+      {
+        "id": "doc-chelm-1",
+        "name": "CrossDock_Chelm_Rates_2026.xlsx",
+        "size": "185 KB",
+        "uploadedAt": "10.02.2026",
+        "validUntil": "2026-12-31",
+        "isActive": true,
+        "comment": "Тарифи на крос-докінг та оформлення T1/MRN"
+      }
+    ],
+    "services": [
+      "Крос-докінг та ПРР",
+      "Зберігання"
+    ],
+    "selectedSubServices": [
+      "Крос-докінг (пряме перевантаження фура-фура)",
+      "Оформлення T1 / MRN / супровідних складських документів",
+      "Палетне зберігання (європалета / доба)"
+    ],
+    "workRules": "Тільки палети. Перевантаження фура-фура за попереднім бронюванням вікна.",
+    "specialNotes": "Прикордонний крос-докінг склад біля п/п Ягодин",
+    "schedule": {
+      "Mon": "08:00 - 20:00",
+      "Tue": "08:00 - 20:00",
+      "Wed": "08:00 - 20:00",
+      "Thu": "08:00 - 20:00",
+      "Fri": "08:00 - 20:00",
+      "Sat": "09:00 - 17:00",
+      "Sun": "Вихідний"
+    },
+    "contacts": [
+      {
+        "fullName": "Марек Ковальські",
+        "position": "Митний координатор / Брокер",
+        "email": "marek@chelm-Crossdock.pl",
+        "comment": "Оформлення T1/MRN та бронювання вікон під перевантаження фура-фура.",
+        "isPrimary": true,
+        "phones": [
+          {
+            "number": "+48 501 234 567",
+            "socials": [
+              {
+                "type": "Telegram",
+                "value": "@marek_chelm_pl"
+              },
+              {
+                "type": "WhatsApp",
+                "value": "+48501234567"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "shippingInstructions": "Обов'язкова наявність MRN та T1 перед заїздом на територію митного терміналу.",
     "status": "active",
     "archivedDate": "-",
     "link": null,
@@ -31,14 +372,67 @@
   },
   {
     "id": "poland",
-    "name": "Склад Польща",
+    "name": "Склад Варшава",
+    "contractor": "EuroTransit Sp. z o.o.",
     "country": "Польща",
     "flag": "🇵🇱",
     "city": "Варшава",
-    "address": "ul. Magazynowa 5, Pruszków",
+    "address": "м. Варшава (Pruszków), ul. Magazynowa 5, 05-800",
     "type": "Партнерський",
-    "services": ["Зберігання", "Упаковка", "Маркування"],
-    "specialNotes": "Прийом великогабаритного вантажу за попереднім узгодженням",
+    "isConsolidation": true,
+    "volume": 200,
+    "occupiedVolume": 0,
+    "expectedVolume": 0,
+    "activeArrives": 0,
+    "expectedSubflights": 0,
+    "lastArrivalDate": "2026-06-15",
+    "tariffs": [],
+    "tariffType": "text",
+    "tariffDocuments": [],
+    "tariffText": "Склад на інвентаризації. Базове зберігання: 4.50 PLN/палетомісце/доба",
+    "tariffTextValidUntil": "2026-11-20",
+    "services": [
+      "Зберігання",
+      "Пакування та обробка",
+      "Маркування та Фулфілмент"
+    ],
+    "selectedSubServices": [
+      "Палетне зберігання (європалета / доба)",
+      "Палетування вантажу (формування палети)",
+      "Маркування кожної коробки (DF-код клієнта)"
+    ],
+    "workRules": "Без негабариту. Тільки стандартні європалети 120х80.",
+    "specialNotes": "Тимчасово обмежено прийом нових партій через інвентаризацію",
+    "schedule": {
+      "Mon": "Вихідний",
+      "Tue": "Вихідний",
+      "Wed": "Вихідний",
+      "Thu": "Вихідний",
+      "Fri": "Вихідний",
+      "Sat": "Вихідний",
+      "Sun": "Вихідний"
+    },
+    "contacts": [
+      {
+        "fullName": "Пйотр Новак",
+        "position": "Логіст складу",
+        "email": "p.nowak@eurotransit.pl",
+        "comment": "Контактна особа щодо залишків на складі під час інвентаризації.",
+        "isPrimary": true,
+        "phones": [
+          {
+            "number": "+48 600 998 877",
+            "socials": [
+              {
+                "type": "Telegram",
+                "value": "@piotr_pruszkow"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "shippingInstructions": "Водію мати світловідбивний жилет та каску. Реєстрація на КПП №2.",
     "status": "inactive",
     "archivedDate": "-",
     "link": null,

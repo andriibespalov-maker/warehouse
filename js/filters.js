@@ -24,7 +24,8 @@ export class FilterManager {
       { id: 'city', label: 'Місто', icon: 'fa-city' },
       { id: 'address', label: 'Адреса', icon: 'fa-location-dot' },
       { id: 'type', label: 'Тип', icon: 'fa-boxes-stacked' },
-      { id: 'status', label: 'Статус', icon: 'fa-toggle-on' }
+      { id: 'status', label: 'Статус', icon: 'fa-toggle-on' },
+      { id: 'services', label: 'Послуги (макро-категорії)', icon: 'fa-list-check' }
     ];
 
     this.fieldHTMLMap = {
@@ -129,6 +130,38 @@ export class FilterManager {
             </div>
           </div>
           <button type="button" class="remove-filter-row-btn p-1.5 text-slate-400 hover:text-rose-600 transition cursor-pointer" title="Видалити поле"><i class="fa-solid fa-trash-can text-xs"></i></button>
+        </div>`,
+      services: `
+        <div class="filter-row flex items-center gap-2 bg-slate-50/60 p-2.5 rounded-xl border border-slate-200/60" data-field="services">
+          <span class="w-20 text-xs font-semibold text-slate-700 shrink-0">Послуги:</span>
+          <select id="operator-services" class="bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-700 font-semibold focus:outline-none focus:border-brand-500 cursor-pointer shrink-0">
+            <option value="equals">містить</option>
+            <option value="not_equals">не містить</option>
+          </select>
+          <div class="relative flex-1">
+            <button type="button" class="multiselect-toggle-btn w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-left flex justify-between items-center transition focus:outline-none focus:border-brand-500 cursor-pointer" data-field="services">
+              <span id="multiselect-btn-text-services" class="text-slate-400 truncate">Обрати категорії послуг...</span>
+              <i class="fa-solid fa-chevron-down text-slate-400 text-[10px]"></i>
+            </button>
+            <div id="multiselect-menu-services" class="multiselect-menu hidden absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-30 p-2 space-y-1">
+              <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded-lg cursor-pointer text-xs font-medium text-slate-700">
+                <input type="checkbox" value="Зберігання" class="multiselect-cb rounded border-slate-300 text-brand-600 focus:ring-brand-500" data-field="services"> 📦 Зберігання
+              </label>
+              <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded-lg cursor-pointer text-xs font-medium text-slate-700">
+                <input type="checkbox" value="Пакування та обробка" class="multiselect-cb rounded border-slate-300 text-brand-600 focus:ring-brand-500" data-field="services"> 🛠️ Пакування та обробка
+              </label>
+              <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded-lg cursor-pointer text-xs font-medium text-slate-700">
+                <input type="checkbox" value="Маркування та Фулфілмент" class="multiselect-cb rounded border-slate-300 text-brand-600 focus:ring-brand-500" data-field="services"> 🏷️ Маркування та Фулфілмент
+              </label>
+              <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded-lg cursor-pointer text-xs font-medium text-slate-700">
+                <input type="checkbox" value="Крос-докінг та ПРР" class="multiselect-cb rounded border-slate-300 text-brand-600 focus:ring-brand-500" data-field="services"> 🚛 Крос-докінг та ПРР
+              </label>
+              <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded-lg cursor-pointer text-xs font-medium text-slate-700">
+                <input type="checkbox" value="Інспекція та Сортування" class="multiselect-cb rounded border-slate-300 text-brand-600 focus:ring-brand-500" data-field="services"> 🔍 Інспекція та Сортування
+              </label>
+            </div>
+          </div>
+          <button type="button" class="remove-filter-row-btn p-1.5 text-slate-400 hover:text-rose-600 transition cursor-pointer" title="Видалити поле"><i class="fa-solid fa-trash-can text-xs"></i></button>
         </div>`
     };
   }
@@ -207,10 +240,14 @@ export class FilterManager {
     if (tpl.filters.statusOp && document.getElementById('operator-status')) {
       document.getElementById('operator-status').value = tpl.filters.statusOp;
     }
+    if (tpl.filters.servicesOp && document.getElementById('operator-services')) {
+      document.getElementById('operator-services').value = tpl.filters.servicesOp;
+    }
 
     this.setMultiselectValues('country', tpl.filters.country || []);
     this.setMultiselectValues('type', tpl.filters.type || []);
     this.setMultiselectValues('status', tpl.filters.status || []);
+    this.setMultiselectValues('services', tpl.filters.services || []);
   }
 
   // --- Current Filters State ---
@@ -224,7 +261,9 @@ export class FilterManager {
       type: this.getSelectedMultiselectValues('type'),
       typeOp: document.getElementById('operator-type')?.value || 'equals',
       status: this.getSelectedMultiselectValues('status'),
-      statusOp: document.getElementById('operator-status')?.value || 'equals'
+      statusOp: document.getElementById('operator-status')?.value || 'equals',
+      services: this.getSelectedMultiselectValues('services'),
+      servicesOp: document.getElementById('operator-services')?.value || 'equals'
     };
   }
 
@@ -237,6 +276,7 @@ export class FilterManager {
     const address = (item.address || '').toLowerCase();
     const type = item.type || '';
     const status = item.status || '';
+    const itemServices = Array.isArray(item.services) ? item.services : [];
 
     const matchesName = !filters.name || name.includes(filters.name.toLowerCase());
     const matchesCity = !filters.city || city.includes(filters.city.toLowerCase());
@@ -260,7 +300,13 @@ export class FilterManager {
       matchesStatus = filters.statusOp === 'equals' ? inSelected : !inSelected;
     }
 
-    return matchesName && matchesCity && matchesAddress && matchesCountry && matchesType && matchesStatus;
+    let matchesServices = true;
+    if (filters.services.length > 0) {
+      const hasAnySelected = filters.services.some(s => itemServices.includes(s));
+      matchesServices = filters.servicesOp === 'equals' ? hasAnySelected : !hasAnySelected;
+    }
+
+    return matchesName && matchesCity && matchesAddress && matchesCountry && matchesType && matchesStatus && matchesServices;
   }
 
   // --- Active Filters Summary Bar ---
@@ -276,7 +322,7 @@ export class FilterManager {
     const currentFilters = this.getCurrentFilters();
 
     const isAnyActive = currentFilters.name || currentFilters.city || currentFilters.address ||
-      currentFilters.country.length > 0 || currentFilters.type.length > 0 || currentFilters.status.length > 0;
+      currentFilters.country.length > 0 || currentFilters.type.length > 0 || currentFilters.status.length > 0 || currentFilters.services.length > 0;
 
     if (isAnyActive) {
       filterBadge?.classList.remove('hidden');
@@ -300,6 +346,10 @@ export class FilterManager {
       const opText = currentFilters.statusOp === 'not_equals' ? '≠' : '=';
       const statusLabels = currentFilters.status.map(s => s === 'active' ? 'Активний' : (s === 'inactive' ? 'Неактивний' : 'Заархівований'));
       activeEntries.push(['status', `Статус (${opText})`, statusLabels.join(', ')]);
+    }
+    if (currentFilters.services.length) {
+      const opText = currentFilters.servicesOp === 'not_equals' ? '≠' : '=';
+      activeEntries.push(['services', `Послуги (${opText})`, currentFilters.services.join(', ')]);
     }
 
     if (activeEntries.length === 0 && !this.activeTemplateId) {
@@ -403,6 +453,7 @@ export class FilterManager {
         ${this.fieldHTMLMap.address}
         ${this.fieldHTMLMap.type}
         ${this.fieldHTMLMap.status}
+        ${this.fieldHTMLMap.services}
       `;
     }
     this.renderTemplatesList();
@@ -529,6 +580,7 @@ export class FilterManager {
       if (currentFilters.address) activeEntries.push(['Адреса', currentFilters.address]);
       if (currentFilters.type.length) activeEntries.push([`Тип (${currentFilters.typeOp === 'equals' ? '=' : '!='})`, currentFilters.type.join(', ')]);
       if (currentFilters.status.length) activeEntries.push([`Статус (${currentFilters.statusOp === 'equals' ? '=' : '!='})`, currentFilters.status.join(', ')]);
+      if (currentFilters.services.length) activeEntries.push([`Послуги (${currentFilters.servicesOp === 'equals' ? '=' : '!='})`, currentFilters.services.join(', ')]);
 
       if (activeEntries.length === 0) {
         alert('Заповніть хоча б одне поле фільтрації, щоб зберегти шаблон!');
@@ -621,7 +673,7 @@ export class FilterManager {
       const chipBtn = e.target.closest('.remove-filter-chip-btn');
       if (chipBtn) {
         const field = chipBtn.getAttribute('data-field');
-        if (['country', 'type', 'status'].includes(field)) {
+        if (['country', 'type', 'status', 'services'].includes(field)) {
           this.setMultiselectValues(field, []);
         } else {
           const input = document.getElementById(`filter-${field}`);
@@ -635,7 +687,7 @@ export class FilterManager {
         this.editingTemplateId = null;
         document.querySelectorAll('.filter-input').forEach(input => input.value = '');
         document.querySelectorAll('.clear-single-val-btn').forEach(btn => btn.classList.add('hidden'));
-        ['country', 'type', 'status'].forEach(f => this.setMultiselectValues(f, []));
+        ['country', 'type', 'status', 'services'].forEach(f => this.setMultiselectValues(f, []));
         this.renderTemplatesList();
         this.triggerChange();
       }
@@ -645,7 +697,7 @@ export class FilterManager {
     document.getElementById('clear-filter-fields-btn')?.addEventListener('click', () => {
       document.querySelectorAll('.filter-input').forEach(input => input.value = '');
       document.querySelectorAll('.clear-single-val-btn').forEach(btn => btn.classList.add('hidden'));
-      ['country', 'type', 'status'].forEach(f => this.setMultiselectValues(f, []));
+      ['country', 'type', 'status', 'services'].forEach(f => this.setMultiselectValues(f, []));
       this.triggerChange();
     });
 

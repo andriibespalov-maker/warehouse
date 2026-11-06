@@ -9,6 +9,10 @@
       "loadingType": "LCL",
       "originCountry": "Китай",
       "destinationCountry": "Україна",
+      "routeStages": [
+        "Китай",
+        "Україна"
+      ],
       "hub": "Північний / Київ (Центральний Хаб)",
       "transitSegment": "Фошань ➔ Одеса ➔ Київ",
       "plannedDeparture": "2026-10-20",
@@ -16,8 +20,8 @@
       "actualDeparture": null,
       "actualArrival": null,
       "maxPlaces": 500,
-      "maxWeight": 20.0,
-      "maxVolume": 60.0,
+      "maxWeight": 20,
+      "maxVolume": 60,
       "transport": "Морський",
       "temperatureSupported": false,
       "adrPermitted": false,
@@ -35,6 +39,46 @@
       "comment": "Активне формування морського підрейсу на складі Фошань. Приймаються генеральні сухі вантажі (LCL)."
     },
     {
+      "id": "SV-4402",
+      "name": "Морський FOS-POL (Плече Китай ➔ Польща)",
+      "parentVoyage": "VOY-2026-09",
+      "status": "Формування",
+      "logist": "І. Сидоренко",
+      "loadingType": "LCL",
+      "originCountry": "Китай",
+      "destinationCountry": "Польща",
+      "routeStages": [
+        "Китай",
+        "Польща"
+      ],
+      "hub": "Транзитний хаб Польща (Гданськ / Варшава)",
+      "transitSegment": "Китай ➔ Польща",
+      "plannedDeparture": "2026-10-21",
+      "plannedArrival": "2026-11-18",
+      "actualDeparture": null,
+      "actualArrival": null,
+      "maxPlaces": 600,
+      "maxWeight": 24,
+      "maxVolume": 68,
+      "transport": "Морський",
+      "temperatureSupported": false,
+      "adrPermitted": true,
+      "transportDetails": {
+        "containerNumber": "CMAU7654321",
+        "bookingNumber": "BKG-774411",
+        "shippingLine": "CMA CGM",
+        "ports": "Port of Nansha ➔ Port of Gdańsk (PL)"
+      },
+      "template": "Морський (Мультимодальне плече)",
+      "isMain": true,
+      "isTransit": true,
+      "loadingPlace": "Фошань (Китай)",
+      "unloadingPlace": "Гданськ / Варшава (Польща)",
+      "comment": "Морський контейнерний підрейс закриває транспортне плече Китай ➔ Польща. Точка отримання у цьому підрейсі — Польща (Порт Гданськ / Склад Варшава). Далі вантажі прямують до кінцевої точки отримання (Київ, Україна).",
+      "originPort": "Port of Nansha (Китай)",
+      "destinationPort": "Port of Gdańsk (Польща)"
+    },
+    {
       "id": "SV-4405",
       "name": "Авіа Експрес SZN",
       "parentVoyage": "VOY-2026-12",
@@ -50,8 +94,8 @@
       "actualDeparture": "2026-10-18",
       "actualArrival": null,
       "maxPlaces": 100,
-      "maxWeight": 5.0,
-      "maxVolume": 10.0,
+      "maxWeight": 5,
+      "maxVolume": 10,
       "transport": "Авіа",
       "temperatureSupported": false,
       "adrPermitted": true,
@@ -83,8 +127,8 @@
       "actualDeparture": "2026-09-25",
       "actualArrival": "2026-10-05",
       "maxPlaces": 300,
-      "maxWeight": 15.0,
-      "maxVolume": 40.0,
+      "maxWeight": 15,
+      "maxVolume": 40,
       "transport": "Авто",
       "temperatureSupported": true,
       "tempRange": "+5°C до +25°C",
@@ -117,8 +161,8 @@
       "actualDeparture": null,
       "actualArrival": null,
       "maxPlaces": 400,
-      "maxWeight": 25.0,
-      "maxVolume": 70.0,
+      "maxWeight": 25,
+      "maxVolume": 70,
       "transport": "Залізниця",
       "temperatureSupported": false,
       "adrPermitted": false,
@@ -133,6 +177,72 @@
       "loadingPlace": "Фошань (Китай)",
       "unloadingPlace": "Львів (EU Gate)",
       "comment": "Відкрито формування залізничного складу на терміналі відправки."
+    },
+    {
+      "id": "SV-4415",
+      "name": "Авіа Експрес SZN-2",
+      "parentVoyage": "VOY-2026-21",
+      "status": "Формування",
+      "logist": "О. Ковальчук",
+      "loadingType": "Air Consolid",
+      "originCountry": "Китай",
+      "destinationCountry": "Україна",
+      "hub": "Західний / Львів (EU Gate)",
+      "transitSegment": "Шеньчжень ➔ Варшава ➔ Львів",
+      "plannedDeparture": "2026-10-22",
+      "plannedArrival": "2026-10-26",
+      "actualDeparture": null,
+      "actualArrival": null,
+      "maxPlaces": 100,
+      "maxWeight": 5,
+      "maxVolume": 10,
+      "transport": "Авіа",
+      "temperatureSupported": true,
+      "adrPermitted": true,
+      "transportDetails": {
+        "airline": "LOT Cargo",
+        "awbNumber": "080-55443322",
+        "airports": "SZX ➔ WAW ➔ LWO"
+      },
+      "template": "Авіа Експрес",
+      "isMain": true,
+      "isTransit": true,
+      "loadingPlace": "Шеньчжень (Китай)",
+      "unloadingPlace": "Львів (EU Gate)",
+      "comment": "Формується новий авіаційний підрейс до Львова (підтримує батареї та ADR)."
+    },
+    {
+      "id": "SV-4418",
+      "name": "Авто Рейс CAN-ODE-2",
+      "parentVoyage": "VOY-2026-24",
+      "status": "Формування",
+      "logist": "М. Петренко",
+      "loadingType": "LTL",
+      "originCountry": "Китай",
+      "destinationCountry": "Україна",
+      "hub": "Південний напрямок (Одеса / Миколаїв)",
+      "transitSegment": "Гуанчжоу ➔ Ягодин ➔ Одеса",
+      "plannedDeparture": "2026-10-19",
+      "plannedArrival": "2026-10-30",
+      "actualDeparture": null,
+      "actualArrival": null,
+      "maxPlaces": 300,
+      "maxWeight": 15,
+      "maxVolume": 40,
+      "transport": "Авто",
+      "temperatureSupported": true,
+      "adrPermitted": true,
+      "transportDetails": {
+        "borderCrossing": "п/п Ягодин - Дорогуськ",
+        "loadingDate": "2026-10-19",
+        "vehicleDetails": "MAN TGX (AA 7788 KB)"
+      },
+      "template": "Автоперевезення TIR",
+      "isMain": true,
+      "isTransit": false,
+      "loadingPlace": "Гуанчжоу (Китай)",
+      "unloadingPlace": "Одеса / Миколаїв (Південний Хаб)",
+      "comment": "Формується автопоїзд на Південний хаб (Одеса / Миколаїв)."
     }
   ],
   "shipments": [
@@ -155,8 +265,8 @@
       "dateShipped": "2026-10-20",
       "dateArrivalExpected": "2026-11-15",
       "places": 100,
-      "weight": 4.0,
-      "volume": 12.0,
+      "weight": 4,
+      "volume": 12,
       "isHazardous": false,
       "hasBatteries": false,
       "closeExporterDocs": true,
@@ -235,7 +345,34 @@
       "senderContacts": "+86 755 8899 0011 (Export Logistics Dept)",
       "cargoReadyDate": "2026-10-05",
       "customsClearance": "Брокер компанії",
-      "customsTerms": "FOB"
+      "customsTerms": "FOB",
+      "finalDestination": "Північний / Київ (Центральний Хаб)",
+      "subvoyageLegDestination": "Україна",
+      "multimodalTimeline": [
+        {
+          "type": "warehouse",
+          "label": "Склад відправлення",
+          "location": "Китай, Фабричний логістичний парк #8",
+          "duration": "2 дні",
+          "mode": "truck"
+        },
+        {
+          "type": "port",
+          "label": "Транспортне плече",
+          "location": "Морський маршрут",
+          "duration": "18 днів",
+          "mode": "ship",
+          "isSubvoyageDest": true
+        },
+        {
+          "type": "address",
+          "label": "Кінцева точка доставки",
+          "location": "Північний / Київ (Центральний Хаб)",
+          "duration": "1 день",
+          "mode": "client",
+          "isFinalDest": true
+        }
+      ]
     },
     {
       "id": "DF540-102",
@@ -256,8 +393,8 @@
       "dateShipped": "2026-10-20",
       "dateArrivalExpected": "2026-11-15",
       "places": 100,
-      "weight": 4.0,
-      "volume": 13.0,
+      "weight": 4,
+      "volume": 13,
       "isHazardous": false,
       "hasBatteries": false,
       "closeExporterDocs": false,
@@ -270,9 +407,9 @@
           "titleUa": "Керамограніт полірований 600x600",
           "contentDescription": "Керамічна плитка, крихкий вантаж, важкий",
           "places": 100,
-          "grossWeight": 4.0,
+          "grossWeight": 4,
           "netWeight": 3.8,
-          "volume": 13.0,
+          "volume": 13,
           "packageType": "Посилені палети з обрешіткою",
           "dimensions": {
             "length": 120,
@@ -305,7 +442,34 @@
       "senderContacts": "+86 755 8899 0011 (Export Logistics Dept)",
       "cargoReadyDate": "2026-10-06",
       "customsClearance": "Брокер компанії",
-      "customsTerms": "FOB"
+      "customsTerms": "FOB",
+      "finalDestination": "Північний / Київ (Центральний Хаб)",
+      "subvoyageLegDestination": "Україна",
+      "multimodalTimeline": [
+        {
+          "type": "warehouse",
+          "label": "Склад відправлення",
+          "location": "Китай, Фабричний логістичний парк #8",
+          "duration": "2 дні",
+          "mode": "truck"
+        },
+        {
+          "type": "port",
+          "label": "Транспортне плече",
+          "location": "Морський маршрут",
+          "duration": "18 днів",
+          "mode": "ship",
+          "isSubvoyageDest": true
+        },
+        {
+          "type": "address",
+          "label": "Кінцева точка доставки",
+          "location": "Північний / Київ (Центральний Хаб)",
+          "duration": "1 день",
+          "mode": "client",
+          "isFinalDest": true
+        }
+      ]
     },
     {
       "id": "DF540-103",
@@ -326,8 +490,8 @@
       "dateShipped": "2026-10-18",
       "dateArrivalExpected": "2026-10-22",
       "places": 50,
-      "weight": 2.0,
-      "volume": 4.0,
+      "weight": 2,
+      "volume": 4,
       "isHazardous": false,
       "hasBatteries": false,
       "closeExporterDocs": true,
@@ -340,9 +504,9 @@
           "titleUa": "Мережеві комутатори та оптичні модулі",
           "contentDescription": "Серверне обладнання та електроніка",
           "places": 50,
-          "grossWeight": 2.0,
+          "grossWeight": 2,
           "netWeight": 1.7,
-          "volume": 4.0,
+          "volume": 4,
           "packageType": "Протиударні кейси",
           "dimensions": {
             "length": 80,
@@ -375,7 +539,34 @@
       "senderContacts": "+86 755 8899 0011 (Export Logistics Dept)",
       "cargoReadyDate": "2026-10-02",
       "customsClearance": "Брокер компанії",
-      "customsTerms": "EXW"
+      "customsTerms": "EXW",
+      "finalDestination": "Західний / Львів (EU Gate)",
+      "subvoyageLegDestination": "Україна",
+      "multimodalTimeline": [
+        {
+          "type": "warehouse",
+          "label": "Склад відправлення",
+          "location": "Китай, Фабричний логістичний парк #8",
+          "duration": "2 дні",
+          "mode": "truck"
+        },
+        {
+          "type": "port",
+          "label": "Транспортне плече",
+          "location": "Авіа маршрут",
+          "duration": "18 днів",
+          "mode": "plane",
+          "isSubvoyageDest": true
+        },
+        {
+          "type": "address",
+          "label": "Кінцева точка доставки",
+          "location": "Західний / Львів (EU Gate)",
+          "duration": "1 день",
+          "mode": "client",
+          "isFinalDest": true
+        }
+      ]
     },
     {
       "id": "DF540-104",
@@ -387,13 +578,20 @@
       "logist": "І. Сидоренко",
       "hub": "Північний / Київ (Центральний Хаб)",
       "urgency": "critical",
-      "urgencyText": "🔥 Critical (2 дні до відправки)",
+      "urgencyText": "🔥 Critical (Очікує відправки)",
       "loadingType": "LCL",
       "originCountry": "Китай",
       "destinationCountry": "Україна",
+      "finalDestination": "Київ, Україна (02000)",
+      "routeStages": [
+        "Китай",
+        "Польща",
+        "Київ / Україна"
+      ],
+      "transitSegment": "Китай ➔ Польща ➔ Київ/Україна",
       "transport": "Морський",
       "dateReady": "2026-10-10",
-      "dateShipped": "2026-10-20",
+      "dateShipped": null,
       "dateArrivalExpected": "2026-11-12",
       "places": 42,
       "weight": 1.5,
@@ -445,7 +643,62 @@
       "senderContacts": "+86 755 8899 0011 (Export Logistics Dept)",
       "cargoReadyDate": "2026-10-10",
       "customsClearance": "Брокер компанії",
-      "customsTerms": "FOB"
+      "customsTerms": "FOB",
+      "finalAddress": "Україна, м. Київ, 02000, Центральний Хаб",
+      "subvoyageLegDestination": "Польща (Порт Гданськ)",
+      "multimodalTimeline": [
+        {
+          "type": "address",
+          "label": "Адреса відправника",
+          "location": "Фошань, Китай",
+          "duration": "1 день",
+          "mode": "truck"
+        },
+        {
+          "type": "warehouse",
+          "label": "Склад відправлення",
+          "location": "New FOSHAN Hub (Китай)",
+          "duration": "3 дні",
+          "mode": "truck"
+        },
+        {
+          "type": "port",
+          "label": "Порт відправки",
+          "location": "Port of Nansha (Китай)",
+          "duration": "5 днів",
+          "mode": "ship"
+        },
+        {
+          "type": "port",
+          "label": "Порт розвантаження (Точка отримання підрейсу)",
+          "location": "Port of Gdańsk (Польща)",
+          "duration": "35 днів",
+          "mode": "ship",
+          "isSubvoyageDest": true
+        },
+        {
+          "type": "warehouse",
+          "label": "Транзитний склад (Польща)",
+          "location": "Варшава (Pruszków), Польща",
+          "duration": "3 дні",
+          "mode": "truck"
+        },
+        {
+          "type": "warehouse",
+          "label": "Митний хаб",
+          "location": "Київ (Центральний Хаб), Україна",
+          "duration": "2 дні",
+          "mode": "truck"
+        },
+        {
+          "type": "address",
+          "label": "Кінцева точка доставки",
+          "location": "Київ, Україна, 02000",
+          "duration": "1 день",
+          "mode": "client",
+          "isFinalDest": true
+        }
+      ]
     },
     {
       "id": "DF540-105",
@@ -457,13 +710,13 @@
       "logist": "О. Ковальчук",
       "hub": "Західний / Львів (EU Gate)",
       "urgency": "high",
-      "urgencyText": "⚠️ High (5 днів до відправки)",
+      "urgencyText": "⚠️ High (Очікує рейсу)",
       "loadingType": "Air Consolid",
       "originCountry": "Китай",
       "destinationCountry": "Україна",
       "transport": "Авіа",
       "dateReady": "2026-10-12",
-      "dateShipped": "2026-10-23",
+      "dateShipped": null,
       "dateArrivalExpected": "2026-10-28",
       "places": 15,
       "weight": 0.8,
@@ -518,7 +771,34 @@
       "senderContacts": "+86 755 8899 0011 (Export Logistics Dept)",
       "cargoReadyDate": "2026-10-12",
       "customsClearance": "Брокер компанії",
-      "customsTerms": "EXW"
+      "customsTerms": "EXW",
+      "finalDestination": "Західний / Львів (EU Gate)",
+      "subvoyageLegDestination": "Україна",
+      "multimodalTimeline": [
+        {
+          "type": "warehouse",
+          "label": "Склад відправлення",
+          "location": "Китай, Фабричний логістичний парк #8",
+          "duration": "2 дні",
+          "mode": "truck"
+        },
+        {
+          "type": "port",
+          "label": "Транспортне плече",
+          "location": "Авіа маршрут",
+          "duration": "18 днів",
+          "mode": "plane",
+          "isSubvoyageDest": true
+        },
+        {
+          "type": "address",
+          "label": "Кінцева точка доставки",
+          "location": "Західний / Львів (EU Gate)",
+          "duration": "1 день",
+          "mode": "client",
+          "isFinalDest": true
+        }
+      ]
     },
     {
       "id": "DF540-106",
@@ -530,13 +810,13 @@
       "logist": "М. Петренко",
       "hub": "Південний напрямок (Одеса / Миколаїв)",
       "urgency": "critical",
-      "urgencyText": "🔥 Critical (1 день до відправки)",
+      "urgencyText": "🔥 Critical (Очікує рейсу)",
       "loadingType": "LTL",
       "originCountry": "Китай",
       "destinationCountry": "Україна",
       "transport": "Авто",
       "dateReady": "2026-10-15",
-      "dateShipped": "2026-10-19",
+      "dateShipped": null,
       "dateArrivalExpected": "2026-11-02",
       "places": 120,
       "weight": 4.2,
@@ -553,7 +833,7 @@
           "titleUa": "Автомобільні гальмівні диски та супорти",
           "contentDescription": "Металеві запчастини для авто (сталь)",
           "places": 80,
-          "grossWeight": 3.0,
+          "grossWeight": 3,
           "netWeight": 2.9,
           "volume": 5.5,
           "packageType": "Піддони металеві",
@@ -586,7 +866,7 @@
           "places": 40,
           "grossWeight": 1.2,
           "netWeight": 1.1,
-          "volume": 3.0,
+          "volume": 3,
           "packageType": "Спеціальні каністри UN-сертифіковані",
           "dimensions": {
             "length": 30,
@@ -622,7 +902,34 @@
       "senderContacts": "+86 755 8899 0011 (Export Logistics Dept)",
       "cargoReadyDate": "2026-10-15",
       "customsClearance": "Брокер компанії",
-      "customsTerms": "EXW"
+      "customsTerms": "EXW",
+      "finalDestination": "Південний напрямок (Одеса / Миколаїв)",
+      "subvoyageLegDestination": "Україна",
+      "multimodalTimeline": [
+        {
+          "type": "warehouse",
+          "label": "Склад відправлення",
+          "location": "Китай, Фабричний логістичний парк #8",
+          "duration": "2 дні",
+          "mode": "truck"
+        },
+        {
+          "type": "port",
+          "label": "Транспортне плече",
+          "location": "Авто маршрут",
+          "duration": "18 днів",
+          "mode": "truck",
+          "isSubvoyageDest": true
+        },
+        {
+          "type": "address",
+          "label": "Кінцева точка доставки",
+          "location": "Південний напрямок (Одеса / Миколаїв)",
+          "duration": "1 день",
+          "mode": "client",
+          "isFinalDest": true
+        }
+      ]
     },
     {
       "id": "DF540-107",
@@ -634,17 +941,17 @@
       "logist": "І. Сидоренко",
       "hub": "Південний напрямок (Одеса / Миколаїв)",
       "urgency": "high",
-      "urgencyText": "⚠️ High (6 днів до відправки)",
+      "urgencyText": "⚠️ High (Очікує рейсу)",
       "loadingType": "LTL",
       "originCountry": "Китай",
       "destinationCountry": "Україна",
       "transport": "Авто",
       "dateReady": "2026-10-11",
-      "dateShipped": "2026-10-24",
+      "dateShipped": null,
       "dateArrivalExpected": "2026-11-04",
       "places": 60,
       "weight": 2.1,
-      "volume": 8.0,
+      "volume": 8,
       "isHazardous": false,
       "hasBatteries": false,
       "closeExporterDocs": true,
@@ -659,7 +966,7 @@
           "places": 60,
           "grossWeight": 2.1,
           "netWeight": 1.9,
-          "volume": 8.0,
+          "volume": 8,
           "packageType": "Картонні короби з пінопластом",
           "dimensions": {
             "length": 120,
@@ -692,7 +999,34 @@
       "senderContacts": "+86 755 8899 0011 (Export Logistics Dept)",
       "cargoReadyDate": "2026-10-11",
       "customsClearance": "Брокер компанії",
-      "customsTerms": "EXW"
+      "customsTerms": "EXW",
+      "finalDestination": "Південний напрямок (Одеса / Миколаїв)",
+      "subvoyageLegDestination": "Україна",
+      "multimodalTimeline": [
+        {
+          "type": "warehouse",
+          "label": "Склад відправлення",
+          "location": "Китай, Фабричний логістичний парк #8",
+          "duration": "2 дні",
+          "mode": "truck"
+        },
+        {
+          "type": "port",
+          "label": "Транспортне плече",
+          "location": "Авто маршрут",
+          "duration": "18 днів",
+          "mode": "truck",
+          "isSubvoyageDest": true
+        },
+        {
+          "type": "address",
+          "label": "Кінцева точка доставки",
+          "location": "Південний напрямок (Одеса / Миколаїв)",
+          "duration": "1 день",
+          "mode": "client",
+          "isFinalDest": true
+        }
+      ]
     },
     {
       "id": "DF540-108",
@@ -704,13 +1038,13 @@
       "logist": "О. Ковальчук",
       "hub": "Західний / Львів (EU Gate)",
       "urgency": "high",
-      "urgencyText": "⚠️ High (4 дні до відправки)",
+      "urgencyText": "⚠️ High (Очікує рейсу)",
       "loadingType": "Air Consolid",
       "originCountry": "Китай",
       "destinationCountry": "Україна",
       "transport": "Авіа",
       "dateReady": "2026-10-14",
-      "dateShipped": "2026-10-22",
+      "dateShipped": null,
       "dateArrivalExpected": "2026-10-27",
       "places": 30,
       "weight": 2.5,
@@ -762,7 +1096,34 @@
       "senderContacts": "+86 755 8899 0011 (Export Logistics Dept)",
       "cargoReadyDate": "2026-10-14",
       "customsClearance": "Брокер компанії",
-      "customsTerms": "EXW"
+      "customsTerms": "EXW",
+      "finalDestination": "Західний / Львів (EU Gate)",
+      "subvoyageLegDestination": "Україна",
+      "multimodalTimeline": [
+        {
+          "type": "warehouse",
+          "label": "Склад відправлення",
+          "location": "Китай, Фабричний логістичний парк #8",
+          "duration": "2 дні",
+          "mode": "truck"
+        },
+        {
+          "type": "port",
+          "label": "Транспортне плече",
+          "location": "Авіа маршрут",
+          "duration": "18 днів",
+          "mode": "plane",
+          "isSubvoyageDest": true
+        },
+        {
+          "type": "address",
+          "label": "Кінцева точка доставки",
+          "location": "Західний / Львів (EU Gate)",
+          "duration": "1 день",
+          "mode": "client",
+          "isFinalDest": true
+        }
+      ]
     },
     {
       "id": "DF540-109",
@@ -774,17 +1135,17 @@
       "logist": "І. Сидоренко",
       "hub": "Західний / Львів (EU Gate)",
       "urgency": "normal",
-      "urgencyText": "✅ Normal (12 днів до відправки)",
+      "urgencyText": "✅ Normal (Очікує рейсу)",
       "loadingType": "LCL",
       "originCountry": "Китай",
       "destinationCountry": "Україна",
       "transport": "Залізниця",
       "dateReady": "2026-10-16",
-      "dateShipped": "2026-10-30",
+      "dateShipped": null,
       "dateArrivalExpected": "2026-11-20",
       "places": 80,
       "weight": 3.5,
-      "volume": 12.0,
+      "volume": 12,
       "isHazardous": false,
       "hasBatteries": false,
       "closeExporterDocs": false,
@@ -799,7 +1160,7 @@
           "places": 80,
           "grossWeight": 3.5,
           "netWeight": 3.4,
-          "volume": 12.0,
+          "volume": 12,
           "packageType": "Рулони у водонепроникній плівці",
           "dimensions": {
             "length": 150,
@@ -832,7 +1193,34 @@
       "senderContacts": "+86 755 8899 0011 (Export Logistics Dept)",
       "cargoReadyDate": "2026-10-16",
       "customsClearance": "Брокер компанії",
-      "customsTerms": "EXW"
+      "customsTerms": "EXW",
+      "finalDestination": "Західний / Львів (EU Gate)",
+      "subvoyageLegDestination": "Україна",
+      "multimodalTimeline": [
+        {
+          "type": "warehouse",
+          "label": "Склад відправлення",
+          "location": "Китай, Фабричний логістичний парк #8",
+          "duration": "2 дні",
+          "mode": "truck"
+        },
+        {
+          "type": "port",
+          "label": "Транспортне плече",
+          "location": "Залізниця маршрут",
+          "duration": "18 днів",
+          "mode": "ship",
+          "isSubvoyageDest": true
+        },
+        {
+          "type": "address",
+          "label": "Кінцева точка доставки",
+          "location": "Західний / Львів (EU Gate)",
+          "duration": "1 день",
+          "mode": "client",
+          "isFinalDest": true
+        }
+      ]
     },
     {
       "id": "DF540-110",
@@ -907,7 +1295,34 @@
       "senderContacts": "+86 755 8899 0011 (Export Logistics Dept)",
       "cargoReadyDate": "2026-09-20",
       "customsClearance": "Брокер компанії",
-      "customsTerms": "EXW"
+      "customsTerms": "EXW",
+      "finalDestination": "Південний напрямок (Одеса / Миколаїв)",
+      "subvoyageLegDestination": "Україна",
+      "multimodalTimeline": [
+        {
+          "type": "warehouse",
+          "label": "Склад відправлення",
+          "location": "Китай, Фабричний логістичний парк #8",
+          "duration": "2 дні",
+          "mode": "truck"
+        },
+        {
+          "type": "port",
+          "label": "Транспортне плече",
+          "location": "Авто маршрут",
+          "duration": "18 днів",
+          "mode": "truck",
+          "isSubvoyageDest": true
+        },
+        {
+          "type": "address",
+          "label": "Кінцева точка доставки",
+          "location": "Південний напрямок (Одеса / Миколаїв)",
+          "duration": "1 день",
+          "mode": "client",
+          "isFinalDest": true
+        }
+      ]
     },
     {
       "id": "DF540-111",
@@ -985,7 +1400,34 @@
       "senderContacts": "+86 755 8899 0011 (Export Logistics Dept)",
       "cargoReadyDate": "2026-09-22",
       "customsClearance": "Брокер компанії",
-      "customsTerms": "EXW"
+      "customsTerms": "EXW",
+      "finalDestination": "Південний напрямок (Одеса / Миколаїв)",
+      "subvoyageLegDestination": "Україна",
+      "multimodalTimeline": [
+        {
+          "type": "warehouse",
+          "label": "Склад відправлення",
+          "location": "Китай, Фабричний логістичний парк #8",
+          "duration": "2 дні",
+          "mode": "truck"
+        },
+        {
+          "type": "port",
+          "label": "Транспортне плече",
+          "location": "Авто маршрут",
+          "duration": "18 днів",
+          "mode": "truck",
+          "isSubvoyageDest": true
+        },
+        {
+          "type": "address",
+          "label": "Кінцева точка доставки",
+          "location": "Південний напрямок (Одеса / Миколаїв)",
+          "duration": "1 день",
+          "mode": "client",
+          "isFinalDest": true
+        }
+      ]
     },
     {
       "id": "DF540-112",
@@ -1007,7 +1449,7 @@
       "dateArrivalExpected": "2026-10-05",
       "places": 85,
       "weight": 5.4,
-      "volume": 18.0,
+      "volume": 18,
       "isHazardous": false,
       "hasBatteries": false,
       "closeExporterDocs": true,
@@ -1026,8 +1468,8 @@
           "contentDescription": "Важке обладнання для сільгосптехніки",
           "places": 85,
           "grossWeight": 5.4,
-          "netWeight": 5.0,
-          "volume": 18.0,
+          "netWeight": 5,
+          "volume": 18,
           "packageType": "Дерев'яні ящики важкі",
           "dimensions": {
             "length": 120,
@@ -1060,7 +1502,171 @@
       "senderContacts": "+86 755 8899 0011 (Export Logistics Dept)",
       "cargoReadyDate": "2026-09-15",
       "customsClearance": "Брокер компанії",
-      "customsTerms": "EXW"
+      "customsTerms": "EXW",
+      "finalDestination": "Південний напрямок (Одеса / Миколаїв)",
+      "subvoyageLegDestination": "Україна",
+      "multimodalTimeline": [
+        {
+          "type": "warehouse",
+          "label": "Склад відправлення",
+          "location": "Китай, Фабричний логістичний парк #8",
+          "duration": "2 дні",
+          "mode": "truck"
+        },
+        {
+          "type": "port",
+          "label": "Транспортне плече",
+          "location": "Авто маршрут",
+          "duration": "18 днів",
+          "mode": "truck",
+          "isSubvoyageDest": true
+        },
+        {
+          "type": "address",
+          "label": "Кінцева точка доставки",
+          "location": "Південний напрямок (Одеса / Миколаїв)",
+          "duration": "1 день",
+          "mode": "client",
+          "isFinalDest": true
+        }
+      ]
+    },
+    {
+      "id": "DF540-113",
+      "dfPromise": "DF540-113TR",
+      "dfShipment": "DF540-113TR",
+      "status": "Готовий до завантаження",
+      "client": "ТОВ \"ЄвроЛогістик Київ\"",
+      "clientLink": "#/clients/CL-113",
+      "logist": "І. Сидоренко",
+      "hub": "Північний / Київ (Центральний Хаб)",
+      "loadingType": "LCL",
+      "originCountry": "Китай",
+      "destinationCountry": "Україна",
+      "finalDestination": "Київ, Україна, 02000",
+      "routeStages": [
+        "Китай",
+        "Польща",
+        "Київ / Україна"
+      ],
+      "transitSegment": "Китай ➔ Польща ➔ Київ/Україна",
+      "transport": "Морський",
+      "dateReady": "2026-10-08",
+      "dateShipped": null,
+      "dateArrivalExpected": "2026-11-22",
+      "places": 55,
+      "weight": 2.8,
+      "volume": 9.4,
+      "isHazardous": false,
+      "hasBatteries": false,
+      "closeExporterDocs": true,
+      "hasVisa": true,
+      "subvoyageId": null,
+      "lastMile": null,
+      "cargoes": [
+        {
+          "cargoId": "CRG-113-A",
+          "titleUa": "Сонячні панелі монокристалічні 550W",
+          "contentDescription": "Енергетичне обладнання на палетах (мультимодальний маршрут через Польщу)",
+          "places": 55,
+          "grossWeight": 2.8,
+          "netWeight": 2.6,
+          "volume": 9.4,
+          "packageType": "Посилені палети",
+          "dimensions": {
+            "length": 228,
+            "width": 113,
+            "height": 125,
+            "unit": "cm"
+          },
+          "loadingConditions": {
+            "isStackable": false,
+            "isFragile": true,
+            "orientation": "Vertical"
+          },
+          "hazardousDetails": null,
+          "temperatureControl": {
+            "isRequired": false,
+            "range": null
+          },
+          "hasBatteries": false,
+          "warehouseLocation": "Склад A, Секція 2",
+          "status": "Готовий до завантаження",
+          "nameEn": "Monocrystalline Solar Panels 550W",
+          "logistNote": "Мультимодальний маршрут: Китай ➔ Польща (морем) ➔ Київ/Україна (авто)"
+        }
+      ],
+      "transportMode": "Морський",
+      "transportType": "LCL",
+      "originAddress": "Китай, Фошань, Логістичний термінал",
+      "destinationAddress": "Україна, м. Київ (через транзитний хаб Польща)",
+      "deliveryMethod": "Мультимодальна (Море до Польщі + Авто до Києва)",
+      "senderContacts": "+86 757 8820 9900",
+      "cargoReadyDate": "2026-10-08",
+      "customsClearance": "Брокер компанії",
+      "customsTerms": "FOB",
+      "finalAddress": "Україна, м. Київ, 02000, вул. Хрещатик 1",
+      "subvoyageLegDestination": "Польща (GDANSK)",
+      "multimodalTimeline": [
+        {
+          "type": "address",
+          "label": "Адреса",
+          "location": "Сіалкот, Пакистан",
+          "duration": "1 день",
+          "mode": "truck"
+        },
+        {
+          "type": "warehouse",
+          "label": "Склад (Інше)",
+          "location": "KARACHI PAKISTAN",
+          "duration": "3 дні",
+          "mode": "truck"
+        },
+        {
+          "type": "port",
+          "label": "Порт",
+          "location": "KARACHI PAKISTAN",
+          "duration": "5 днів",
+          "mode": "ship"
+        },
+        {
+          "type": "port",
+          "label": "Порт",
+          "location": "SINGAPORE",
+          "duration": "12 днів",
+          "mode": "ship"
+        },
+        {
+          "type": "port",
+          "label": "Порт розвантаження (Точка отримання підрейсу)",
+          "location": "GDANSK (Польща)",
+          "duration": "40 днів",
+          "mode": "ship",
+          "isSubvoyageDest": true
+        },
+        {
+          "type": "warehouse",
+          "label": "Склад (Інше)",
+          "location": "GDANSK (Польща)",
+          "duration": "3 дні",
+          "mode": "truck"
+        },
+        {
+          "type": "warehouse",
+          "label": "Склад (Інше)",
+          "location": "Гришківці, Житомирська обл., Україна",
+          "duration": "5 дні",
+          "mode": "truck"
+        },
+        {
+          "type": "address",
+          "label": "Кінцева точка доставки",
+          "location": "Київ, Україна, 02000",
+          "duration": "1 день",
+          "mode": "client",
+          "isFinalDest": true
+        }
+      ]
     }
   ]
 }

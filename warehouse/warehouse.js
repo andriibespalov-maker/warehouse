@@ -71,7 +71,7 @@ let selectedCargoIds = [];
 let activeSubvoyageId = 'ALL';
 let subvoyageLogistFilter = [];
 let activeStatusGroup = 'on_warehouse';
-let isGroupedByShipment = false;
+let isGroupedByShipment = true; // Кейс 2.3: за замовчуванням активний режим «Групувати за перевезеннями»
 let currentAssignShipmentKey = null;
 let currentShipmentContext = null;
 let currentPage = 1;
@@ -1600,29 +1600,11 @@ function resetAllFilters() {
 
   activeSubvoyageId = 'ALL';
   activeStatusGroup = 'on_warehouse';
-  isGroupedByShipment = false;
   currentPage = 1;
 
   if (typeof cargoFilterManager !== 'undefined' && cargoFilterManager) {
     cargoFilterManager.resetModalFilters();
   }
-
-  const groupingText = document.getElementById('grouping-btn-text');
-  if (groupingText) groupingText.innerText = 'Групувати за перевезенням';
-
-  const groupingBtn = document.getElementById('btn-toggle-grouping');
-  if (groupingBtn) groupingBtn.classList.remove('bg-indigo-600', 'text-white', 'shadow-xs');
-  if (groupingBtn) groupingBtn.classList.add('text-slate-600');
-
-  const listBtn = document.getElementById('btn-view-mode-list');
-  if (listBtn) {
-    listBtn.classList.add('bg-white', 'text-slate-800', 'shadow-xs');
-    listBtn.classList.remove('text-slate-500');
-  }
-
-  // Показуємо фільтри списку при скиданні
-  const listViewFilters = document.getElementById('list-view-filters');
-  if (listViewFilters) listViewFilters.classList.remove('hidden');
 
   const badge = document.getElementById('grouping-active-badge');
   if (badge) badge.classList.add('hidden');
@@ -2022,5 +2004,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   };
 
+  // Кейс 2.3: За замовчуванням активуємо основний режим «Групувати за перевезеннями»
+  window.toggleSubvoyagePlannerMode(true);
   renderTable();
 });
