@@ -276,24 +276,110 @@ function initSubvoyagesPlannerModule() {
           <i class="fa-solid fa-location-dot text-rose-500 text-[10px]"></i>
           <span>${origin} ➔ ${destination}</span>
         </span>
-        ${renderTransportBadge(tr.transport, 'bg-white border border-slate-200 px-1.5 py-0.5 rounded text-[10px] font-bold shadow-2xs')}
+        <i class="${getTransportIcon(tr.transport).icon} ${getTransportIcon(tr.transport).color} text-[11px]" title="Спосіб перевезення: ${tr.transport || '—'}"></i>
       </div>
     `;
   }
 
+  const SHIPMENT_STATUS_LABELS = {
+    unprocessed: 'Необроблений запит',
+    tariff_request: 'Запит на тариф',
+    tariff_added: 'Додано тариф',
+    tariff_sent: 'Відправлено тариф клієнту',
+    tariff_lost: 'Програно тариф',
+    awaiting_warehouse: 'Очікується на складі',
+    partially_received: 'Частково отримано на складі',
+    received_at_warehouse: 'Отримано на складі',
+    broker_recalculation: 'Перерахунок брокера',
+    tariff_under_review: 'Тариф на узгодженні',
+    ready_for_loading: 'Готовий до завантаження',
+    unloaded: 'Вивантажено на складі призначення',
+    ready_for_pickup: 'Готовий до видачі',
+    last_mile: 'Остання миля',
+    received: 'Завершено',
+    cargo_issues: 'Проблеми з вантажем',
+    rejected: 'Відхилено',
+    self_pickup_completed: 'Видано отримувачу',
+    handed_over_to_self_pickup: 'Передано на самовивіз',
+    shipped_courier_service: 'Відправлено кур\'єрською службою',
+    delivered_courier_service: 'Доставлено кур\'єрською службою'
+  };
+
+  const NOT_READY_SHIPMENT_STATUS_CODES = new Set([
+    'unprocessed',
+    'tariff_request',
+    'tariff_added',
+    'tariff_sent',
+    'tariff_lost',
+    'awaiting_warehouse',
+    'partially_received',
+    'received_at_warehouse',
+    'broker_recalculation',
+    'tariff_under_review'
+  ]);
+
+  const NOT_READY_SHIPMENT_STATUS_LABELS = new Set(
+    Array.from(NOT_READY_SHIPMENT_STATUS_CODES).map(code => SHIPMENT_STATUS_LABELS[code])
+  );
+
+  function getShipmentStatusLabel(status) {
+    return SHIPMENT_STATUS_LABELS[status] || status || '—';
+  }
+
+  function isNotReadyShipmentStatus(status) {
+    return NOT_READY_SHIPMENT_STATUS_CODES.has(status) || NOT_READY_SHIPMENT_STATUS_LABELS.has(status);
+  }
+
+  function resolveNotReadyStatus(tr) {
+    if (isNotReadyShipmentStatus(tr.status)) return getShipmentStatusLabel(tr.status);
+    if (isNotReadyShipmentStatus(tr.notReadyStatus)) return getShipmentStatusLabel(tr.notReadyStatus);
+    return 'Отримано на складі';
+  }
+
   function renderStatusBadge(status) {
+    const label = getShipmentStatusLabel(status);
     const styles = {
       'Формування': 'bg-amber-50 text-amber-800 border-amber-300',
       'Завантажений': 'bg-emerald-50 text-emerald-800 border-emerald-300',
+      'Спаковано': 'bg-emerald-50 text-emerald-800 border-emerald-300',
       'Формується': 'bg-amber-50 text-amber-800 border-amber-300',
       'Готовий до завантаження': 'bg-sky-50 text-sky-800 border-sky-300',
       'В дорозі': 'bg-indigo-50 text-indigo-800 border-indigo-300',
+      'На митниці на експорт': 'bg-amber-50 text-amber-900 border-amber-300',
+      'На митниці на імпорт': 'bg-amber-50 text-amber-900 border-amber-300',
+      'На митниці відправки': 'bg-amber-50 text-amber-900 border-amber-300',
+      'На митниці призначення': 'bg-amber-50 text-amber-900 border-amber-300',
+      'Вивантажений': 'bg-sky-50 text-sky-800 border-sky-300',
+      'Відправлено': 'bg-sky-50 text-sky-800 border-sky-300',
+      'Завершений': 'bg-purple-50 text-purple-800 border-purple-300',
       'Прибув на склад отримання': 'bg-purple-50 text-purple-800 border-purple-300',
+      'Вантаж видано отримувачам': 'bg-emerald-50 text-emerald-800 border-emerald-300',
+      'Видано отримувачу': 'bg-emerald-50 text-emerald-800 border-emerald-300',
       'Очікує готовності': 'bg-slate-100 text-slate-700 border-slate-300',
-      'Новий': 'bg-slate-100 text-slate-700 border-slate-300'
+      'Новий': 'bg-slate-100 text-slate-700 border-slate-300',
+      'Необроблений запит': 'bg-slate-100 text-slate-700 border-slate-300',
+      'Запит на тариф': 'bg-amber-50 text-amber-800 border-amber-300',
+      'Додано тариф': 'bg-amber-50 text-amber-800 border-amber-300',
+      'Відправлено тариф клієнту': 'bg-amber-50 text-amber-800 border-amber-300',
+      'Програно тариф': 'bg-rose-50 text-rose-800 border-rose-300',
+      'Очікується на складі': 'bg-amber-50 text-amber-800 border-amber-300',
+      'Частково отримано на складі': 'bg-orange-50 text-orange-800 border-orange-300',
+      'Отримано на складі': 'bg-amber-50 text-amber-800 border-amber-300',
+      'Перерахунок брокера': 'bg-orange-50 text-orange-800 border-orange-300',
+      'Тариф на узгодженні': 'bg-amber-50 text-amber-800 border-amber-300',
+      'Вивантажено на складі призначення': 'bg-purple-50 text-purple-800 border-purple-300',
+      'Готовий до видачі': 'bg-emerald-50 text-emerald-800 border-emerald-300',
+      'Остання миля': 'bg-indigo-50 text-indigo-800 border-indigo-300',
+      'Завершено': 'bg-emerald-50 text-emerald-800 border-emerald-300',
+      'Проблеми з вантажем': 'bg-rose-50 text-rose-800 border-rose-300',
+      'Відхилено': 'bg-rose-50 text-rose-800 border-rose-300',
+      'Видано отримувачу': 'bg-emerald-50 text-emerald-800 border-emerald-300',
+      'Передано на самовивіз': 'bg-sky-50 text-sky-800 border-sky-300',
+      'Відправлено кур\'єрською службою': 'bg-indigo-50 text-indigo-800 border-indigo-300',
+      'Доставлено кур\'єрською службою': 'bg-emerald-50 text-emerald-800 border-emerald-300'
     };
-    const cls = styles[status] || 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    return `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold border ${cls}">${status}</span>`;
+    const cls = styles[label] || 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    return `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold border ${cls}">${label}</span>`;
   }
 
   // Іконка та стиль для Способу перевезення (Морський, Авіа, Авто, Залізниця)
@@ -351,13 +437,15 @@ function initSubvoyagesPlannerModule() {
   }
 
   function getSubvoyageStatusPriority(status) {
-    // 1. Ті, що формуються / в роботі логіста
-    if (status === 'Формування' || status === 'Формується') return 1;
-    // 2. Завантажені (готуються до виходу)
-    if (status === 'Завантажений') return 2;
-    // 3. В дорозі
-    if (status === 'В дорозі') return 3;
-    // 4. Прибув на склад / завершені
+    // 1. Ті, що формуються / в роботі логіста (formation)
+    if (status === 'Формування' || status === 'Формується' || status === 'formation') return 1;
+    // 2. Завантажені (packed)
+    if (status === 'Завантажений' || status === 'Спаковано' || status === 'packed') return 2;
+    // 3. В дорозі / митниці / вивантажений (in_transit, at_export_customs, at_import_customs, despatched)
+    if (status === 'В дорозі' || status === 'На митниці на експорт' || status === 'На митниці на імпорт' || status === 'Вивантажений' ||
+        status === 'На митниці відправки' || status === 'На митниці призначення' || status === 'Відправлено' ||
+        status === 'in_transit' || status === 'at_export_customs' || status === 'at_import_customs' || status === 'despatched') return 3;
+    // 4. Завершений / прибув на склад / вантаж видано отримувачам (completed, cargo_released_to_recipient)
     return 4;
   }
 
@@ -382,11 +470,17 @@ function initSubvoyagesPlannerModule() {
     transportsData.forEach(tr => {
       // Непромарковані позиції — це завжди Вантажі (не перевезення)
       if (tr.readinessCategory === 'unmarked' && !tr.entityType) tr.entityType = 'cargo';
+      if (!tr.readinessCategory && isNotReadyShipmentStatus(tr.status)) {
+        tr.readinessCategory = 'not_ready';
+      }
       if (tr.subvoyageId) {
         const sv = subVoyagesData.find(s => s.id === tr.subvoyageId);
         if (sv) {
           if (tr.readinessCategory === 'ready' || !tr.readinessCategory) {
             tr.status = sv.status;
+          } else if (tr.readinessCategory === 'not_ready') {
+            tr.status = resolveNotReadyStatus(tr);
+            tr.notReadyStatus = tr.status;
           }
           if (sv.plannedDeparture) {
             tr.dateShipped = sv.plannedDeparture;
@@ -397,7 +491,10 @@ function initSubvoyagesPlannerModule() {
         tr.dateShipped = null;
         if (tr.readinessCategory === 'planned') tr.status = 'Плановий (обіцянка)';
         else if (tr.readinessCategory === 'unmarked') tr.status = 'Непромаркований';
-        else if (tr.readinessCategory === 'not_ready') tr.status = 'Не готовий до завантаження';
+        else if (tr.readinessCategory === 'not_ready') {
+          tr.status = resolveNotReadyStatus(tr);
+          tr.notReadyStatus = tr.status;
+        }
         else tr.status = 'Готовий до завантаження';
       }
       tr.urgency = getShipmentUrgencyInfo(tr).level;
@@ -562,10 +659,12 @@ function initSubvoyagesPlannerModule() {
         tr.isOversized = tr.packagingType === 'Негабарит' || idx % 5 === 0;
       }
       if (!tr.readinessCategory) {
-        if (tr.status === 'Готовий до завантаження' || tr.subvoyageId) {
-          tr.readinessCategory = 'ready';
-        } else if (tr.status === 'Формування' || tr.status === 'Очікує готовності') {
+        if (isNotReadyShipmentStatus(tr.status) || tr.status === 'Формування' || tr.status === 'Очікує готовності') {
           tr.readinessCategory = 'not_ready';
+          tr.status = resolveNotReadyStatus(tr);
+          tr.notReadyStatus = tr.status;
+        } else if (tr.status === 'Готовий до завантаження' || tr.subvoyageId) {
+          tr.readinessCategory = 'ready';
         } else {
           tr.readinessCategory = 'ready';
         }
@@ -592,7 +691,7 @@ function initSubvoyagesPlannerModule() {
         status: 'Готовий до завантаження',
         dateReady: '2026-10-16',
         volume: 14.5,
-        weight: 3.4,
+        weight: 3400,
         places: 22,
         subvoyageId: null,
         isHazardous: true,
@@ -614,13 +713,69 @@ function initSubvoyagesPlannerModule() {
         cargoes: [
           {
             cargoId: 'ARR-9901-1',
-            titleUa: 'Промислові гібридні інвертори з LiFePO4 модулями (Тестове найзаповненіше перевезення)',
-            nameEn: 'Industrial Hybrid Inverters & LiFePO4 Packs (Full Markers Test)',
-            places: 22,
-            grossWeight: 3.4,
-            volume: 14.5,
-            packageType: 'Палети + Негабарит',
-            status: 'На складі'
+            trackingNumber: 'SF1488291009901',
+            receiveDate: '2026-10-14 09:40',
+            warehouse: 'Склад Шеньчжень (Баоань)',
+            warehouseLocation: 'Зона DG-1 • Палета P-01',
+            titleUa: 'Промислові гібридні інвертори 30kW з LiFePO4 модулями',
+            nameEn: 'Industrial Hybrid Inverters 30kW & LiFePO4 Packs',
+            nameCn: '工业混合逆变器及磷酸铁锂电池组',
+            contentDescription: 'Гібридні інвертори DEYE 30kW та акумуляторні шафи LiFePO4 (UN3480)',
+            places: 12,
+            grossWeight: 2100,
+            volume: 8.5,
+            length: 120,
+            width: 100,
+            height: 165,
+            isOversized: true,
+            packageType: 'Палети + Обрешітка',
+            additionalServices: 'UN3480 маркування, Фотозвіт, Стрейчування',
+            logistNote: 'Партія №1 повністю промаркована та готова до відвантаження',
+            status: 'Готовий до завантаження'
+          },
+          {
+            cargoId: 'ARR-9901-2',
+            trackingNumber: 'YT9920114820012',
+            receiveDate: '2026-10-15 14:15',
+            warehouse: 'Склад Іу (Центральний)',
+            warehouseLocation: 'Сектор B • Стелаж 08',
+            titleUa: 'Силові кабелі DC, BMS контролери та монтажні шафи',
+            nameEn: 'Solar DC Cables, BMS Controllers & Racks',
+            nameCn: '光伏直流电缆及电池管理系统控制柜',
+            contentDescription: 'Комплектуючі для монтажу СЕС, конектори MC4, автоматика захисту',
+            places: 6,
+            grossWeight: 800,
+            volume: 3.6,
+            length: 110,
+            width: 80,
+            height: 95,
+            isOversized: false,
+            packageType: 'Деревʼяні ящики',
+            additionalServices: 'Перепакування, Перевірка комплектності',
+            logistNote: 'Перевезено з Іу на консолідаційний хаб у Гуанчжоу',
+            status: 'На складі відправки'
+          },
+          {
+            cargoId: 'ARR-9901-3',
+            trackingNumber: 'JD7781203948115',
+            receiveDate: '2026-10-16 11:20',
+            warehouse: 'Склад Гуанчжоу (Байюнь)',
+            warehouseLocation: 'Зона консолідації C-04',
+            titleUa: 'Запасні плати керування та дисплейні модулі моніторингу',
+            nameEn: 'Spare Control PCBs & Smart Monitoring Displays',
+            nameCn: '备用控制主板及智能监控显示屏',
+            contentDescription: 'Електронні плати керування (крихкий вантаж, антистатичне пакування)',
+            places: 4,
+            grossWeight: 500,
+            volume: 2.4,
+            length: 80,
+            width: 60,
+            height: 75,
+            isOversized: false,
+            packageType: 'Коробки на палеті',
+            additionalServices: 'Крихке маркування, Плівка пухирчаста',
+            logistNote: 'Очікує фінальної перевірки серійних номерів за інвойсом',
+            status: 'Очікує виконання завдання по вантажу'
           }
         ]
       },
@@ -640,10 +795,11 @@ function initSubvoyagesPlannerModule() {
         packagingType: 'Коробки',
         readinessCategory: 'not_ready',
         notReadyReason: 'Чекає на консолідацію (2 з 3 партій на складі) та оригінал інвойсу',
-        status: 'Не готовий до завантаження',
+        status: 'Частково отримано на складі',
+        notReadyStatus: 'Частково отримано на складі',
         dateReady: '2026-10-21',
         volume: 9.2,
-        weight: 1.8,
+        weight: 1800,
         places: 38,
         subvoyageId: 'SV-4402',
         isHazardous: false,
@@ -657,12 +813,45 @@ function initSubvoyagesPlannerModule() {
         cargoes: [
           {
             cargoId: 'ARR-8410-1',
-            titleUa: 'Керамічні ізолятори та фурнітура (очікує доукомплектування)',
-            places: 38,
-            grossWeight: 1.8,
-            volume: 9.2,
+            trackingNumber: 'SF6620194827101',
+            receiveDate: '2026-10-13 10:15',
+            warehouse: 'Склад Нінбо (Порт)',
+            warehouseLocation: 'Зона A • Стелаж 14',
+            titleUa: 'Керамічні високовольтні ізолятори (Партія 1)',
+            nameEn: 'High-Voltage Ceramic Insulators (Batch 1)',
+            nameCn: '高压陶瓷绝缘子（第一批）',
+            contentDescription: 'Ізолятори порцелянові 35кВ у посилених гофроящиках',
+            places: 24,
+            grossWeight: 1200,
+            volume: 5.8,
+            length: 100,
+            width: 80,
+            height: 90,
             packageType: 'Коробки',
-            status: 'Очікує консолідації'
+            additionalServices: 'Обрешітка, Крихке маркування',
+            logistNote: 'Прийнято без пошкоджень',
+            status: 'Зберігання на складі'
+          },
+          {
+            cargoId: 'ARR-8410-2',
+            trackingNumber: 'ZTO883920194822',
+            receiveDate: '2026-10-16 16:45',
+            warehouse: 'Склад Нінбо (Порт)',
+            warehouseLocation: 'Зона приймання B-02',
+            titleUa: ' Арматура СІП та натяжні затискачі (Партія 2)',
+            nameEn: ' Overhead Line Fittings & Tension Clamps (Batch 2)',
+            nameCn: '架空线路金具及耐张线夹（第二批）',
+            contentDescription: 'Металева фурнітура для ЛЕП, оцинкована сталь',
+            places: 14,
+            grossWeight: 600,
+            volume: 3.4,
+            length: 90,
+            width: 75,
+            height: 80,
+            packageType: 'Коробки',
+            additionalServices: 'Зважування, Фотозвіт',
+            logistNote: 'Очікує 3-тю досилку від постачальника з Іу',
+            status: 'Очікує інші частини'
           }
         ]
       },
@@ -682,10 +871,11 @@ function initSubvoyagesPlannerModule() {
         packagingType: 'Палети',
         readinessCategory: 'not_ready',
         notReadyReason: 'Не оплачений інвойс за пакування, перевірка митної декларації',
-        status: 'Не готовий до завантаження',
+        status: 'Перерахунок брокера',
+        notReadyStatus: 'Перерахунок брокера',
         dateReady: '2026-10-23',
         volume: 6.8,
-        weight: 1.4,
+        weight: 1400,
         places: 12,
         subvoyageId: null,
         isHazardous: false,
@@ -696,7 +886,40 @@ function initSubvoyagesPlannerModule() {
         hasVisa: false,
         customsTerms: 'FCA',
         customsClearance: 'Брокер компанії',
-        cargoes: []
+        cargoes: [
+          {
+            cargoId: 'ARR-8412-1',
+            trackingNumber: 'SF-8412-01',
+            titleUa: 'Акумуляторні пуско-зарядні пристрої 24V',
+            nameEn: 'Heavy Duty Battery Jump Starters 24V',
+            nameCn: '汽车应急启动电源',
+            contentDescription: 'Палета з пусковими станціями (вбудовані Li-Ion батареї)',
+            places: 8,
+            grossWeight: 950,
+            volume: 4.5,
+            packageType: 'Палети',
+            warehouseLocation: 'Склад Фошань · Зона C · Ряд 2',
+            additionalServices: 'Перевірка MSDS, обрешітка кутів, фотофіксація',
+            logistNote: 'Очікує підтвердження оплати за пакування',
+            status: 'Очікує виконання завдання по вантажу'
+          },
+          {
+            cargoId: 'ARR-8412-2',
+            trackingNumber: 'SF-8412-02',
+            titleUa: 'Комплекти силових кабелів та клем',
+            nameEn: 'Power Cable Kits & Clamps',
+            nameCn: '电源线及夹子套件',
+            contentDescription: 'Мідні силові кабелі у посилених коробках',
+            places: 4,
+            grossWeight: 450,
+            volume: 2.3,
+            packageType: 'Коробки',
+            warehouseLocation: 'Склад Фошань · Зона C · Ряд 2',
+            additionalServices: 'Стрейчування, маркування DF',
+            logistNote: 'Прийнято без пошкоджень, готово до консолідації з основною партією',
+            status: 'На складі відправки'
+          }
+        ]
       },
       {
         id: 'PRM-9015-PLAN',
@@ -716,7 +939,7 @@ function initSubvoyagesPlannerModule() {
         status: 'Плановий (обіцянка)',
         dateReady: '2026-10-25',
         volume: 16.0,
-        weight: 3.1,
+        weight: 3100,
         places: 24,
         subvoyageId: null,
         isHazardous: false,
@@ -727,7 +950,40 @@ function initSubvoyagesPlannerModule() {
         hasVisa: true,
         customsTerms: 'FOB',
         customsClearance: 'Брокер компанії',
-        cargoes: []
+        cargoes: [
+          {
+            cargoId: 'ARR-9015-1',
+            trackingNumber: 'YT-9015-A',
+            titleUa: 'Сонячні панелі монокристалічні 550W',
+            nameEn: 'Monocrystalline Solar Panels 550W',
+            nameCn: '单晶太阳能电池板 550W',
+            contentDescription: 'Палетовані сонячні модулі в заводській обрешітці',
+            places: 16,
+            grossWeight: 2200,
+            volume: 11.5,
+            packageType: 'Палети',
+            warehouseLocation: 'Склад Нінбо · Сектор A-1',
+            additionalServices: 'Додаткова дерев\'яна обрешітка, датчики удару',
+            logistNote: 'Перша частина обіцянки вже прибула на склад у Китаї',
+            status: 'На складі відправки'
+          },
+          {
+            cargoId: 'ARR-9015-2',
+            trackingNumber: 'YT-9015-B',
+            titleUa: 'Контролери заряду MPPT та інверторні шафи',
+            nameEn: 'MPPT Charge Controllers & Inverter Cabinets',
+            nameCn: 'MPPT太阳能控制器及逆变柜',
+            contentDescription: 'Електронні блоки керування для СЕС',
+            places: 8,
+            grossWeight: 900,
+            volume: 4.5,
+            packageType: 'Ящики',
+            warehouseLocation: 'Очікується від постачальника (Фошань)',
+            additionalServices: 'Перевірка серійних номерів, вологозахисна плівка',
+            logistNote: 'Очікується підвезення з фабрики до 25.10',
+            status: 'Очікує інші частини'
+          }
+        ]
       },
       {
         id: 'PRM-9018-PLAN',
@@ -747,7 +1003,7 @@ function initSubvoyagesPlannerModule() {
         status: 'Плановий (обіцянка)',
         dateReady: '2026-10-26',
         volume: 4.5,
-        weight: 0.9,
+        weight: 900,
         places: 18,
         subvoyageId: null,
         isHazardous: false,
@@ -758,30 +1014,47 @@ function initSubvoyagesPlannerModule() {
         hasVisa: true,
         customsTerms: 'EXW',
         customsClearance: 'Клієнт самостійно',
-        cargoes: []
+        cargoes: [
+          {
+            cargoId: 'ARR-9018-1',
+            trackingNumber: 'DHL-9018-77',
+            titleUa: 'Оптичні сенсори та лазерні далекоміри',
+            nameEn: 'Optical Sensors & Laser Rangefinders',
+            nameCn: '光学传感器和激光测距仪',
+            contentDescription: 'Точна оптика в захисних кейсах (Крихке)',
+            places: 18,
+            grossWeight: 900,
+            volume: 4.5,
+            packageType: 'Коробки',
+            warehouseLocation: 'Термінал Шеньчжень · Авіа-бокс #4',
+            additionalServices: 'Маркування Fragile, термоізоляційна плівка',
+            logistNote: 'Заброньовано під авіа-консолідацію на Варшаву',
+            status: 'Готовий до завантаження'
+          }
+        ]
       },
       // Непромарковані — це НЕ перевезення, а фізичні ВАНТАЖІ (entityType: 'cargo'), прийняті на склад без маркування DF.
-      // Вантаж можна додати до підрейсу; після прорахунку менеджером він конвертується в Обіцянку (entityType: 'promise').
+      // Вантаж ще не має типу перевезення (transport: null). Його можна додати до підрейсу; коли менеджер прорахує обіцянку та прив'яже до неї вантаж, позиція перейде в Обіцянку (entityType: 'promise').
       ...[
         {
           id: 'ARR-UNM-701', trackNumber: 'SF-99201', receiveDate: '2026-10-19', warehouseLocation: 'Зона B · Ряд 4 · Стелаж 2',
           contentDescription: 'Картонні коробки без маркування клієнта (побутова електроніка)', packagingType: 'Коробки',
-          places: 15, weight: 0.85, volume: 5.4, length: 60, width: 40, height: 50,
-          originCountry: 'Китай', destinationCountry: 'Україна', transport: 'Морський', hub: 'Центральний Хаб Київ (Гостомель)', logist: 'М. Бондар',
+          places: 15, weight: 850, volume: 5.4, length: 60, width: 40, height: 50,
+          originCountry: 'Китай', destinationCountry: 'Україна', transport: null, hub: 'Центральний Хаб Київ (Гостомель)', logist: 'М. Бондар',
           markers: ['pkg_rigid', 'groupage', 'general', 'customs_cargo'], isHazardous: false, isOversized: false
         },
         {
           id: 'ARR-UNM-704', trackNumber: 'GATE3-0412', receiveDate: '2026-10-20', warehouseLocation: 'Ворота #3 · Майданчик негабариту',
           contentDescription: 'Металева конструкція в обрешітці, без документів', packagingType: 'Негабарит',
-          places: 4, weight: 2.1, volume: 7.2, length: 240, width: 120, height: 150,
-          originCountry: 'Китай', destinationCountry: 'Польща', transport: 'Авто', hub: 'Транзитний хаб Варшава (Прушкув)', logist: 'О. Коваль',
+          places: 4, weight: 2100, volume: 7.2, length: 240, width: 120, height: 150,
+          originCountry: 'Китай', destinationCountry: 'Польща', transport: null, hub: 'Транзитний хаб Варшава (Прушкув)', logist: 'О. Коваль',
           markers: ['oversized', 'adr', 'pkg_straps', 'multimodal'], isHazardous: true, isOversized: true
         },
         {
           id: 'ARR-UNM-709', trackNumber: 'YT-5508812', receiveDate: '2026-10-22', warehouseLocation: 'Зона A · Ряд 1 · Палетне місце 7',
           contentDescription: 'Палета з акумуляторними блоками, маркування пошкоджене', packagingType: 'Палети',
-          places: 2, weight: 0.64, volume: 1.9, length: 120, width: 80, height: 100,
-          originCountry: 'Китай', destinationCountry: 'Україна', transport: 'Морський', hub: 'Центральний Хаб Київ (Гостомель)', logist: 'І. Сидоренко',
+          places: 2, weight: 640, volume: 1.9, length: 120, width: 80, height: 100,
+          originCountry: 'Китай', destinationCountry: 'Україна', transport: null, hub: 'Центральний Хаб Київ (Гостомель)', logist: 'І. Сидоренко',
           markers: ['batt_li', 'fragile', 'pkg_pallets'], hasBatteries: true, isFragile: true
         }
       ].map(c => ({
@@ -837,7 +1110,7 @@ function initSubvoyagesPlannerModule() {
           status: 'Плановий (обіцянка)',
           dateReady: '2026-10-24',
           volume: 8.5,
-          weight: 1.6,
+          weight: 1600,
           places: 10,
           subvoyageId: firstFormationSv.id,
           isHazardous: false,
@@ -848,10 +1121,169 @@ function initSubvoyagesPlannerModule() {
           hasVisa: true,
           customsTerms: 'FOB',
           customsClearance: 'Брокер компанії',
-          cargoes: []
+          cargoes: [
+            {
+              cargoId: 'ARR-9022-1',
+              trackingNumber: 'SF-9022-A',
+              titleUa: 'Промислові LED-світильники IP65 (200W)',
+              nameEn: 'Industrial High-Bay LED Lights IP65',
+              nameCn: '工业LED高棚灯 200W',
+              contentDescription: 'Світильники в індивідуальних коробках на палетах',
+              places: 6,
+              grossWeight: 1000,
+              volume: 5.5,
+              packageType: 'Палети',
+              warehouseLocation: 'Склад Фошань · Сектор B-3',
+              additionalServices: 'Кутники жорсткості, палетування',
+              logistNote: 'Перша частина заброньованої обіцянки прийнята на склад',
+              status: 'На складі відправки'
+            },
+            {
+              cargoId: 'ARR-9022-2',
+              trackingNumber: 'SF-9022-B',
+              titleUa: 'Блоки аварійного живлення з LiFePO4 акумуляторами',
+              nameEn: 'Emergency Power Units with LiFePO4 Battery',
+              nameCn: '应急电源模块',
+              contentDescription: 'Аварійні драйвери освітлення',
+              places: 4,
+              grossWeight: 600,
+              volume: 3.0,
+              packageType: 'Палети',
+              warehouseLocation: 'В дорозі від фабрики (Гуанчжоу)',
+              additionalServices: 'Перевірка UN3481, маркування',
+              logistNote: 'Очікуємо прибуття на склад до 24.10',
+              status: 'Очікує інші частини'
+            }
+          ]
         });
       }
     }
+
+    // 4. Збагачуємо сутності задачами (лише для частини Обіцянок та Перевезень, щоб у таблиці було видно різницю: є задача -> позначка, немає -> пусто)
+    // та історією переміщень між складами для кожного вантажу (Ерайву)
+    const sampleTasksByEntity = {
+      'DF-9901-FULL': [
+        { id: 'TSK-901', title: 'Перевірити сертифікат MSDS та UN38.3 на LiFePO4 модулі', assignee: 'О. Коваль', dueDate: '2026-10-18', status: 'В роботі' },
+        { id: 'TSK-902', title: 'Погодити схему кріплення негабаритних палет у контейнері', assignee: 'І. Сидоренко', dueDate: '2026-10-19', status: 'Виконано' }
+      ],
+      'DF540-101': [
+        { id: 'TSK-101', title: 'Закрити експортну декларацію EX-1 (FOB Nansha)', assignee: 'І. Сидоренко', dueDate: '2026-10-19', status: 'В роботі' }
+      ],
+      'DF540-103': [
+        { id: 'TSK-103', title: 'Перевірити налаштування термореєстратора (+2..+8°C) перед вильотом', assignee: 'О. Ковальчук', dueDate: '2026-10-18', status: 'Виконано' }
+      ],
+      'DF-8410-NR': [
+        { id: 'TSK-841', title: 'Отримати оригінал комерційного інвойсу від фабрики', assignee: 'І. Сидоренко', dueDate: '2026-10-21', status: 'В роботі' },
+        { id: 'TSK-842', title: 'Консолідувати 3-тю партію ізоляторів після прибуття', assignee: 'І. Сидоренко', dueDate: '2026-10-22', status: 'В роботі' }
+      ],
+      'PRM-9015-PLAN': [
+        { id: 'TSK-915', title: 'Підтвердити фінальний об\'єм обіцянки з клієнтом ТОВ ГрінТех', assignee: 'О. Коваль', dueDate: '2026-10-24', status: 'В роботі' }
+      ],
+      'PRM-9022-BOOKED': [
+        { id: 'TSK-922', title: 'Проконтролювати заїзд 2-ї частини вантажу (ARR-9022-2) до закриття підрейсу', assignee: 'О. Коваль', dueDate: '2026-10-23', status: 'В роботі' }
+      ]
+    };
+
+    const buildDefaultCargoMovementHistory = (cargoObj, parentEntity) => {
+      const originCity = (parentEntity?.originCountry || 'Китай') === 'Китай' ? 'Склад Фошань (Китай, Термінал А)' : `Склад відправки (${parentEntity?.originCountry || 'Китай'})`;
+      const transitHub = parentEntity?.routeStages?.includes('Польща')
+        ? 'Транзитний хаб Варшава / Гданськ (Польща)'
+        : 'Митний термінал перетину кордону';
+      const finalHub = parentEntity?.hub || 'Центральний Хаб Київ (Гостомель)';
+      const loc = cargoObj.warehouseLocation || parentEntity?.warehouseLocation || 'Зона A · Ряд 2 · Секція 1';
+      const recDate = cargoObj.receiveDate || parentEntity?.dateReady || '2026-10-14';
+      const svId = parentEntity?.subvoyageId || null;
+      const svObj = svId ? subVoyagesData.find(s => s.id === svId) : null;
+
+      const history = [
+        {
+          step: 1,
+          warehouse: originCity,
+          location: 'Зона приймання (Рампа #2)',
+          operation: 'Приймання вантажу на склад відправки',
+          status: 'Прийнято на склад',
+          date: `${recDate} 09:40`,
+          operator: parentEntity?.logist || 'І. Сидоренко',
+          transportInfo: `Вхідний трек: ${cargoObj.trackingNumber || cargoObj.trackNumber || ('TRK-' + (cargoObj.cargoId || cargoObj.id))}`,
+          comment: 'Зважування, обмір габаритів, вхідний фотозвіт та первинне маркування.'
+        },
+        {
+          step: 2,
+          warehouse: originCity,
+          location: loc,
+          operation: 'Складська обробка та розміщення у зоні зберігання',
+          status: cargoObj.status || 'На складі відправки',
+          date: `${recDate} 14:15`,
+          operator: parentEntity?.logist || 'О. Коваль',
+          transportInfo: `Пакування: ${cargoObj.packageType || cargoObj.packagingType || 'Палети'} (${cargoObj.places || 1} місць, ${cargoObj.volume || 1} м³)`,
+          comment: cargoObj.logistNote || cargoObj.contentDescription || 'Розміщено на адресне зберігання, підготовлено до консолідації.'
+        }
+      ];
+
+      if (svObj) {
+        history.push({
+          step: 3,
+          warehouse: svObj.loadingPlace || originCity,
+          location: `Зона комплектації підрейсу ${svObj.id}`,
+          operation: `Комплектація у підрейс ${svObj.id} (${svObj.name})`,
+          status: svObj.status === 'В дорозі' || svObj.status === 'Прибув на склад отримання' ? 'Відвантажено зі складу' : 'Заплановано до відвантаження',
+          date: `${svObj.plannedDeparture || recDate} 18:00`,
+          operator: svObj.logist || 'І. Сидоренко',
+          transportInfo: `${svObj.transport || 'Транспорт'} • Плече: ${svObj.originCountry} ➔ ${svObj.destinationCountry}`,
+          comment: `Прив'язано до підрейсу ${svObj.id}. Точка розвантаження підрейсу: ${svObj.unloadingPlace || svObj.destinationCountry}.`
+        });
+      }
+
+      history.push({
+        step: history.length + 1,
+        warehouse: transitHub,
+        location: 'Зона крос-докінгу та митного транзиту',
+        operation: 'Транзитний перевантажувальний склад (Проміжний хаб)',
+        status: svObj && svObj.status === 'Прибув на склад отримання' ? 'Пройдено транзит' : 'Маршрутна точка (План)',
+        date: svObj?.plannedArrival ? `${svObj.plannedArrival} 11:00` : 'За графіком маршруту',
+        operator: 'Черговий логіст хабу',
+        transportInfo: `Маршрут: ${parentEntity?.transitSegment || (parentEntity?.originCountry + ' ➔ ' + parentEntity?.destinationCountry)}`,
+        comment: 'Перевірка цілісності пломб, перевантаження / оформлення транзитної декларації Т1.'
+      });
+
+      history.push({
+        step: history.length + 1,
+        warehouse: finalHub,
+        location: 'Термінал прибуття та видачі клієнту',
+        operation: 'Кінцевий склад призначення',
+        status: parentEntity?.status === 'Прибув на склад отримання' ? 'На складі призначення' : 'Очікується прибуття',
+        date: parentEntity?.dateArrivalExpected || svObj?.plannedArrival || 'План прибуття',
+        operator: parentEntity?.logist || 'М. Петренко',
+        transportInfo: `Кінцевий пункт: ${parentEntity?.finalDestination || parentEntity?.destinationCountry || finalHub}`,
+        comment: 'Фінальне розвантаження, звірка місць та передача на видачу / останню милю.'
+      });
+
+      return history;
+    };
+
+    transportsData.forEach(tr => {
+      if (!Array.isArray(tr.tasks)) {
+        tr.tasks = sampleTasksByEntity[tr.id] ? sampleTasksByEntity[tr.id].map(t => ({ ...t })) : [];
+      }
+      if (isUnmarkedCargo(tr)) {
+        if (!Array.isArray(tr.movementHistory) || tr.movementHistory.length === 0) {
+          tr.movementHistory = buildDefaultCargoMovementHistory(tr, tr);
+        }
+      }
+      if (Array.isArray(tr.cargoes)) {
+        tr.cargoes.forEach((c, cIdx) => {
+          if (!c.cargoId) c.cargoId = `${tr.id}-CRG-${cIdx + 1}`;
+          if (!c.trackingNumber) c.trackingNumber = `TRK-${c.cargoId}`;
+          if (!c.receiveDate) c.receiveDate = tr.dateReady || '2026-10-12';
+          if (!c.warehouse) c.warehouse = tr.originCountry === 'Китай' ? 'Склад Фошань (CN)' : (tr.hub || 'Склад відправки');
+          if (!c.warehouseLocation) c.warehouseLocation = `Склад A · Секція ${cIdx + 1}-B`;
+          if (!c.status) c.status = tr.readinessCategory === 'planned' ? 'Очікує інші частини' : 'Готовий до завантаження';
+          if (!Array.isArray(c.movementHistory) || c.movementHistory.length === 0) {
+            c.movementHistory = buildDefaultCargoMovementHistory(c, tr);
+          }
+        });
+      }
+    });
 
     // Публікуємо глобально для синхронізації з 5 категоріями блоку «Розподіл об'єму» в dashboard.js
     window.svManagementShipments = transportsData.map(t => ({
@@ -884,6 +1316,9 @@ function initSubvoyagesPlannerModule() {
         if (firstSv) {
           activeSubvoyageId = firstSv.id;
         }
+      }
+      if (activeSubvoyageId) {
+        expandedSubvoyageIds.add(activeSubvoyageId);
       }
 
       setupHubFilterOptions();
@@ -952,15 +1387,9 @@ function initSubvoyagesPlannerModule() {
                 <span class="font-mono font-bold text-slate-900 text-xs">${item.dfShipment || item.id}</span>
                 <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${cfg.cls}">${cfg.text}</span>
               </div>
-              <div class="text-[11px] text-slate-600">${item.client || ''} • <strong class="font-mono">${item.volume} м³ | ${item.weight} т | ${item.places} шт</strong></div>
+              <div class="text-[11px] text-slate-600">${item.client || ''} • <strong class="font-mono">${item.volume} м³ | ${item.weight} кг | ${item.places} шт</strong></div>
             </div>
             <div class="flex items-center gap-1.5">
-              ${(item.readinessCategory === 'planned' || item.readinessCategory === 'not_ready' || isUnmarkedCargo(item)) ? '' : `
-                <button type="button" onclick="window.convertShipmentToReady('${item.id}', event); window.closeSubvoyageDepartureBlockModal();"
-                  class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold transition cursor-pointer">
-                  <i class="fa-solid fa-check mr-1"></i>Готовий
-                </button>
-              `}
               <button type="button" onclick="detachShipmentFromSubvoyage('${item.id}'); window.closeSubvoyageDepartureBlockModal();"
                 class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-[10px] font-bold transition cursor-pointer">
                 <i class="fa-solid fa-xmark mr-1"></i>Прибрати з рейсу
@@ -971,24 +1400,6 @@ function initSubvoyagesPlannerModule() {
       }).join('');
     }
 
-    const btnConvertAll = document.getElementById('btn-sv-block-convert-all');
-    if (btnConvertAll) {
-      btnConvertAll.onclick = () => {
-        blockingItems.forEach(item => {
-          if (isUnmarkedCargo(item)) convertCargoToPromise(item, {});
-          item.readinessCategory = 'ready';
-          if (item.id.startsWith('UNM-')) item.dfShipment = `DF-${item.id.replace('UNM-', '')}`;
-          else if (item.id.startsWith('PRM-')) item.dfShipment = `DF-${item.id.replace('PRM-', '')}`;
-        });
-        sv.status = targetStatus;
-        selectedSubvoyageStatuses.add(targetStatus);
-        syncSubvoyageAndShipmentsStatuses();
-        window.closeSubvoyageDepartureBlockModal();
-        renderAll();
-        showToast(`Усі позиції підтверджено! Підрейс ${sv.id} переведено у статус «${targetStatus}».`);
-      };
-    }
-
     modal.classList.remove('hidden');
   }
 
@@ -996,7 +1407,8 @@ function initSubvoyagesPlannerModule() {
     const sv = subVoyagesData.find(s => s.id === svId);
     if (!sv) return;
 
-    if (newStatus === 'Завантажений' || newStatus === 'В дорозі') {
+    const isDepartureOrTransitStatus = newStatus !== 'Формування' && newStatus !== 'Формується' && newStatus !== 'formation';
+    if (isDepartureOrTransitStatus) {
       const blocking = getBlockingItemsForSubvoyage(sv.id);
       if (blocking.length > 0) {
         if (selectElement) selectElement.value = sv.status;
@@ -1004,7 +1416,7 @@ function initSubvoyagesPlannerModule() {
           currentSubvoyageStatusSelect.value = sv.status;
         }
         openSubvoyageDepartureBlockModal(sv, newStatus, blocking);
-        showToast(`Блокування відправки ${sv.id}: знайдено ${blocking.length} не готових / планових позицій!`, true);
+        showToast(`Блокування відправки ${sv.id}: знайдено ${blocking.length} позицій без статусу «Готовий до завантаження»!`, true);
         return;
       }
     }
@@ -1042,22 +1454,50 @@ function initSubvoyagesPlannerModule() {
     const sv = subVoyagesData.find(s => s.id === svId);
     if (!sv) return;
 
+    const receiveDate = reportData.receiveDate || new Date().toISOString().slice(0, 16).replace('T', ' ');
     sv.status = 'Прибув на склад отримання';
-    sv.actualArrival = new Date().toISOString().split('T')[0];
+    sv.actualArrival = receiveDate.split(' ')[0];
+    sv.receivedAt = receiveDate;
     sv.acceptanceReport = reportData;
     selectedSubvoyageStatuses.add('Прибув на склад отримання');
 
-    const problemIds = new Set(reportData.selectedProblemShipments || []);
+    const reportByShipment = new Map();
+    (reportData.shipmentsReport || []).forEach(r => {
+      reportByShipment.set(r.rawId, r);
+      reportByShipment.set(r.id, r);
+    });
     let acceptedCount = 0;
+    let shortageCount = 0;
 
     transportsData.forEach(tr => {
       if (tr.subvoyageId === sv.id) {
-        const hasProblem = !reportData.isAllGood && (problemIds.has(tr.id) || problemIds.has(tr.dfShipment));
-        tr.status = hasProblem ? 'Пошкоджено / Нестача' : 'Прибув на склад отримання';
-        tr.readinessCategory = hasProblem ? 'not_ready' : 'ready';
+        const rep = reportByShipment.get(tr.id) || reportByShipment.get(tr.dfShipment) || {};
+        // Недостача або пошкодження НЕ зупиняють роботу з вантажем — перевезення стає на баланс складу
+        tr.status = 'Прибув на склад отримання';
+        tr.readinessCategory = 'ready';
         tr.acceptedToday = true;
-        if (hasProblem && reportData.notes) {
-          tr.notReadyReason = `Акт приймання (${(reportData.selectedProblemTypes || []).join(', ')}): ${reportData.notes}`;
+        if (rep.manager && !tr.manager) tr.manager = rep.manager;
+        tr.acceptance = {
+          subvoyageId: sv.id,
+          receiveDate,
+          damageLevel: rep.damageLevel || null,
+          shortage: !!rep.shortage,
+          shortagePlaces: rep.shortagePlaces || 0,
+          expectedPlaces: rep.expectedPlaces ?? tr.places,
+          receivedPlaces: (rep.expectedPlaces ?? tr.places ?? 0) - (rep.shortagePlaces || 0),
+          notes: reportData.notes || ''
+        };
+        if (rep.shortage) {
+          shortageCount++;
+          if (!Array.isArray(tr.tasks)) tr.tasks = [];
+          tr.tasks.unshift({
+            id: `TSK-SH-${sv.id}-${tr.id}`,
+            title: `Недостача ${rep.shortagePlaces} з ${tr.acceptance.expectedPlaces} місць при отриманні ${sv.id} — запустити компенсацію`,
+            assignee: rep.manager || tr.manager || 'Відповідальний менеджер',
+            dueDate: receiveDate.split(' ')[0],
+            status: 'open',
+            type: 'shortage'
+          });
         }
         acceptedCount++;
       }
@@ -1067,9 +1507,76 @@ function initSubvoyagesPlannerModule() {
     renderAll();
 
     if (typeof showToast === 'function') {
-      showToast(`Підрейс ${sv.id} прийнято на склад! Звіт приймання збережено (${acceptedCount} перевезень зараховано на баланс).`);
+      const ntf = shortageCount > 0 ? ` Недостача у ${shortageCount} перевез. — менеджерам надіслано сповіщення.` : '';
+      showToast(`Підрейс ${sv.id} прийнято на склад (${acceptedCount} перевезень на балансі).${ntf}`, shortageCount > 0);
     }
   };
+
+  // Бейджі результату отримання на складі: ступінь пошкодження коробок + недостача (видно логістам і менеджерам)
+  const ACCEPTANCE_DAMAGE_UI = {
+    green: { label: 'Коробки: зелений', cls: 'bg-emerald-50 text-emerald-800 border-emerald-300', dot: 'bg-emerald-500', desc: 'Коробки максимально мають вигляд, як при відправці з Китаю' },
+    yellow: { label: 'Коробки: жовтий', cls: 'bg-amber-50 text-amber-900 border-amber-300', dot: 'bg-amber-400', desc: 'Коробки мають пошкодження, їх реально підремонтувати' },
+    red: { label: 'Коробки: червоний', cls: 'bg-rose-50 text-rose-800 border-rose-300', dot: 'bg-rose-500', desc: 'Коробки критично пошкоджені, мокрі, потребують повну заміну пакування' }
+  };
+  function renderBlockingDepartureBadge(tr) {
+    if (!tr || !tr.readinessCategory || tr.readinessCategory === 'ready') return '';
+    const reasonMap = {
+      planned: 'Обіцянка (плановий вантаж)',
+      not_ready: 'Не готовий до завантаження',
+      unmarked: 'Непромаркований вантаж'
+    };
+    const reason = reasonMap[tr.readinessCategory] || tr.status || 'Не готовий до завантаження';
+    return `<span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-100 text-rose-800 border border-rose-300 inline-flex items-center gap-0.5 whitespace-nowrap" title="Блокує відправку підрейсу зі статусу «Формування» (${reason})">⛔ Блокує вихід</span>`;
+  }
+  window.renderBlockingDepartureBadge = renderBlockingDepartureBadge;
+
+  function renderAcceptanceBadges(tr) {
+    const acc = tr && tr.acceptance;
+    if (!acc) return '';
+    const dmg = ACCEPTANCE_DAMAGE_UI[acc.damageLevel];
+    const dmgHtml = dmg ? `
+      <span class="px-1.5 py-0.2 rounded border ${dmg.cls} text-[9px] font-bold inline-flex items-center gap-1 whitespace-nowrap" title="${dmg.label} — ${dmg.desc} (отримано ${acc.receiveDate || ''})">
+        <span class="w-1.5 h-1.5 rounded-full ${dmg.dot}"></span>${dmg.label.replace('Коробки: ', '')}
+      </span>` : '';
+    const shortHtml = acc.shortage ? `
+      <span class="px-1.5 py-0.2 rounded border bg-rose-100 text-rose-800 border-rose-300 text-[9px] font-bold inline-flex items-center gap-1 whitespace-nowrap" title="Недостача при отриманні ${acc.subvoyageId || ''}: не вистачає ${acc.shortagePlaces} з ${acc.expectedPlaces} місць. Менеджеру надіслано сповіщення.">
+        <i class="fa-solid fa-box-open text-[8px]"></i>−${acc.shortagePlaces} шт
+      </span>` : '';
+    return dmgHtml + shortHtml;
+  }
+  window.renderAcceptanceBadges = renderAcceptanceBadges;
+
+  function renderDrawerAcceptanceBlock(tr) {
+    const tasksSec = document.getElementById('drawer-entity-tasks-section');
+    if (!tasksSec) return;
+    let block = document.getElementById('drawer-entity-acceptance-block');
+    if (!block) {
+      block = document.createElement('div');
+      block.id = 'drawer-entity-acceptance-block';
+      tasksSec.parentNode.insertBefore(block, tasksSec);
+    }
+    const acc = tr && tr.acceptance;
+    if (!acc) {
+      block.className = 'hidden';
+      block.innerHTML = '';
+      return;
+    }
+    const dmg = ACCEPTANCE_DAMAGE_UI[acc.damageLevel];
+    block.className = `p-3 rounded-xl border space-y-1.5 ${acc.shortage || acc.damageLevel === 'red' ? 'bg-rose-50/60 border-rose-200' : acc.damageLevel === 'yellow' ? 'bg-amber-50/60 border-amber-200' : 'bg-emerald-50/50 border-emerald-200'}`;
+    block.innerHTML = `
+      <div class="flex items-center justify-between gap-2 flex-wrap">
+        <h4 class="text-xs font-bold text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-clipboard-check text-indigo-600"></i>Отримання на складі (${acc.subvoyageId || '—'})</h4>
+        <span class="text-[10px] font-mono text-slate-500">${acc.receiveDate || ''}</span>
+      </div>
+      ${dmg ? `<div class="text-[11px] flex items-start gap-1.5"><span class="mt-1 w-2 h-2 rounded-full ${dmg.dot} shrink-0"></span><span><strong>${dmg.label}</strong> — ${dmg.desc}</span></div>` : ''}
+      <div class="text-[11px] ${acc.shortage ? 'text-rose-800 font-bold' : 'text-slate-600'}">
+        ${acc.shortage
+          ? `<i class="fa-solid fa-box-open mr-1"></i>Недостача: не вистачає ${acc.shortagePlaces} з ${acc.expectedPlaces} місць (отримано ${acc.receivedPlaces}). Менеджеру ${tr.manager ? `<strong>${tr.manager}</strong> ` : ''}надіслано сповіщення.`
+          : `<i class="fa-solid fa-check mr-1 text-emerald-600"></i>Недостачі не виявлено (${acc.expectedPlaces} місць)`}
+      </div>
+      ${acc.notes ? `<div class="text-[10px] text-slate-500 italic">Примітка логіста: ${acc.notes}</div>` : ''}
+    `;
+  }
 
   function setupSubvoyageStatusSelect() {
     if (!currentSubvoyageStatusSelect) return;
@@ -1173,6 +1680,9 @@ function initSubvoyagesPlannerModule() {
     if (etaInput && !etaInput.value) etaInput.value = in30Days;
 
     setCreateSvTransport('Морський');
+    const allModeRadio = document.querySelector('input[name="new-sv-cargo-mode"][value="all"]');
+    if (allModeRadio) allModeRadio.checked = true;
+    document.querySelectorAll('input[name="new-sv-key-marker"]').forEach(cb => { cb.checked = false; });
   };
 
   window.closeCreateSubvoyageModal = function () {
@@ -1249,6 +1759,8 @@ function initSubvoyagesPlannerModule() {
     const booking = document.getElementById('new-sv-booking')?.value.trim() || `BKG-${Math.floor(100000 + Math.random() * 900000)}`;
     const tracking = document.getElementById('new-sv-tracking')?.value.trim() || `TRK-${Math.floor(100000 + Math.random() * 900000)}`;
     const comment = document.getElementById('new-sv-comment')?.value.trim();
+    const cargoMode = document.querySelector('input[name="new-sv-cargo-mode"]:checked')?.value || 'all';
+    const keyMarkers = Array.from(document.querySelectorAll('input[name="new-sv-key-marker"]:checked')).map(el => el.value);
 
     if (!name) {
       alert('Будь ласка, введіть назву підрейсу!');
@@ -1277,11 +1789,13 @@ function initSubvoyagesPlannerModule() {
       actualDeparture: atd,
       actualArrival: ata,
       maxPlaces: 600,
-      maxWeight: 24.0,
+      maxWeight: 24000,
       maxVolume: 68.0,
       transport: currentModalTransport,
-      temperatureSupported: false,
-      adrPermitted: true,
+      cargoMode: cargoMode,
+      keyMarkers: keyMarkers,
+      temperatureSupported: keyMarkers.includes('temp_control'),
+      adrPermitted: keyMarkers.length === 0 || keyMarkers.includes('adr'),
       transportDetails: {
         shippingLine: carrier,
         carrier: carrier,
@@ -1305,6 +1819,7 @@ function initSubvoyagesPlannerModule() {
     selectedSubvoyageStatuses.add(newSubvoyage.status);
     closeCreateSubvoyageModal();
     activeSubvoyageId = newSubvoyage.id;
+    expandedSubvoyageIds.add(newSubvoyage.id);
     leftTableSubvoyageMode = 'pool';
     updateActiveSubvoyageState();
     renderAll();
@@ -1896,6 +2411,7 @@ function initSubvoyagesPlannerModule() {
   ];
 
   // Блок 4.2: Вичерпний список маркерів вантажу з урахуванням офіційного каталогу
+  // Тип перевезення винесено окремо (не в списку маркерів!)
   function getAllShipmentMarkers(tr) {
     if (!tr) return [];
     const markers = [];
@@ -1907,31 +2423,13 @@ function initSubvoyagesPlannerModule() {
       markers.push(item);
     };
 
-    // 1. Спосіб перевезення — завжди ПЕРШИМ у списку маркерів (вимога користувача)
-    if (tr.transport) {
-      const tIcon = getTransportIcon(tr.transport);
-      const shortLabels = {
-        'Морський': 'Море',
-        'Авіа': 'Авіа',
-        'Авто': 'Авто',
-        'Залізниця': 'Ж/Д'
-      };
-      const text = shortLabels[tr.transport] || tr.transport;
-      pushMarker({
-        key: 'transport_mode',
-        shortLabel: text,
-        label: text,
-        fullLabel: `Спосіб перевезення: ${tr.transport}`,
-        cls: `${tIcon.bg} ${tIcon.color} font-bold`,
-        icon: tIcon.icon
-      });
-    }
-
-    // 2. Прямі маркери з масиву tr.markers (якщо передано масив ID або назв з каталогу)
+    // 1. Прямі маркери з масиву tr.markers (виключаючи загальні маркери виду транспорту sea_freight/air_freight/rail_freight, оскільки тип перевезення відображається окремо)
+    const transportModeCatalogIds = new Set(['sea_freight', 'air_freight', 'rail_freight']);
     if (Array.isArray(tr.markers)) {
       tr.markers.forEach(mKey => {
+        if (transportModeCatalogIds.has(mKey)) return;
         const found = CARGO_MARKERS_CATALOG.find(c => c.id === mKey || c.name.toLowerCase() === String(mKey).toLowerCase() || c.shortLabel.toLowerCase() === String(mKey).toLowerCase());
-        if (found) {
+        if (found && !transportModeCatalogIds.has(found.id)) {
           pushMarker({
             key: found.id,
             shortLabel: found.shortLabel,
@@ -1944,7 +2442,7 @@ function initSubvoyagesPlannerModule() {
       });
     }
 
-    // 3. Логічний мапінг наявних полів перевезення на каталог маркерів
+    // 2. Логічний мапінг наявних полів перевезення на каталог маркерів
     const mapToCatalog = (catalogId) => {
       const found = CARGO_MARKERS_CATALOG.find(c => c.id === catalogId);
       if (found) {
@@ -1979,6 +2477,127 @@ function initSubvoyagesPlannerModule() {
 
     return markers;
   }
+
+  // Розподіл маркерів на 3 логічні категорії:
+  // 1) docs — Документи / Експорт
+  // 2) loading — Складська робота / Завантаження
+  // 3) special — Додаткові особливості: ADR, крихке, кріплення
+  function getMarkerGroup(markerKey) {
+    if (markerKey === 'pkg_straps') return 'special';
+    const catItem = CARGO_MARKERS_CATALOG.find(c => c.id === markerKey);
+    const cat = catItem ? catItem.category : '';
+    if (cat === 'Митний статус та документи' || cat === 'Географія, дозволи та допуски') return 'docs';
+    if (cat === 'Завантаження та формат відправки' || cat === 'Спосіб пакування та кріплення' || cat === 'Вид транспорту та рухомий склад') return 'loading';
+    return 'special';
+  }
+
+  function renderMarkerListBadges(markers, emptyText = '—') {
+    if (!markers || markers.length === 0) {
+      return `<span class="text-[10px] text-slate-300 italic">${emptyText}</span>`;
+    }
+    const fullTooltip = markers.map(m => `• ${m.fullLabel}`).join('\n');
+    const html = markers.map(m => {
+      const isFaIcon = typeof m.icon === 'string' && m.icon.startsWith('fa-');
+      const text = m.shortLabel || m.label.replace(m.icon, '').trim();
+      return `
+        <span class="${m.cls} border px-1.5 py-0.5 rounded text-[10px] font-bold inline-flex items-center gap-1 shadow-2xs whitespace-nowrap leading-none select-none hover:brightness-95 transition"
+              title="${m.fullLabel}">
+          ${isFaIcon ? `<i class="${m.icon} text-[9px]"></i>` : `<span class="text-[10px]">${m.icon}</span>`}
+          <span class="tracking-tight">${text}</span>
+        </span>
+      `;
+    }).join('');
+    return `<div class="flex flex-wrap items-center gap-1 max-w-full" title="${fullTooltip}">${html}</div>`;
+  }
+
+  function getShipmentMarkerGroups(tr) {
+    const all = getAllShipmentMarkers(tr);
+    return {
+      docs: all.filter(m => getMarkerGroup(m.key) === 'docs'),
+      loading: all.filter(m => getMarkerGroup(m.key) === 'loading'),
+      special: all.filter(m => getMarkerGroup(m.key) === 'special')
+    };
+  }
+
+  // Спосіб перевезення: тільки іконка без бейджа та тексту (п.1)
+  function renderCompactTransportTypeBadge(tr) {
+    if (!tr || !tr.transport || isUnmarkedCargo(tr)) return '';
+    const tIcon = getTransportIcon(tr.transport);
+    return `<i class="${tIcon.icon} ${tIcon.color} text-[11px] shrink-0" title="Спосіб перевезення: ${tr.transport}${tr.loadingType ? ' (' + tr.loadingType + ')' : ''}"></i>`;
+  }
+
+  // Завдання в таблицях не відображаються — залишаються тільки в самих сутностях (п.2)
+  function renderEntityTasksTableBadge(tr) {
+    return '';
+  }
+
+  window.openContextDrawerToTasks = function (shipmentId, event) {
+    if (event) event.stopPropagation();
+    window.openContextDrawer(shipmentId);
+    setTimeout(() => {
+      const tasksSec = document.getElementById('drawer-entity-tasks-section');
+      if (tasksSec) {
+        tasksSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        tasksSec.classList.add('ring-2', 'ring-amber-400');
+        setTimeout(() => tasksSec.classList.remove('ring-2', 'ring-amber-400'), 1600);
+      }
+    }, 150);
+  };
+
+  // Значок активних завдань для Підрейсу (якщо хоча б в одному перевезенні є активна задача)
+  function getSubvoyageActiveTasksInfo(svId) {
+    const assigned = transportsData.filter(t => t.subvoyageId === svId);
+    let activeTasksCount = 0;
+    const taskDetails = [];
+
+    assigned.forEach(tr => {
+      if (Array.isArray(tr.tasks)) {
+        tr.tasks.forEach(task => {
+          const isActive = task && task.status !== 'Виконано' && task.status !== 'Завершено' && task.status !== 'done';
+          if (isActive) {
+            activeTasksCount++;
+            taskDetails.push({
+              shipmentId: tr.dfShipment || tr.id,
+              title: task.title,
+              assignee: task.assignee || tr.logist || 'Логіст',
+              dueDate: task.dueDate || ''
+            });
+          }
+        });
+      }
+    });
+
+    return {
+      hasActiveTasks: activeTasksCount > 0,
+      count: activeTasksCount,
+      tasks: taskDetails
+    };
+  }
+
+  function renderSubvoyageTasksBadge(sv) {
+    if (!sv || !sv.id) return '';
+    const info = getSubvoyageActiveTasksInfo(sv.id);
+    if (!info.hasActiveTasks) return '';
+
+    const lines = info.tasks.map(t => `• [${t.shipmentId}] ${t.title}${t.assignee ? ' (' + t.assignee + ')' : ''}${t.dueDate ? ' — до ' + t.dueDate : ''}`).join('\n');
+    const titleText = `Підрейс містить активні завдання (${info.count}):\n${lines}\n\nНатисніть, щоб розгорнути перевезення підрейсу.`;
+
+    return `
+      <button type="button" onclick="window.openSubvoyageTasksView('${sv.id}', event)"
+        class="px-1.5 py-0.2 rounded-md bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 font-bold text-[9px] inline-flex items-center gap-1 shadow-2xs transition cursor-pointer"
+        title="${titleText}">
+        <i class="fa-solid fa-list-check text-amber-600 text-[8px]"></i>
+        <span>Завдання: ${info.count}</span>
+      </button>
+    `;
+  }
+
+  window.openSubvoyageTasksView = function (svId, event) {
+    if (event) event.stopPropagation();
+    expandedSubvoyageIds.add(svId);
+    selectActiveSubvoyage(svId);
+    renderSubvoyagesTimeline();
+  };
 
   function renderShipmentPropertyBadges(tr) {
     const markers = getAllShipmentMarkers(tr);
@@ -2105,7 +2724,9 @@ function initSubvoyagesPlannerModule() {
                     <th class="p-1.5">DF номер</th>
                     <th class="p-1.5">Дата готовності</th>
                     <th class="p-1.5">Габарити</th>
-                    <th class="p-1.5">Маркери</th>
+                    <th class="p-1.5">Документи / Експорт</th>
+                    <th class="p-1.5">Склад / Завантаження</th>
+                    <th class="p-1.5">Особливості</th>
                     <th class="p-1.5 text-center">Підрейс</th>
                     <th class="p-1.5 text-right">Інфо</th>
                   </tr>
@@ -2113,36 +2734,38 @@ function initSubvoyagesPlannerModule() {
                 <tbody class="divide-y divide-slate-100">
                   ${assignedList.map(tr => {
         const isNonReady = tr.readinessCategory && tr.readinessCategory !== 'ready';
+        const mGroups = getShipmentMarkerGroups(tr);
         return `
-                      <tr class="hover:bg-slate-50 transition ${isNonReady ? 'bg-amber-50/30' : ''}" onclick="openContextDrawer('${tr.id}')">
+                      <tr class="hover:bg-slate-50 transition ${isNonReady ? 'bg-rose-50/40' : ''}" onclick="openContextDrawer('${tr.id}')">
                         <td class="p-1.5">
-                          <div class="flex items-center gap-1.5 flex-wrap">
+                          <div class="flex items-center gap-1 flex-wrap">
                             ${isUnmarkedCargo(tr) ? `<span class="px-1 py-0.2 rounded text-[9px] font-bold bg-slate-800 text-white" title="Це вантаж, а не перевезення">📦 Вантаж</span>` : ''}
                             <span class="font-mono font-bold text-brand-700 text-[10px]">${tr.dfShipment || tr.id}</span>
-                            ${renderReadinessMicroBadge(tr)}
+                            ${renderCompactTransportTypeBadge(tr)}
+                            ${renderBlockingDepartureBadge(tr)}
+                            ${renderAcceptanceBadges(tr)}
                           </div>
                         </td>
                         <td class="p-1.5 font-mono text-[10px] text-slate-700 whitespace-nowrap">
                           ${tr.dateReady || '—'}
                         </td>
                         <td class="p-1.5 font-mono text-[10px] text-slate-800 whitespace-nowrap">
-                          <div><strong>${tr.volume}</strong> м³ | <strong>${tr.weight}</strong> т | ${tr.places} шт</div>
+                          <div><strong>${tr.volume}</strong> м³ | <strong>${tr.weight}</strong> кг | ${tr.places} шт</div>
                           <div class="text-[9px] ${tr.readinessCategory === 'planned' ? 'text-purple-700 font-bold' : 'text-emerald-700'}">
                             ${tr.readinessCategory === 'planned' ? 'Планові куби' : 'Фактичні куби'}
                           </div>
                         </td>
                         <td class="p-1.5">
-                          ${renderShipmentPropertyBadges(tr)}
+                          ${renderMarkerListBadges(mGroups.docs)}
+                        </td>
+                        <td class="p-1.5">
+                          ${renderMarkerListBadges(mGroups.loading)}
+                        </td>
+                        <td class="p-1.5">
+                          ${renderMarkerListBadges(mGroups.special)}
                         </td>
                         <td class="p-1.5 text-center whitespace-nowrap" onclick="event.stopPropagation()">
                           <div class="inline-flex items-center gap-1">
-                            ${(tr.readinessCategory === 'planned' || tr.readinessCategory === 'not_ready' || isUnmarkedCargo(tr)) ? '' : (isNonReady ? `
-                              <button type="button" onclick="window.convertShipmentToReady('${tr.id}', event)"
-                                class="px-1.5 py-0.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-300 rounded text-[9px] font-bold transition cursor-pointer"
-                                title="Промаркувати / підтвердити готовність на складі">
-                                ✓ Готовий
-                              </button>
-                            ` : '')}
                             <button type="button" onclick="detachShipmentFromSubvoyage('${tr.id}')"
                               class="px-1.5 py-0.5 bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 rounded text-[9px] font-bold transition cursor-pointer"
                               title="Відкріпити з підрейсу назад у пул (мінус)">
@@ -2222,11 +2845,13 @@ function initSubvoyagesPlannerModule() {
           <!-- Рядок 2: Спосіб перевезення, Маршрут підрейсу, Спец. маркери, Дата відправлення -->
           <div class="flex items-center justify-between gap-1.5 flex-wrap text-[10px]">
             <div class="flex items-center gap-1.5 flex-wrap">
-              ${renderTransportBadge(sv.transport, 'bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded text-[9px] font-bold')}
+              <span class="inline-flex items-center text-xs mr-0.5" title="Спосіб перевезення: ${sv.transport || '—'}"><i class="${getTransportIcon(sv.transport).icon} ${getTransportIcon(sv.transport).color}"></i></span>
               <span class="inline-flex items-center gap-1 bg-sky-50 text-sky-900 border border-sky-200 px-2 py-0.5 rounded-md font-bold text-[10px]" title="Маршрут підрейсу: ${sv.originCountry} ➔ ${sv.destinationCountry}">
                 <i class="fa-solid fa-arrows-left-right text-sky-600"></i>
                 <span>${sv.originCountry || 'Китай'} ➔ ${sv.destinationCountry || 'Польща'}</span>
               </span>
+              ${sv.cargoMode && sv.cargoMode !== 'all' ? `<span class="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-200 font-bold text-[10px]">${sv.cargoMode}</span>` : ''}
+              ${Array.isArray(sv.keyMarkers) && sv.keyMarkers.length > 0 ? sv.keyMarkers.map(k => `<span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200 font-bold text-[10px]">${SUBVOYAGE_KEY_MARKER_LABELS[k] || k}</span>`).join('') : ''}
               ${specialAttributesHtml}
             </div>
             <span class="bg-brand-50 text-brand-900 border border-brand-200 px-2 py-0.5 rounded font-mono font-bold text-[10px] inline-flex items-center gap-1">
@@ -2244,7 +2869,7 @@ function initSubvoyagesPlannerModule() {
                 <span class="text-purple-700 font-bold" title="Планові куби (обіцянки клієнтів)">План: ${cap.plannedVol.toFixed(1)} м³</span>
                 <span class="text-slate-400">/ ${sv.maxVolume} м³ ${deltaVolText}</span>
                 <span class="text-slate-300">•</span>
-                <span title="Вага"><strong>${cap.weight.toFixed(1)}</strong>/${sv.maxWeight} т</span>
+                <span title="Вага"><strong>${Math.round(cap.weight)}</strong>/${sv.maxWeight} кг</span>
                 <span class="text-slate-300">•</span>
                 <span title="Кількість вантажних місць"><strong>${cap.places}</strong>${sv.maxPlaces ? `/${sv.maxPlaces}` : ''} місць${cap.deltaPlaces > 0 ? ` <span class="text-brand-600 font-bold">(+${cap.deltaPlaces})</span>` : ''}</span>
               </div>
@@ -2275,6 +2900,7 @@ function initSubvoyagesPlannerModule() {
       activeSubvoyageId = null;
     } else {
       activeSubvoyageId = svId;
+      expandedSubvoyageIds.add(svId);
       leftTableSubvoyageMode = 'pool';
     }
     shipmentsCurrentPage = 1;
@@ -2332,24 +2958,31 @@ function initSubvoyagesPlannerModule() {
     return st === tg || st.includes(tg) || tg.includes(st);
   }
 
-  // Кейс 2.4: Логіка рекомендацій перевезень під вибраний підрейс (Матчинг маршрутів)
-  // Підбір працює ВИКЛЮЧНО за двома параметрами: 1) тип доставки та 2) місце доставки (маршрут, включаючи мультимодальні плечі)
-  function isShipmentCompatibleWithSubvoyage(tr, sv) {
-    if (!tr || !sv) return false;
+  const SUBVOYAGE_KEY_MARKER_LABELS = {
+    adr: '☣️ ADR (Небезпечний)',
+    batt_li: '🔋 Батареї (Li-ion / АКБ)',
+    close_exporter_docs: '📑 Закриття експорту',
+    fragile: '🍷 Крихке',
+    temp_control: '❄️ Температурний режим',
+    oversized: '🚜 Негабарит'
+  };
 
-    // Вже розподілені у підрейс перевезення не є вільними кандидатами пулу
-    if (tr.subvoyageId !== null) return false;
+  function shipmentHasKeyMarker(tr, key) {
+    if (!tr) return false;
+    const markers = getAllShipmentMarkers(tr);
+    const ids = new Set(markers.map(m => m.key));
+    if (key === 'batt_li') return ids.has('batt_li') || ids.has('batt_lead') || ids.has('batt_waste');
+    if (key === 'temp_control') {
+      return ids.has('temp_deep_freeze') || ids.has('temp_fresh') || ids.has('temp_plus') || ids.has('temp_multi') || ids.has('truck_reefer');
+    }
+    return ids.has(key);
+  }
 
-    // 1. Параметр №1: Тип доставки (Морський / Авіа / Авто / Залізниця)
-    if (sv.transport && tr.transport !== sv.transport) return false;
-
-    // 2. Параметр №2: Місце доставки / Маршрут (включаючи обробку складних мультимодальних маршрутів)
+  function isRouteCompatibleWithSubvoyage(tr, sv) {
     const svOrigin = (sv.originCountry || '').trim().toLowerCase();
     const svDest = (sv.destinationCountry || '').trim().toLowerCase();
     const trNodes = extractRouteNodes(tr);
 
-    // Перевіряємо, чи покриває підрейс (svOrigin -> svDest) плече або частину загального маршруту перевезення
-    // Наприклад, підрейс Китай -> Польща має рекомендувати перевезення з маршрутом Китай -> Польща -> Київ/Україна
     let routeMatches = false;
     if (svOrigin && svDest && trNodes.length >= 2) {
       const originIdx = trNodes.findIndex(n => isNodeMatchingStage(n, svOrigin));
@@ -2359,7 +2992,6 @@ function initSubvoyagesPlannerModule() {
       }
     }
 
-    // Якщо прямий або мультимодальний ланцюжок країн/етапів співпав, також перевіряємо хаб (якщо кінцева країна підрейсу збігається з кінцевою країною перевезення)
     if (!routeMatches) {
       const trDest = (tr.destinationCountry || '').trim().toLowerCase();
       if (svDest && trDest && isNodeMatchingStage(trDest, svDest)) {
@@ -2368,15 +3000,94 @@ function initSubvoyagesPlannerModule() {
         }
       }
     } else {
-      // Якщо це прямий рейс у країну фінального призначення (напр. Китай -> Україна) і вказані конкретні українські хаби, враховуємо хаб доставки
       const trDest = (tr.destinationCountry || '').trim().toLowerCase();
       const isFinalLegToSameCountry = svDest && trDest && isNodeMatchingStage(trDest, svDest) && trNodes.length <= 2;
       if (isFinalLegToSameCountry && sv.hub && tr.hub && sv.hub !== tr.hub) {
         routeMatches = false;
       }
     }
-
     return routeMatches;
+  }
+
+  // Порівняння базових параметрів підрейсу (напрямок, спосіб, тип карго/не карго, ключові маркери) з перевезенням
+  function getSubvoyageShipmentConflicts(tr, sv) {
+    const conflicts = [];
+    if (!tr || !sv) return conflicts;
+
+    // 1. Спосіб перевезення (Море / Авіа / Авто)
+    if (sv.transport && tr.transport && tr.transport !== sv.transport) {
+      conflicts.push({
+        key: 'transport',
+        paramLabel: 'Спосіб перевезення',
+        svValue: sv.transport,
+        trValue: tr.transport
+      });
+    }
+
+    // 2. Напрямок / Маршрут
+    if (!isRouteCompatibleWithSubvoyage(tr, sv)) {
+      conflicts.push({
+        key: 'route',
+        paramLabel: 'Напрямок маршруту',
+        svValue: `${sv.originCountry || '—'} ➔ ${sv.destinationCountry || '—'}`,
+        trValue: tr.transitSegment || `${tr.originCountry || '—'} ➔ ${tr.destinationCountry || '—'}`
+      });
+    }
+
+    // 3. Тип перевезення (Карго / Не карго)
+    if (sv.cargoMode && sv.cargoMode !== 'all') {
+      const isCargoTr = tr.cargoType === 'Карго';
+      const wantsCargo = sv.cargoMode === 'Карго';
+      if (wantsCargo !== isCargoTr) {
+        conflicts.push({
+          key: 'cargoMode',
+          paramLabel: 'Тип (Карго / Не карго)',
+          svValue: sv.cargoMode,
+          trValue: tr.cargoType || 'Не вказано'
+        });
+      }
+    }
+
+    // 4. Ключові маркери, задані на підрейсі
+    if (Array.isArray(sv.keyMarkers) && sv.keyMarkers.length > 0) {
+      sv.keyMarkers.forEach(mKey => {
+        if (!shipmentHasKeyMarker(tr, mKey)) {
+          const label = SUBVOYAGE_KEY_MARKER_LABELS[mKey] || mKey;
+          conflicts.push({
+            key: `marker_${mKey}`,
+            paramLabel: `Маркер підрейсу: ${label}`,
+            svValue: `Потрібен ${label}`,
+            trValue: 'Відсутній у перевезенні'
+          });
+        }
+      });
+    }
+
+    // 5. Обмеження ADR / Температурного режиму на існуючих підрейсах
+    if (sv.adrPermitted === false && shipmentHasKeyMarker(tr, 'adr')) {
+      conflicts.push({
+        key: 'adr_not_permitted',
+        paramLabel: 'Допуск ADR',
+        svValue: 'ADR заборонено',
+        trValue: 'Небезпечний вантаж (ADR)'
+      });
+    }
+    if (sv.temperatureSupported === false && shipmentHasKeyMarker(tr, 'temp_control')) {
+      conflicts.push({
+        key: 'temp_not_supported',
+        paramLabel: 'Температурний режим',
+        svValue: 'Без рефрижератора',
+        trValue: 'Потребує температурного режиму'
+      });
+    }
+
+    return conflicts;
+  }
+
+  function isShipmentCompatibleWithSubvoyage(tr, sv) {
+    if (!tr || !sv) return false;
+    if (tr.subvoyageId !== null) return false;
+    return getSubvoyageShipmentConflicts(tr, sv).length === 0;
   }
 
   function getShipmentWorkPriority(tr, currentSv) {
@@ -2421,8 +3132,8 @@ function initSubvoyagesPlannerModule() {
       if (filters.quickFilter === 'planned' && cat !== 'planned') return false;
       if (filters.quickFilter === 'unmarked' && cat !== 'unmarked') return false;
 
-      // Блок 4.1: Швидкий перемикач за типом доставки (Море / Авіа / Авто)
-      if (filters.deliveryMode && filters.deliveryMode !== 'all' && t.transport !== filters.deliveryMode) {
+      // Блок 4.1: Швидкий перемикач за типом доставки (Море / Авіа / Авто) — для непромаркованих вантажів тип перевезення ще невідомий
+      if (filters.deliveryMode && filters.deliveryMode !== 'all' && !isUnmarkedCargo(t) && t.transport !== filters.deliveryMode) {
         return false;
       }
 
@@ -2542,16 +3253,16 @@ function initSubvoyagesPlannerModule() {
         diffVol: 0,
         diffWeight: 0,
         diffPlaces: 0,
-        badgeHtml: `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border ${isTight ? 'bg-amber-50 text-amber-800 border-amber-300' : 'bg-emerald-50 text-emerald-800 border-emerald-200'}" title="Влазить у вільний залишок ${sv.id}. Залишиться після додавання: ${afterVolRem.toFixed(1)} м³ | ${afterWeightRem.toFixed(1)} т | ${afterPlacesRem} місць">
-          <i class="fa-solid fa-check text-[8px]"></i> Влазить (зал: ${remVol.toFixed(1)} м³ · ${remWeight.toFixed(1)} т)
+        badgeHtml: `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border ${isTight ? 'bg-amber-50 text-amber-800 border-amber-300' : 'bg-emerald-50 text-emerald-800 border-emerald-200'}" title="Влазить у вільний залишок ${sv.id}. Залишиться після додавання: ${afterVolRem.toFixed(1)} м³ | ${Math.round(afterWeightRem)} кг | ${afterPlacesRem} місць">
+          <i class="fa-solid fa-check text-[8px]"></i> Влазить (зал: ${remVol.toFixed(1)} м³ · ${Math.round(remWeight)} кг)
         </span>`,
-        tooltip: `Влазить у залишок місця ${sv.id} (вільно: ${remVol.toFixed(1)} м³ / ${remWeight.toFixed(1)} т / ${remPlaces} місць)`
+        tooltip: `Влазить у залишок місця ${sv.id} (вільно: ${remVol.toFixed(1)} м³ / ${Math.round(remWeight)} кг / ${remPlaces} місць)`
       };
     }
 
     const overParts = [];
     if (overVol) overParts.push(`+${diffVol.toFixed(1)} м³`);
-    if (overWeight) overParts.push(`+${diffWeight.toFixed(1)} т`);
+    if (overWeight) overParts.push(`+${Math.round(diffWeight)} кг`);
     if (overPlaces) overParts.push(`+${diffPlaces} шт`);
 
     return {
@@ -2567,10 +3278,10 @@ function initSubvoyagesPlannerModule() {
       afterWeightRem,
       afterPlacesRem,
       overText: overParts.join(', '),
-      badgeHtml: `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-300" title="Перевищує вільний залишок підрейсу ${sv.id}! Доступно: ${remVol.toFixed(1)} м³ | ${remWeight.toFixed(1)} т | ${remPlaces} місць">
+      badgeHtml: `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-300" title="Перевищує вільний залишок підрейсу ${sv.id}! Доступно: ${remVol.toFixed(1)} м³ | ${Math.round(remWeight)} кг | ${remPlaces} місць">
         <i class="fa-solid fa-triangle-exclamation text-[8px]"></i> Не влазить (${overParts.join(', ')})
       </span>`,
-      tooltip: `УВАГА: Перевищує залишок місця у ${sv.id} (${overParts.join(', ')}). Вільно лише: ${remVol.toFixed(1)} м³ / ${remWeight.toFixed(1)} т / ${remPlaces} місць`
+      tooltip: `УВАГА: Перевищує залишок місця у ${sv.id} (${overParts.join(', ')}). Вільно лише: ${remVol.toFixed(1)} м³ / ${Math.round(remWeight)} кг / ${remPlaces} місць`
     };
   }
 
@@ -2665,7 +3376,7 @@ function initSubvoyagesPlannerModule() {
       ? (sortDirection === 'asc' ? 'fa-sort-up text-brand-600' : 'fa-sort-down text-brand-600')
       : 'fa-sort text-slate-300 group-hover:text-slate-400';
 
-    const colTitle = `Габарити ${currentSv ? '& Залишок' : '(м³ / т / шт)'}`;
+    const colTitle = `Габарити ${currentSv ? '& Залишок' : '(м³ / кг / шт)'}`;
 
     return `
       <th class="p-2 cursor-pointer hover:text-brand-700 transition select-none group" onclick="toggleDimensionsSort()" title="Сортування за габаритами (об'єм, вага)">
@@ -2756,15 +3467,17 @@ function initSubvoyagesPlannerModule() {
             <i class="fa-regular fa-calendar text-slate-400 mr-1"></i>${c.receiveDate || c.dateReady || '—'}
           </td>
           <td class="p-2 font-mono text-[11px] text-slate-700 whitespace-nowrap">
-            <div><strong>${c.volume}</strong> м³ <span class="text-slate-300">|</span> <strong>${c.weight}</strong> т <span class="text-slate-300">|</span> <span class="text-slate-500">${c.places} шт</span></div>
+            <div><strong>${c.volume}</strong> м³ <span class="text-slate-300">|</span> <strong>${c.weight}</strong> кг <span class="text-slate-300">|</span> <span class="text-slate-500">${c.places} шт</span></div>
             ${fitInfo ? `<div class="mt-0.5 font-sans">${fitInfo.badgeHtml}</div>` : ''}
           </td>
           <td class="p-2">${renderCargoMarkerBadges(c)}</td>
           <td class="p-2 text-center whitespace-nowrap" onclick="event.stopPropagation()">${assignHtml}</td>
           <td class="p-2 text-right whitespace-nowrap" onclick="event.stopPropagation()">
-            <button onclick="openCargoInfoModal('${c.id}')" class="px-2 py-1 text-slate-600 hover:text-brand-700 rounded-lg border border-slate-200 hover:bg-slate-100 text-[10px] font-semibold inline-flex items-center gap-1 cursor-pointer" title="Інформація про вантаж">
-              <i class="fa-solid fa-circle-info text-brand-600"></i><span>Інфо</span>
-            </button>
+            <div class="inline-flex items-center gap-1">
+              <button onclick="openCargoInfoModal('${c.id}')" class="px-2 py-1 text-slate-600 hover:text-brand-700 rounded-lg border border-slate-200 hover:bg-slate-100 text-[10px] font-semibold inline-flex items-center gap-1 cursor-pointer" title="Інформація про вантаж">
+                <i class="fa-solid fa-circle-info text-brand-600"></i><span>Інфо</span>
+              </button>
+            </div>
           </td>
         </tr>
       `;
@@ -2817,11 +3530,12 @@ function initSubvoyagesPlannerModule() {
     host.classList.add('flex');
   }
 
-  // Картка ВАНТАЖУ (не перевезення): номер, трек, габарити, пакування, склад, маркери
+  // Картка ВАНТАЖУ (не перевезення): номер, трек, габарити, пакування, склад, маркери, історія переміщень, редагування
   function openCargoInfoModal(cargoId) {
     const c = transportsData.find(t => t.id === cargoId);
     if (!c) return;
     const sv = c.subvoyageId ? subVoyagesData.find(s => s.id === c.subvoyageId) : null;
+    const historyList = Array.isArray(c.movementHistory) ? c.movementHistory : [];
     const row = (label, value) => `
       <div class="p-2 bg-slate-50 rounded-lg border border-slate-200">
         <div class="text-[10px] uppercase text-slate-500 font-bold">${label}</div>
@@ -2829,121 +3543,87 @@ function initSubvoyagesPlannerModule() {
       </div>`;
 
     showCargoModal(`
-      <div class="p-4 border-b border-slate-200 flex items-start justify-between gap-3">
+      <div class="p-4 border-b border-slate-200 flex items-start justify-between gap-3 bg-slate-900 text-white rounded-t-2xl">
         <div>
           <div class="flex items-center gap-2 flex-wrap">
-            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-white">📦 Вантаж</span>
-            <span class="font-mono font-extrabold text-brand-700">${c.cargoNumber || c.id}</span>
-            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-900 border border-rose-300">Отримано непромаркованим</span>
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-brand-600 text-white">📦 Картка вантажу (Ерайв)</span>
+            <span class="font-mono font-extrabold text-brand-300 text-sm">${c.cargoNumber || c.id}</span>
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-200 border border-rose-400/30">${c.status || 'Непромаркований'}</span>
           </div>
-          <div class="text-[11px] text-slate-500 mt-1">Вантаж без маркування DF. Не є перевезенням — після прорахунку менеджером конвертується в обіцянку.</div>
+          <div class="text-[11px] text-slate-400 mt-1">Спеціалізована картка вантажу: фізичні параметри, складська локація та історія переміщень між складами.</div>
         </div>
-        <button onclick="closeCargoModal()" class="text-slate-400 hover:text-slate-700 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+        <button onclick="closeCargoModal()" class="text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
       </div>
-      <div class="p-4 space-y-3">
+      <div class="p-4 space-y-3 text-xs">
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          ${row('Номер вантажу', `<span class="font-mono">${c.cargoNumber || c.id}</span>`)}
+          ${row('Номер вантажу (DF)', `<span class="font-mono">${c.cargoNumber || c.id}</span>`)}
           ${row('Трек-номер', `<span class="font-mono">${c.trackNumber || '—'}</span>`)}
           ${row('Дата отримання', c.receiveDate || c.dateReady)}
-          ${row('Склад', c.hub)}
+          ${row('Склад', c.hub || c.warehouse)}
           ${row('Локація на складі', c.warehouseLocation)}
           ${row('Підрейс', sv ? `${sv.name} (${sv.id})` : 'Не призначено')}
         </div>
-        <div class="text-[11px] font-bold text-slate-700 uppercase">Фізичні показники</div>
+        <div class="text-[11px] font-bold text-slate-700 uppercase">Фізичні показники та пакування</div>
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
           ${row('Габарити місця (Д×Ш×В)', formatCargoDimensions(c))}
           ${row('Тип пакування', c.packagingType)}
           ${row('Кількість місць', `${c.places} шт`)}
-          ${row('Вага брутто', `${c.weight} т`)}
+          ${row('Вага брутто', `${c.weight} кг`)}
           ${row("Об'єм", `${c.volume} м³`)}
           ${row('Негабарит', c.isOversized ? 'Так' : 'Ні')}
         </div>
-        ${row('Опис вмісту', c.contentDescription)}
+        ${row('Опис вмісту / Товар', c.contentDescription || c.titleUa)}
+        ${c.logistNote ? row('Примітка логіста', c.logistNote) : ''}
         <div>
           <div class="text-[11px] font-bold text-slate-700 uppercase mb-1">Маркери вантажу</div>
           ${renderCargoMarkerBadges(c)}
         </div>
+
+        <!-- Короткий блок історії переміщень між складами прямо в картці -->
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="text-[11px] font-bold text-slate-800 uppercase flex items-center gap-1.5">
+              <i class="fa-solid fa-route text-brand-600"></i>
+              <span>Історія переміщень між складами (${historyList.length})</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button type="button" onclick="window.openCargoMovementHistoryModal && window.openCargoMovementHistoryModal('${c.id}', null, event)"
+                class="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-[10px] font-bold inline-flex items-center gap-1 cursor-pointer">
+                <i class="fa-solid fa-route text-sky-600"></i> Історія переміщень між складами
+              </button>
+            </div>
+          </div>
+          <div class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+            ${historyList.map((st, idx) => `
+              <div class="bg-white p-2 rounded-lg border border-slate-200 flex items-start justify-between gap-2 text-[11px]">
+                <div class="flex items-start gap-2">
+                  <span class="w-5 h-5 rounded-full bg-brand-100 text-brand-800 font-mono font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">${idx + 1}</span>
+                  <div>
+                    <div class="font-bold text-slate-800">${st.warehouse} <span class="text-slate-400 font-normal">• ${st.location || 'Термінал'}</span></div>
+                    <div class="text-[10px] text-slate-600">${st.operation}</div>
+                  </div>
+                </div>
+                <div class="text-right shrink-0">
+                  <span class="px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 text-[9px] font-bold block">${st.status}</span>
+                  <span class="text-[9px] font-mono text-slate-400">${st.date}</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
       </div>
-      <div class="p-4 border-t border-slate-200 flex justify-end gap-2">
-        <button onclick="closeCargoModal()" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold cursor-pointer hover:bg-slate-50">Закрити</button>
+      <div class="p-4 border-t border-slate-200 bg-slate-50 rounded-b-2xl flex flex-wrap justify-between items-center gap-2">
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="window.openEditCargoModal && window.openEditCargoModal('${c.id}', null, event)"
+            class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-2xs">
+            <i class="fa-regular fa-pen-to-square"></i> Редагувати вантаж
+          </button>
+        </div>
+        <button onclick="closeCargoModal()" class="px-3.5 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold cursor-pointer hover:bg-slate-100">Закрити</button>
       </div>
     `);
   }
   window.openCargoInfoModal = openCargoInfoModal;
-
-  // Форма конвертації: менеджер вказує клієнта та номер прорахованої обіцянки
-  window.openConvertCargoToPromise = function (cargoId, event) {
-    if (event) event.stopPropagation();
-    const c = transportsData.find(t => t.id === cargoId);
-    if (!c || !isUnmarkedCargo(c)) return;
-    const suggested = `PRM-${(c.cargoNumber || c.id).replace(/\D/g, '') || Date.now().toString().slice(-4)}`;
-
-    showCargoModal(`
-      <div class="p-4 border-b border-slate-200 flex items-center justify-between">
-        <div class="font-bold text-sm text-slate-900">Конвертація вантажу <span class="font-mono text-brand-700">${c.cargoNumber || c.id}</span> в обіцянку</div>
-        <button onclick="closeCargoModal()" class="text-slate-400 hover:text-slate-700 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <div class="p-4 space-y-3 text-xs">
-        <div class="p-2 rounded-lg bg-violet-50 border border-violet-200 text-violet-900">
-          Менеджер створив і прорахував обіцянку та поклав у неї цей вантаж. Після конвертації позиція стане <strong>Обіцянкою</strong> (Планові куби)${c.subvoyageId ? ` і залишиться в підрейсі <strong>${c.subvoyageId}</strong>` : ''}.
-        </div>
-        <label class="block">
-          <span class="font-bold text-slate-700">Номер обіцянки (DF)</span>
-          <input id="cargo-promise-number" value="${suggested}" class="mt-1 w-full border border-slate-300 rounded-lg px-2 py-1.5 font-mono">
-        </label>
-        <label class="block">
-          <span class="font-bold text-slate-700">Клієнт</span>
-          <input id="cargo-promise-client" placeholder="Назва клієнта" class="mt-1 w-full border border-slate-300 rounded-lg px-2 py-1.5">
-        </label>
-        <label class="block">
-          <span class="font-bold text-slate-700">Менеджер</span>
-          <input id="cargo-promise-manager" placeholder="ПІБ менеджера" class="mt-1 w-full border border-slate-300 rounded-lg px-2 py-1.5">
-        </label>
-      </div>
-      <div class="p-4 border-t border-slate-200 flex justify-end gap-2">
-        <button onclick="closeCargoModal()" class="px-3 py-1.5 rounded-lg border border-slate-200 font-semibold text-xs cursor-pointer hover:bg-slate-50">Скасувати</button>
-        <button id="cargo-promise-confirm" class="px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs cursor-pointer">Конвертувати</button>
-      </div>
-    `);
-
-    document.getElementById('cargo-promise-confirm').onclick = () => {
-      const promiseNumber = document.getElementById('cargo-promise-number').value.trim();
-      const client = document.getElementById('cargo-promise-client').value.trim();
-      const manager = document.getElementById('cargo-promise-manager').value.trim();
-      if (!promiseNumber || !client) {
-        showToast('Вкажіть номер обіцянки та клієнта', true);
-        return;
-      }
-      convertCargoToPromise(c, { promiseNumber, client, manager });
-      closeCargoModal();
-      syncSubvoyageAndShipmentsStatuses();
-      renderAll();
-      showToast(`Вантаж ${c.cargoNumber} конвертовано в обіцянку ${promiseNumber}`);
-    };
-  };
-
-  function convertCargoToPromise(c, { promiseNumber, client, manager } = {}) {
-    const number = promiseNumber || `PRM-${(c.cargoNumber || c.id).replace(/\D/g, '')}`;
-    c.entityType = 'promise';
-    c.readinessCategory = 'planned';
-    c.status = 'Плановий (обіцянка)';
-    c.dfPromise = number;
-    c.dfShipment = number;
-    c.client = client || c.client;
-    if (manager) c.manager = manager;
-    c.sourceCargoNumber = c.cargoNumber; // зв'язок з вихідним вантажем
-    c.cargoType = c.cargoType || 'Карго';
-    c.customsClearance = 'Брокер компанії';
-    c.cargoes = [{
-      cargoId: c.cargoNumber,
-      titleUa: c.contentDescription || 'Вантаж',
-      places: c.places,
-      grossWeight: c.weight,
-      volume: c.volume,
-      packageType: c.packagingType,
-      status: 'На складі'
-    }];
-  }
 
   function renderShipmentsTable() {
     if (!tbodyUnassignedShipments || !shipmentsTableHeader) return;
@@ -3006,18 +3686,29 @@ function initSubvoyagesPlannerModule() {
         <span>Дата готовності</span> <i class="fa-solid ${dateSortIcon} ml-0.5"></i>
       </th>
       ${renderShipmentsDimensionsHeader(currentSv)}
-      <th class="p-2">Маркери</th>
+      <th class="p-2">Документи / Експорт</th>
+      <th class="p-2">Склад / Завантаження</th>
+      <th class="p-2">Особливості</th>
       <th class="p-2 text-center">Підрейс (пул)</th>
       <th class="p-2 text-right">Інформація</th>
     `;
 
+    const readinessTitleMap = {
+      ready: 'Готові до завантаження',
+      not_ready: 'Не готові до завантаження',
+      planned: 'Планові (обіцянки)',
+      unmarked: 'Непромарковані',
+      all: 'Усі позиції'
+    };
+    const activeReadinessTitle = readinessTitleMap[filters.quickFilter] || 'Готові до завантаження';
+
     if (list.length === 0) {
       const emptyMsg = currentSv && !isRecommendationFilterIgnored
-        ? `Немає рекомендованих перевезень категорії «${activeReadinessTitle}» за типом доставки (${currentSv.transport}) та маршрутом (${currentSv.originCountry} ➔ ${currentSv.destinationCountry}). Натисніть «Скинути рекомендації» зверху або перемкніть вкладку готовності.`
+        ? `Немає рекомендованих перевезень категорії «${activeReadinessTitle}» за заданими параметрами підрейсу (${currentSv.transport}, ${currentSv.originCountry} ➔ ${currentSv.destinationCountry}${currentSv.cargoMode && currentSv.cargoMode !== 'all' ? ', ' + currentSv.cargoMode : ''}). Натисніть «Скинути рекомендації» зверху або перемкніть вкладку готовності.`
         : `Немає перевезень у категорії «${activeReadinessTitle}» за обраними фільтрами`;
       tbodyUnassignedShipments.innerHTML = `
         <tr>
-          <td colspan="6" class="p-8 text-center text-slate-400 italic">
+          <td colspan="8" class="p-8 text-center text-slate-400 italic">
             ${emptyMsg}
           </td>
         </tr>
@@ -3027,7 +3718,7 @@ function initSubvoyagesPlannerModule() {
 
     tbodyUnassignedShipments.innerHTML = paginatedList.map(tr => {
       const isSelected = selectedUnassignedIds.has(tr.id);
-      const propBadges = renderShipmentPropertyBadges(tr);
+      const mGroups = getShipmentMarkerGroups(tr);
       const readyDateStr = tr.dateReady || tr.cargoReadyDate || '—';
 
       const isRecommendedForActiveSv = Boolean(currentSv && isShipmentCompatibleWithSubvoyage(tr, currentSv));
@@ -3060,15 +3751,6 @@ function initSubvoyagesPlannerModule() {
         poolOrAssignHtml = `<span class="bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded text-[10px] font-semibold">В пулі</span>`;
       }
 
-      const cat = tr.readinessCategory || 'ready';
-      const catMiniTag = cat === 'planned'
-        ? `<span class="text-[9px] bg-violet-100 text-violet-800 border border-violet-200 px-1.5 py-0.2 rounded font-bold" title="Плановий об'єм (Обіцянка)">🔮 План (Обіцянка)</span>`
-        : cat === 'not_ready'
-          ? `<span class="text-[9px] bg-amber-100 text-amber-800 border border-amber-200 px-1.5 py-0.2 rounded font-bold">⏳ Не готовий</span>`
-          : cat === 'unmarked'
-            ? `<span class="text-[9px] bg-rose-100 text-rose-800 border border-rose-200 px-1.5 py-0.2 rounded font-bold">🏷️ Непромаркований</span>`
-            : '';
-
       return `
         <tr class="hover:bg-slate-50 transition cursor-pointer ${isSelected ? 'bg-brand-50/50' : (fitInfo && !fitInfo.fits) ? 'bg-rose-50/30' : isRecommendedForActiveSv ? 'bg-emerald-50/30' : isExceptionCandidate ? 'bg-amber-50/20' : ''}" onclick="handleShipmentRowClick('${tr.id}', event)">
           <!-- 1. Номер -->
@@ -3077,7 +3759,8 @@ function initSubvoyagesPlannerModule() {
               <input type="checkbox" value="${tr.id}" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation()" class="cb-unassigned-shipment rounded text-brand-600 cursor-pointer shrink-0">
               <div class="flex items-center gap-1.5 flex-wrap min-w-0">
                 <span class="font-mono font-bold text-brand-700 text-xs">${tr.dfShipment || tr.id}</span>
-                ${catMiniTag}
+                ${renderCompactTransportTypeBadge(tr)}
+                ${renderAcceptanceBadges(tr)}
               </div>
             </div>
           </td>
@@ -3087,13 +3770,13 @@ function initSubvoyagesPlannerModule() {
           </td>
           <!-- 3. Габарити -->
           <td class="p-2 font-mono text-[11px] text-slate-700 whitespace-nowrap">
-            <div><strong>${tr.volume}</strong> м³ <span class="text-slate-300">|</span> <strong>${tr.weight}</strong> т <span class="text-slate-300">|</span> <span class="text-slate-500">${tr.places} шт</span></div>
+            <div><strong>${tr.volume}</strong> м³ <span class="text-slate-300">|</span> <strong>${tr.weight}</strong> кг <span class="text-slate-300">|</span> <span class="text-slate-500">${tr.places} шт</span></div>
             ${fitInfo ? `<div class="mt-0.5 font-sans">${fitInfo.badgeHtml}</div>` : ''}
           </td>
-          <!-- 4. Маркери (з компактним згортанням +N та повною підказкою при наведенні) -->
-          <td class="p-2">
-            ${propBadges}
-          </td>
+          <!-- 4-6. Маркери (3 логічні категорії) -->
+          <td class="p-2">${renderMarkerListBadges(mGroups.docs)}</td>
+          <td class="p-2">${renderMarkerListBadges(mGroups.loading)}</td>
+          <td class="p-2">${renderMarkerListBadges(mGroups.special)}</td>
           <!-- 5. Підрейс (пулі) -->
           <td class="p-2 text-center whitespace-nowrap" onclick="event.stopPropagation()">
             ${poolOrAssignHtml}
@@ -3148,7 +3831,7 @@ function initSubvoyagesPlannerModule() {
 
     if (bulkSelectedCounter) {
       if (selectedUnassignedIds.size > 0) {
-        bulkSelectedCounter.innerHTML = `Обрано: <strong class="text-brand-700">${selectedUnassignedIds.size}</strong> перевезень (<strong class="text-slate-700">${selVol.toFixed(1)} м³</strong> | <strong class="text-slate-700">${selWeight.toFixed(1)} т</strong> | ${selPlaces} шт)`;
+        bulkSelectedCounter.innerHTML = `Обрано: <strong class="text-brand-700">${selectedUnassignedIds.size}</strong> перевезень (<strong class="text-slate-700">${selVol.toFixed(1)} м³</strong> | <strong class="text-slate-700">${Math.round(selWeight)} кг</strong> | ${selPlaces} шт)`;
       } else {
         bulkSelectedCounter.textContent = `Обрано: 0 перевезень`;
       }
@@ -3196,7 +3879,7 @@ function initSubvoyagesPlannerModule() {
 
     if (currentSubvoyageCapacityPillsContainer) {
       const deltaVolBadge = cap.deltaVol > 0 ? `<span class="bg-brand-100 text-brand-900 border border-brand-300 px-2 py-0.5 rounded-full font-bold text-[10px]">+${cap.deltaVol.toFixed(1)} м³</span>` : '';
-      const deltaWeightBadge = cap.deltaWeight > 0 ? `<span class="bg-brand-100 text-brand-900 border border-brand-300 px-2 py-0.5 rounded-full font-bold text-[10px]">+${cap.deltaWeight.toFixed(1)} т</span>` : '';
+      const deltaWeightBadge = cap.deltaWeight > 0 ? `<span class="bg-brand-100 text-brand-900 border border-brand-300 px-2 py-0.5 rounded-full font-bold text-[10px]">+${Math.round(cap.deltaWeight)} кг</span>` : '';
       const deltaPlacesBadge = cap.deltaPlaces > 0 ? `<span class="bg-brand-100 text-brand-900 border border-brand-300 px-2 py-0.5 rounded-full font-bold text-[10px]">+${cap.deltaPlaces} місць</span>` : '';
 
       currentSubvoyageCapacityPillsContainer.innerHTML = `
@@ -3244,11 +3927,11 @@ function initSubvoyagesPlannerModule() {
     const svWeightBar = document.getElementById('active-sv-weight-bar');
     if (svWeightBar) { svWeightBar.style.width = `${Math.min(cap.projPctWeight, 100)}%`; svWeightBar.className = `h-1.5 rounded-full transition-all duration-300 ${themeWeight.bar}`; }
     const svWeightText = document.getElementById('active-sv-weight-text');
-    if (svWeightText) svWeightText.textContent = cap.weight.toFixed(1);
+    if (svWeightText) svWeightText.textContent = Math.round(cap.weight);
     const svWeightMax = document.getElementById('active-sv-weight-max');
-    if (svWeightMax) svWeightMax.textContent = currentSv.maxWeight.toFixed(1);
+    if (svWeightMax) svWeightMax.textContent = currentSv.maxWeight;
     const svWeightDelta = document.getElementById('active-sv-weight-delta');
-    if (svWeightDelta) svWeightDelta.textContent = cap.deltaWeight > 0 ? `(+${cap.deltaWeight.toFixed(1)})` : '';
+    if (svWeightDelta) svWeightDelta.textContent = cap.deltaWeight > 0 ? `(+${Math.round(cap.deltaWeight)})` : '';
 
     // Метрики Місць
     const svPlacesPct = document.getElementById('active-sv-places-pct');
@@ -3269,8 +3952,8 @@ function initSubvoyagesPlannerModule() {
     if (subvoyageTotalCargoCount) subvoyageTotalCargoCount.textContent = assigned.length;
     if (subvoyageTotalVol) subvoyageTotalVol.textContent = cap.vol.toFixed(1);
     if (subvoyageMaxVol) subvoyageMaxVol.textContent = currentSv.maxVolume.toFixed(1);
-    if (subvoyageTotalWeight) subvoyageTotalWeight.textContent = cap.weight.toFixed(1);
-    if (subvoyageMaxWeight) subvoyageMaxWeight.textContent = currentSv.maxWeight.toFixed(1);
+    if (subvoyageTotalWeight) subvoyageTotalWeight.textContent = Math.round(cap.weight);
+    if (subvoyageMaxWeight) subvoyageMaxWeight.textContent = currentSv.maxWeight;
     if (subvoyageTotalPlaces) subvoyageTotalPlaces.textContent = cap.places;
     if (subvoyageMaxPlaces) subvoyageMaxPlaces.textContent = currentSv.maxPlaces;
 
@@ -3294,12 +3977,12 @@ function initSubvoyagesPlannerModule() {
             <td class="p-1.5 space-y-0.5">
               <div class="font-mono font-bold text-brand-700 text-[11px]">${tr.dfShipment || tr.id}</div>
               <div class="flex items-center gap-1 flex-wrap">
-                ${renderStatusBadge(tr.status)}
                 ${routeInfo}
+                ${renderAcceptanceBadges(tr)}
               </div>
             </td>
             <td class="p-1.5 font-mono text-[10px] text-slate-700 whitespace-nowrap">
-              <div><strong>${tr.volume}</strong> м³ | <strong>${tr.weight}</strong> т</div>
+              <div><strong>${tr.volume}</strong> м³ | <strong>${tr.weight}</strong> кг</div>
               <div class="text-slate-500 text-[9px] font-bold">${tr.places || 0} місць</div>
             </td>
             <td class="p-1.5">
@@ -3397,6 +4080,1140 @@ function initSubvoyagesPlannerModule() {
     `;
   }
 
+  // ============================================================================
+  // НОВІ МОЖЛИВОСТІ (П.1 - П.5):
+  // 1. Редагування вантажу (в межах Обіцянки / Перевезення та Непромаркованого вантажу)
+  // 2. Пошук вантажу по полям і статусам в рамках Обіцянки або Перевезення (всередині сутності)
+  // 3. Задачі до Обіцянки та Перевезення (з мінімалістичною позначкою у таблиці тільки при наявності)
+  // 4. Тип перевезення окремо від маркерів (компактний бейдж у таблицях та картках)
+  // 5. Спеціалізовані картки вантажу (Ерайву): Історія переміщень між складами з друком маршруту
+  // ============================================================================
+
+  let currentDrawerEntityId = null;
+  let drawerCargoSearchQuery = '';
+  let drawerCargoStatusFilter = 'ALL';
+
+  const ALL_CARGO_STATUSES = [
+    'Новий',
+    'На складі відправки',
+    'Отримано непромаркованим',
+    'Передано',
+    'Передано логісту на маркування',
+    'Зберігання на складі',
+    'Очікує інші частини',
+    'Очікує готовності',
+    'Готовий до завантаження',
+    'В дорозі',
+    'На складі призначення',
+    'Виданий',
+    'Повернено клієнту',
+    'Очікує виконання завдання по вантажу'
+  ];
+
+  function renderCargoStatusBadge(status) {
+    const s = String(status || 'На складі відправки');
+    let cls = 'bg-slate-100 text-slate-700 border-slate-200';
+    let icon = 'fa-solid fa-box';
+    if (s.includes('Готовий') || s.includes('Виданий')) {
+      cls = 'bg-emerald-50 text-emerald-800 border-emerald-200';
+      icon = 'fa-solid fa-circle-check text-emerald-600';
+    } else if (s.includes('В дорозі') || s.includes('Передано')) {
+      cls = 'bg-sky-50 text-sky-800 border-sky-200';
+      icon = 'fa-solid fa-truck-fast text-sky-600';
+    } else if (s.includes('Очікує') || s.includes('маркування')) {
+      cls = 'bg-amber-50 text-amber-800 border-amber-200';
+      icon = 'fa-solid fa-clock text-amber-600';
+    } else if (s.includes('непромаркованим') || s.includes('Повернено')) {
+      cls = 'bg-rose-50 text-rose-800 border-rose-200';
+      icon = 'fa-solid fa-tag text-rose-600';
+    } else if (s.includes('складі') || s.includes('Зберігання')) {
+      cls = 'bg-indigo-50 text-indigo-800 border-indigo-200';
+      icon = 'fa-solid fa-warehouse text-indigo-600';
+    }
+    return `<span class="px-2 py-0.5 rounded-md border ${cls} text-[10px] font-bold inline-flex items-center gap-1 shadow-2xs"><i class="${icon} text-[9px]"></i><span>${s}</span></span>`;
+  }
+
+  // --- П.3: Задачі для Обіцянки та Перевезення ---
+  function renderDrawerEntityTasks(tr) {
+    if (!tr) return;
+    if (!Array.isArray(tr.tasks)) tr.tasks = [];
+    renderDrawerAcceptanceBlock(tr);
+
+    const isPromise = tr.readinessCategory === 'planned' || tr.entityType === 'promise';
+    const entityLabel = isPromise ? 'Обіцянці' : 'Перевезенню';
+    const headingEl = document.getElementById('drawer-tasks-heading');
+    if (headingEl) {
+      headingEl.textContent = `Задачі по ${entityLabel}`;
+    }
+
+    const counterEl = document.getElementById('drawer-tasks-counter-badge');
+    const openCount = tr.tasks.filter(t => t.status !== 'done').length;
+    const totalCount = tr.tasks.length;
+    if (counterEl) {
+      if (totalCount === 0) {
+        counterEl.className = 'px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-bold';
+        counterEl.textContent = '0 задач';
+      } else if (openCount > 0) {
+        counterEl.className = 'px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-extrabold';
+        counterEl.textContent = `${openCount} активн. / ${totalCount}`;
+      } else {
+        counterEl.className = 'px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold';
+        counterEl.textContent = `Усі виконані (${totalCount})`;
+      }
+    }
+
+    const listEl = document.getElementById('drawer-entity-tasks-list');
+    if (!listEl) return;
+
+    if (tr.tasks.length === 0) {
+      listEl.innerHTML = `
+        <div class="py-2.5 px-3 bg-white rounded-lg border border-dashed border-slate-200 text-[11px] text-slate-400 italic flex items-center gap-1.5">
+          <i class="fa-regular fa-circle-check text-slate-300"></i>
+          <span>Актуальні задачі по ${entityLabel.toLowerCase()} відсутні</span>
+        </div>
+      `;
+      return;
+    }
+
+    listEl.innerHTML = tr.tasks.map(task => {
+      const isDone = task.status === 'done';
+      return `
+        <div class="p-2.5 rounded-lg border ${isDone ? 'bg-slate-50 border-slate-200 opacity-80' : 'bg-white border-amber-200 shadow-2xs'} flex items-start justify-between gap-2.5 transition">
+          <div class="flex items-start gap-2 min-w-0">
+            <span class="mt-0.5 w-4 h-4 rounded-full ${isDone ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'} flex items-center justify-center shrink-0 text-[9px] font-bold">
+              <i class="fa-solid ${isDone ? 'fa-check' : 'fa-clock'}"></i>
+            </span>
+            <div class="min-w-0">
+              <div class="text-xs font-bold ${isDone ? 'line-through text-slate-500' : 'text-slate-800'} leading-snug break-words">${task.title}</div>
+              <div class="flex flex-wrap items-center gap-2 mt-1 text-[10px] text-slate-500">
+                <span class="inline-flex items-center gap-1"><i class="fa-regular fa-user text-slate-400"></i> ${task.assignee || tr.logist || 'Логіст'}</span>
+                <span>•</span>
+                <span class="inline-flex items-center gap-1 font-mono"><i class="fa-regular fa-calendar text-slate-400"></i> до ${task.dueDate || '—'}</span>
+                <span class="px-1.5 py-0.2 rounded text-[9px] font-bold ${isDone ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'}">
+                  ${isDone ? 'Виконано' : 'В роботі'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  window.toggleEntityTaskForm = function () { };
+  window.submitNewEntityTask = function () { };
+  window.toggleEntityTaskStatus = function (entityId, taskId) {
+    const tr = transportsData.find(t => t.id === entityId);
+    if (!tr || !Array.isArray(tr.tasks)) return;
+    const task = tr.tasks.find(t => t.id === taskId);
+    if (!task) return;
+    task.status = task.status === 'done' ? 'open' : 'done';
+    renderDrawerEntityTasks(tr);
+    renderAll();
+  };
+  window.deleteEntityTask = function () { };
+
+  // --- П.2: Пошук вантажу по полям і статусам в рамках Обіцянки або Перевезення ---
+  function populateDrawerCargoStatusOptions(tr) {
+    const selectEl = document.getElementById('drawer-cargo-status-filter');
+    if (!selectEl || !tr) return;
+    const cargoes = Array.isArray(tr.cargoes) ? tr.cargoes : [];
+    const statusCounts = {};
+    cargoes.forEach(c => {
+      const st = c.status || 'На складі відправки';
+      statusCounts[st] = (statusCounts[st] || 0) + 1;
+    });
+
+    const presentStatuses = Object.keys(statusCounts);
+    const otherStatuses = ALL_CARGO_STATUSES.filter(st => !statusCounts[st]);
+
+    let html = `<option value="ALL">Усі статуси вантажів (${cargoes.length})</option>`;
+    if (presentStatuses.length > 0) {
+      html += `<optgroup label="Наявні статуси у сутності">`;
+      presentStatuses.forEach(st => {
+        html += `<option value="${st}">${st} (${statusCounts[st]})</option>`;
+      });
+      html += `</optgroup>`;
+    }
+    html += `<optgroup label="Довідник статусів вантажу">`;
+    otherStatuses.forEach(st => {
+      html += `<option value="${st}">${st} (0)</option>`;
+    });
+    html += `</optgroup>`;
+
+    selectEl.innerHTML = html;
+    selectEl.value = drawerCargoStatusFilter || 'ALL';
+  }
+
+  window.handleDrawerCargoFilterChange = function () {
+    const searchInputEl = document.getElementById('drawer-cargo-search-input');
+    const clearBtnEl = document.getElementById('drawer-cargo-search-clear');
+    const statusSelectEl = document.getElementById('drawer-cargo-status-filter');
+
+    drawerCargoSearchQuery = searchInputEl ? searchInputEl.value.trim() : '';
+    drawerCargoStatusFilter = statusSelectEl ? statusSelectEl.value : 'ALL';
+
+    if (clearBtnEl) {
+      if (drawerCargoSearchQuery.length > 0) {
+        clearBtnEl.classList.remove('hidden');
+      } else {
+        clearBtnEl.classList.add('hidden');
+      }
+    }
+
+    const tr = transportsData.find(t => t.id === currentDrawerEntityId);
+    if (tr) renderDrawerCargoesSection(tr);
+  };
+
+  window.resetDrawerCargoFilters = function () {
+    drawerCargoSearchQuery = '';
+    drawerCargoStatusFilter = 'ALL';
+    const searchInputEl = document.getElementById('drawer-cargo-search-input');
+    const clearBtnEl = document.getElementById('drawer-cargo-search-clear');
+    const statusSelectEl = document.getElementById('drawer-cargo-status-filter');
+    if (searchInputEl) searchInputEl.value = '';
+    if (clearBtnEl) clearBtnEl.classList.add('hidden');
+    if (statusSelectEl) statusSelectEl.value = 'ALL';
+    const tr = transportsData.find(t => t.id === currentDrawerEntityId);
+    if (tr) renderDrawerCargoesSection(tr);
+  };
+
+  function renderDrawerCargoesSection(tr) {
+    if (!tr || !drawerCargoesList) return;
+    const allCargoes = Array.isArray(tr.cargoes) ? tr.cargoes : [];
+    const q = (drawerCargoSearchQuery || '').toLowerCase();
+    const stFilter = drawerCargoStatusFilter || 'ALL';
+
+    const filtered = allCargoes.filter(c => {
+      if (stFilter !== 'ALL' && (c.status || 'На складі відправки') !== stFilter) {
+        return false;
+      }
+      if (!q) return true;
+      const haystack = [
+        c.cargoId,
+        c.trackingNumber,
+        c.titleUa,
+        c.nameEn,
+        c.nameCn,
+        c.contentDescription,
+        c.warehouse,
+        c.warehouseLocation,
+        c.packageType,
+        c.additionalServices,
+        c.logistNote,
+        c.status,
+        `${c.places || ''} місць`,
+        `${c.grossWeight || ''} кг`,
+        `${c.volume || ''} м3`,
+        `${c.length || ''}x${c.width || ''}x${c.height || ''}`
+      ].filter(Boolean).join(' ').toLowerCase();
+      return haystack.includes(q);
+    });
+
+    if (drawerCargoCount) {
+      if (filtered.length === allCargoes.length) {
+        drawerCargoCount.textContent = `Всього: ${allCargoes.length} од.`;
+      } else {
+        drawerCargoCount.textContent = `Знайдено: ${filtered.length} з ${allCargoes.length} од.`;
+      }
+    }
+
+    const isPromise = tr.readinessCategory === 'planned' || tr.entityType === 'promise';
+    const entityWord = isPromise ? 'Обіцянки' : 'Перевезення';
+
+    if (allCargoes.length === 0) {
+      drawerCargoesList.innerHTML = `
+        <div class="p-4 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-xs text-slate-400 space-y-2">
+          <div>У складі цього ${entityWord.toLowerCase()} ще немає доданих вантажів (Ерайвів).</div>
+          <button type="button" onclick="window.openEditCargoModal('${tr.id}', '__NEW__', event)"
+            class="px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-plus"></i> Додати вантаж
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    if (filtered.length === 0) {
+      drawerCargoesList.innerHTML = `
+        <div class="p-4 text-center bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-500 space-y-2">
+          <div>За пошуковим запитом або статусом у межах цієї ${entityWord.toLowerCase()} вантажів не знайдено.</div>
+          <button type="button" onclick="window.resetDrawerCargoFilters()"
+            class="px-2.5 py-1 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-[11px] cursor-pointer">
+            Скинути фільтри пошуку вантажу
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    drawerCargoesList.innerHTML = filtered.map(c => {
+      const dims = (c.length && c.width && c.height) ? `${c.length}×${c.width}×${c.height} см` : 'Стандарт';
+      return `
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 hover:border-brand-300 shadow-2xs transition space-y-3">
+          <!-- Шапка вантажу: DF номер, трек, статус, дата отримання та 2 дії: "Історія переміщень між складами" і "Редагувати" -->
+          <div class="flex items-start justify-between gap-2.5 flex-wrap">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="font-mono font-extrabold text-xs text-brand-700 bg-brand-50 border border-brand-200 px-2 py-0.5 rounded-md">
+                <i class="fa-solid fa-cube text-[10px] mr-1"></i>${c.cargoId}
+              </span>
+              ${c.trackingNumber ? `<span class="font-mono text-[11px] bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded-md" title="Трек-номер"><i class="fa-solid fa-barcode text-slate-400 mr-1"></i>${c.trackingNumber}</span>` : ''}
+              ${renderCargoStatusBadge(c.status)}
+              ${c.receiveDate ? `<span class="font-mono text-[10px] text-slate-500 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded" title="Дата отримання на складі"><i class="fa-regular fa-calendar-check text-slate-400 mr-1"></i>${c.receiveDate}</span>` : ''}
+            </div>
+
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <button type="button" onclick="window.openCargoMovementHistoryModal('${tr.id}', '${c.cargoId}', event)"
+                class="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer transition shadow-2xs"
+                title="Історія переміщень">
+                <i class="fa-solid fa-route text-sky-600"></i>
+                <span>Історія переміщень</span>
+              </button>
+              <button type="button" onclick="window.openEditCargoModal('${tr.id}', '${c.cargoId}', event)"
+                class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer transition shadow-2xs"
+                title="Редагувати вантаж">
+                <i class="fa-regular fa-pen-to-square text-indigo-600"></i>
+                <span>Редагувати</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Повні дані про товар: UA, EN, CN та опис вмісту прямо в картці -->
+          <div>
+            <div class="text-sm font-bold text-slate-900">${c.titleUa || c.contentDescription || 'Вантаж'}</div>
+            ${(c.nameEn || c.nameCn) ? `
+              <div class="text-xs text-slate-500 flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-0.5">
+                ${c.nameEn ? `<span><strong class="text-slate-600">EN:</strong> ${c.nameEn}</span>` : ''}
+                ${(c.nameEn && c.nameCn) ? `<span class="text-slate-300">•</span>` : ''}
+                ${c.nameCn ? `<span><strong class="text-slate-600">CN:</strong> ${c.nameCn}</span>` : ''}
+              </div>
+            ` : ''}
+            ${(c.contentDescription && c.contentDescription !== c.titleUa) ? `
+              <div class="text-xs text-slate-600 mt-1.5 bg-slate-50 p-2 rounded-lg border border-slate-200/80">
+                <span class="text-[10px] font-bold text-slate-400 uppercase block mb-0.5">Опис вмісту:</span>
+                ${c.contentDescription}
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Повна сітка параметрів: склад, локація, пакування, місця, вага, об'єм, габарити, негабарит -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-50/80 p-2.5 rounded-xl border border-slate-200 text-xs">
+            <div>
+              <span class="text-[10px] text-slate-400 uppercase font-bold block">Поточний склад</span>
+              <span class="font-bold text-slate-800 flex items-center gap-1 mt-0.5">
+                <i class="fa-solid fa-warehouse text-amber-600 text-[11px]"></i>
+                <span>${c.warehouse || tr.hub || 'Склад відправки'}</span>
+              </span>
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-400 uppercase font-bold block">Локація на складі</span>
+              <span class="font-semibold text-slate-800 mt-0.5 block">${c.warehouseLocation || 'Зона A • Стелаж 01'}</span>
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-400 uppercase font-bold block">Тип пакування</span>
+              <span class="font-semibold text-slate-800 mt-0.5 block">${c.packageType || 'Палети'}</span>
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-400 uppercase font-bold block">К-сть місць</span>
+              <span class="font-mono font-bold text-slate-900 mt-0.5 block">${c.places || 0} шт</span>
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-400 uppercase font-bold block">Вага брутто</span>
+              <span class="font-mono font-bold text-slate-900 mt-0.5 block">${c.grossWeight || 0} кг</span>
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-400 uppercase font-bold block">Об'єм</span>
+              <span class="font-mono font-bold text-slate-900 mt-0.5 block">${c.volume || 0} м³</span>
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-400 uppercase font-bold block">Габарити (Д×Ш×В)</span>
+              <span class="font-mono font-semibold text-slate-800 mt-0.5 block">${dims}</span>
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-400 uppercase font-bold block">Негабаритний</span>
+              <span class="font-bold mt-0.5 block ${c.isOversized ? 'text-rose-600' : 'text-slate-600'}">
+                ${c.isOversized ? 'Так (Негабарит)' : 'Ні (Стандарт)'}
+              </span>
+            </div>
+          </div>
+
+          <!-- Додаткові послуги та примітка логіста -->
+          ${(c.additionalServices || c.logistNote) ? `
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              ${c.additionalServices ? `
+                <div class="bg-indigo-50/50 p-2 rounded-lg border border-indigo-100 text-indigo-900">
+                  <span class="text-[10px] font-bold uppercase text-indigo-600 block mb-0.5"><i class="fa-solid fa-screwdriver-wrench mr-1"></i>Додаткові послуги на складі:</span>
+                  <span>${c.additionalServices}</span>
+                </div>
+              ` : ''}
+              ${c.logistNote ? `
+                <div class="bg-amber-50/70 p-2 rounded-lg border border-amber-200 text-amber-900">
+                  <span class="text-[10px] font-bold uppercase text-amber-700 block mb-0.5"><i class="fa-regular fa-comment-dots mr-1"></i>Примітка логіста:</span>
+                  <span>${c.logistNote}</span>
+                </div>
+              ` : ''}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('') + `
+      <div class="pt-1 flex justify-end">
+        
+      </div>
+    `;
+  }
+
+  // Допоміжна функція пошуку цільового вантажу (вкладеного в Обіцянку/Перевезення або окремого непромаркованого)
+  function resolveCargoTarget(entityId, cargoId) {
+    const parentEntity = transportsData.find(t => t.id === entityId);
+    if (!parentEntity) return null;
+
+    if (!cargoId && isUnmarkedCargo(parentEntity)) {
+      return {
+        isStandaloneUnmarked: true,
+        parentEntity,
+        cargo: parentEntity
+      };
+    }
+
+    if (!Array.isArray(parentEntity.cargoes)) parentEntity.cargoes = [];
+    if (cargoId === '__NEW__') {
+      return {
+        isStandaloneUnmarked: false,
+        isNew: true,
+        parentEntity,
+        cargo: {
+          cargoId: `ARR-${(parentEntity.dfShipment || parentEntity.id).replace(/\D/g, '').slice(-4) || '9000'}-${parentEntity.cargoes.length + 1}`,
+          trackingNumber: `TRK-${Date.now().toString().slice(-8)}`,
+          receiveDate: '2026-10-18 12:00',
+          warehouse: `Склад ${parentEntity.originCountry || 'Китай'} (Консолідаційний)`,
+          warehouseLocation: 'Зона приймання A-01',
+          titleUa: '',
+          nameEn: '',
+          nameCn: '',
+          contentDescription: '',
+          places: 1,
+          grossWeight: 200,
+          volume: 1.0,
+          length: 100,
+          width: 80,
+          height: 90,
+          isOversized: false,
+          packageType: parentEntity.packagingType || 'Коробки',
+          additionalServices: 'Зважування, Маркування',
+          logistNote: '',
+          status: 'На складі відправки',
+          movementHistory: []
+        }
+      };
+    }
+
+    const cargo = parentEntity.cargoes.find(c => c.cargoId === cargoId) || parentEntity.cargoes[0];
+    if (!cargo) return null;
+    return {
+      isStandaloneUnmarked: false,
+      isNew: false,
+      parentEntity,
+      cargo
+    };
+  }
+
+  function recalculateEntityMetricsFromCargoes(tr) {
+    if (!tr || !Array.isArray(tr.cargoes) || tr.cargoes.length === 0) return;
+    const totalPlaces = tr.cargoes.reduce((s, c) => s + (Number(c.places) || 0), 0);
+    const totalWeight = tr.cargoes.reduce((s, c) => s + (Number(c.grossWeight) || 0), 0);
+    const totalVol = tr.cargoes.reduce((s, c) => s + (Number(c.volume) || 0), 0);
+    tr.places = totalPlaces;
+    tr.weight = Number(totalWeight.toFixed(2));
+    tr.volume = Number(totalVol.toFixed(2));
+  }
+
+  // --- П.1: Редагування вантажу (Ерайву) ---
+  window.openEditCargoModal = function (entityId, cargoId, event) {
+    if (event) event.stopPropagation();
+    const target = resolveCargoTarget(entityId, cargoId);
+    if (!target) return;
+
+    const { isStandaloneUnmarked, isNew, parentEntity, cargo } = target;
+    const currentNumber = isStandaloneUnmarked ? (cargo.cargoNumber || cargo.id) : cargo.cargoId;
+    const currentStatus = cargo.status || 'На складі відправки';
+    const currentWarehouse = cargo.warehouse || parentEntity.hub || 'Склад відправки';
+    const currentLocation = cargo.warehouseLocation || 'Зона A • Стелаж 01';
+    const currentTitleUa = cargo.titleUa || cargo.contentDescription || '';
+    const currentNameEn = cargo.nameEn || '';
+    const currentNameCn = cargo.nameCn || '';
+    const currentDesc = cargo.contentDescription || cargo.titleUa || '';
+    const currentPlaces = Number(cargo.places) || 1;
+    const currentWeight = Number(isStandaloneUnmarked ? cargo.weight : cargo.grossWeight) || 100;
+    const currentVolume = Number(cargo.volume) || 0.5;
+    const currentLength = Number(cargo.length) || 100;
+    const currentWidth = Number(cargo.width) || 80;
+    const currentHeight = Number(cargo.height) || 90;
+    const currentPkg = (isStandaloneUnmarked ? cargo.packagingType : cargo.packageType) || 'Палети';
+    const currentOversized = Boolean(cargo.isOversized);
+    const currentServices = cargo.additionalServices || '';
+    const currentNote = cargo.logistNote || '';
+    const currentTrack = cargo.trackingNumber || '';
+    const currentReceiveDate = cargo.receiveDate || '2026-10-16 10:00';
+
+    const statusOptionsHtml = ALL_CARGO_STATUSES.map(st =>
+      `<option value="${st}" ${st === currentStatus ? 'selected' : ''}>${st}</option>`
+    ).join('') + (!ALL_CARGO_STATUSES.includes(currentStatus) ? `<option value="${currentStatus}" selected>${currentStatus}</option>` : '');
+
+    showCargoModal(`
+      <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-indigo-50/60 rounded-t-2xl">
+        <div>
+          <div class="text-[10px] font-bold uppercase text-indigo-700">${isNew ? 'Створення нового вантажу (Ерайву)' : 'Редагування картки вантажу (Ерайву)'}</div>
+          <div class="text-base font-bold text-slate-900 font-mono">${isNew ? 'Новий вантаж' : currentNumber} <span class="text-xs font-normal text-slate-500">(${parentEntity.dfShipment || parentEntity.id})</span></div>
+        </div>
+        <button onclick="closeCargoModal()" class="text-slate-400 hover:text-slate-700 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div class="p-4 space-y-3 text-xs max-h-[72vh] overflow-y-auto">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <label class="block">
+            <span class="text-[10px] font-bold text-slate-600 uppercase">DF Номер вантажу (Ерайву)</span>
+            <input id="edit-cargo-number" type="text" value="${currentNumber}" class="mt-1 w-full border border-slate-300 rounded-lg px-2.5 py-1.5 font-mono font-bold text-slate-800 focus:outline-none focus:border-indigo-500">
+          </label>
+          <label class="block">
+            <span class="text-[10px] font-bold text-slate-600 uppercase">Трек-номер</span>
+            <input id="edit-cargo-tracking" type="text" value="${currentTrack}" placeholder="SF / YT / JD..." class="mt-1 w-full border border-slate-300 rounded-lg px-2.5 py-1.5 font-mono text-slate-800 focus:outline-none focus:border-indigo-500">
+          </label>
+          <label class="block">
+            <span class="text-[10px] font-bold text-slate-600 uppercase">Статус вантажу</span>
+            <select id="edit-cargo-status" class="mt-1 w-full border border-slate-300 rounded-lg px-2.5 py-1.5 font-semibold text-slate-800 bg-white focus:outline-none focus:border-indigo-500">
+              ${statusOptionsHtml}
+            </select>
+          </label>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <label class="block">
+            <span class="text-[10px] font-bold text-slate-600 uppercase">Поточний склад</span>
+            <input id="edit-cargo-warehouse" type="text" value="${currentWarehouse}" class="mt-1 w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 focus:outline-none focus:border-indigo-500">
+          </label>
+          <label class="block">
+            <span class="text-[10px] font-bold text-slate-600 uppercase">Локація на складі</span>
+            <input id="edit-cargo-location" type="text" value="${currentLocation}" class="mt-1 w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 focus:outline-none focus:border-indigo-500">
+          </label>
+          <label class="block">
+            <span class="text-[10px] font-bold text-slate-600 uppercase">Дата/час отримання</span>
+            <input id="edit-cargo-received" type="text" value="${currentReceiveDate}" class="mt-1 w-full border border-slate-300 rounded-lg px-2.5 py-1.5 font-mono text-slate-800 focus:outline-none focus:border-indigo-500">
+          </label>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <label class="block">
+            <span class="text-[10px] font-bold text-slate-600 uppercase">Назва товару (UA)</span>
+            <input id="edit-cargo-title-ua" type="text" value="${currentTitleUa}" class="mt-1 w-full border border-slate-300 rounded-lg px-2.5 py-1.5 font-semibold text-slate-800 focus:outline-none focus:border-indigo-500">
+          </label>
+          <label class="block">
+            <span class="text-[10px] font-bold text-slate-600 uppercase">Назва товару (EN)</span>
+            <input id="edit-cargo-name-en" type="text" value="${currentNameEn}" class="mt-1 w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 focus:outline-none focus:border-indigo-500">
+          </label>
+          <label class="block">
+            <span class="text-[10px] font-bold text-slate-600 uppercase">Назва товару (CN)</span>
+            <input id="edit-cargo-name-cn" type="text" value="${currentNameCn}" class="mt-1 w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 focus:outline-none focus:border-indigo-500">
+          </label>
+        </div>
+
+        <label class="block">
+          <span class="text-[10px] font-bold text-slate-600 uppercase">Опис вмісту вантажу</span>
+          <input id="edit-cargo-desc" type="text" value="${currentDesc}" class="mt-1 w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 focus:outline-none focus:border-indigo-500">
+        </label>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+          <label class="block">
+            <span class="text-[10px] font-bold text-slate-600 uppercase">К-сть місць (шт)</span>
+            <input id="edit-cargo-places" type="number" min="1" step="1" value="${currentPlaces}" class="mt-1 w-full border border-slate-300 rounded-lg px-2 py-1 font-mono font-bold text-slate-800 bg-white">
+          </label>
+          <label class="block">
+            <span class="text-[10px] font-bold text-slate-600 uppercase">Вага брутто (кг)</span>
+            <input id="edit-cargo-weight" type="number" min="0.1" step="1" value="${currentWeight}" class="mt-1 w-full border border-slate-300 rounded-lg px-2 py-1 font-mono font-bold text-slate-800 bg-white">
+          </label>
+          <label class="block">
+            <span class="text-[10px] font-bold text-slate-600 uppercase">Об'єм (м³)</span>
+            <input id="edit-cargo-volume" type="number" min="0.01" step="0.1" value="${currentVolume}" class="mt-1 w-full border border-slate-300 rounded-lg px-2 py-1 font-mono font-bold text-slate-800 bg-white">
+          </label>
+          <label class="block">
+            <span class="text-[10px] font-bold text-slate-600 uppercase">Тип пакування</span>
+            <input id="edit-cargo-pkg" type="text" value="${currentPkg}" class="mt-1 w-full border border-slate-300 rounded-lg px-2 py-1 text-slate-800 bg-white">
+          </label>
+        </div>
+
+        <div class="grid grid-cols-3 sm:grid-cols-4 gap-2.5 items-end">
+          <label class="block">
+            <span class="text-[10px] font-bold text-slate-600 uppercase">Довжина (см)</span>
+            <input id="edit-cargo-length" type="number" min="1" value="${currentLength}" class="mt-1 w-full border border-slate-300 rounded-lg px-2 py-1 font-mono text-slate-800">
+          </label>
+          <label class="block">
+            <span class="text-[10px] font-bold text-slate-600 uppercase">Ширина (см)</span>
+            <input id="edit-cargo-width" type="number" min="1" value="${currentWidth}" class="mt-1 w-full border border-slate-300 rounded-lg px-2 py-1 font-mono text-slate-800">
+          </label>
+          <label class="block">
+            <span class="text-[10px] font-bold text-slate-600 uppercase">Висота (см)</span>
+            <input id="edit-cargo-height" type="number" min="1" value="${currentHeight}" class="mt-1 w-full border border-slate-300 rounded-lg px-2 py-1 font-mono text-slate-800">
+          </label>
+          <label class="flex items-center gap-2 pb-1.5 cursor-pointer select-none">
+            <input id="edit-cargo-oversized" type="checkbox" ${currentOversized ? 'checked' : ''} class="rounded text-indigo-600 cursor-pointer">
+            <span class="text-xs font-bold text-slate-700">Негабаритний</span>
+          </label>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <label class="block">
+            <span class="text-[10px] font-bold text-slate-600 uppercase">Додаткові послуги</span>
+            <input id="edit-cargo-services" type="text" value="${currentServices}" placeholder="Перепакування, фотозвіт..." class="mt-1 w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800">
+          </label>
+          <label class="block">
+            <span class="text-[10px] font-bold text-slate-600 uppercase">Примітка логіста</span>
+            <input id="edit-cargo-note" type="text" value="${currentNote}" placeholder="Важливі деталі по вантажу..." class="mt-1 w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800">
+          </label>
+        </div>
+      </div>
+
+      <div class="p-4 border-t border-slate-200 bg-slate-50 rounded-b-2xl flex items-center justify-between gap-2">
+        <div class="text-[10px] text-slate-500">
+          <i class="fa-solid fa-circle-info text-indigo-500 mr-1"></i>При зміні складу або статусу запис автоматично додається в історію переміщень.
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="closeCargoModal()" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold cursor-pointer hover:bg-slate-100">Скасувати</button>
+          <button type="button" id="btn-save-edited-cargo" class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold cursor-pointer shadow-2xs inline-flex items-center gap-1.5">
+            <i class="fa-solid fa-check"></i> Зберегти зміни
+          </button>
+        </div>
+      </div>
+    `);
+
+    const saveBtn = document.getElementById('btn-save-edited-cargo');
+    if (saveBtn) {
+      saveBtn.onclick = () => {
+        const newNum = document.getElementById('edit-cargo-number').value.trim() || currentNumber;
+        const newTrack = document.getElementById('edit-cargo-tracking').value.trim();
+        const newStatus = document.getElementById('edit-cargo-status').value;
+        const newWh = document.getElementById('edit-cargo-warehouse').value.trim() || currentWarehouse;
+        const newLoc = document.getElementById('edit-cargo-location').value.trim() || currentLocation;
+        const newReceived = document.getElementById('edit-cargo-received').value.trim() || currentReceiveDate;
+        const newTitleUa = document.getElementById('edit-cargo-title-ua').value.trim() || 'Вантаж';
+        const newNameEn = document.getElementById('edit-cargo-name-en').value.trim();
+        const newNameCn = document.getElementById('edit-cargo-name-cn').value.trim();
+        const newDesc = document.getElementById('edit-cargo-desc').value.trim() || newTitleUa;
+        const newPlaces = Math.max(1, Number(document.getElementById('edit-cargo-places').value) || 1);
+        const newWeight = Math.max(0.1, Number(document.getElementById('edit-cargo-weight').value) || 1);
+        const newVolume = Math.max(0.01, Number(document.getElementById('edit-cargo-volume').value) || 0.1);
+        const newPkg = document.getElementById('edit-cargo-pkg').value.trim() || 'Коробки';
+        const newLen = Math.max(1, Number(document.getElementById('edit-cargo-length').value) || 100);
+        const newWid = Math.max(1, Number(document.getElementById('edit-cargo-width').value) || 80);
+        const newHei = Math.max(1, Number(document.getElementById('edit-cargo-height').value) || 90);
+        const newOversized = document.getElementById('edit-cargo-oversized').checked;
+        const newServices = document.getElementById('edit-cargo-services').value.trim();
+        const newNote = document.getElementById('edit-cargo-note').value.trim();
+
+        const whChanged = newWh !== currentWarehouse || newLoc !== currentLocation || newStatus !== currentStatus;
+
+        if (isStandaloneUnmarked) {
+          cargo.cargoNumber = newNum;
+          cargo.dfShipment = newNum;
+          cargo.trackingNumber = newTrack;
+          cargo.status = newStatus;
+          cargo.warehouse = newWh;
+          cargo.warehouseLocation = newLoc;
+          cargo.receiveDate = newReceived;
+          cargo.titleUa = newTitleUa;
+          cargo.nameEn = newNameEn;
+          cargo.nameCn = newNameCn;
+          cargo.contentDescription = newDesc;
+          cargo.places = newPlaces;
+          cargo.weight = newWeight;
+          cargo.volume = newVolume;
+          cargo.packagingType = newPkg;
+          cargo.length = newLen;
+          cargo.width = newWid;
+          cargo.height = newHei;
+          cargo.isOversized = newOversized;
+          cargo.additionalServices = newServices;
+          cargo.logistNote = newNote;
+        } else {
+          cargo.cargoId = newNum;
+          cargo.trackingNumber = newTrack;
+          cargo.status = newStatus;
+          cargo.warehouse = newWh;
+          cargo.warehouseLocation = newLoc;
+          cargo.receiveDate = newReceived;
+          cargo.titleUa = newTitleUa;
+          cargo.nameEn = newNameEn;
+          cargo.nameCn = newNameCn;
+          cargo.contentDescription = newDesc;
+          cargo.places = newPlaces;
+          cargo.grossWeight = newWeight;
+          cargo.volume = newVolume;
+          cargo.packageType = newPkg;
+          cargo.length = newLen;
+          cargo.width = newWid;
+          cargo.height = newHei;
+          cargo.isOversized = newOversized;
+          cargo.additionalServices = newServices;
+          cargo.logistNote = newNote;
+
+          if (isNew) {
+            parentEntity.cargoes.push(cargo);
+          }
+          recalculateEntityMetricsFromCargoes(parentEntity);
+          if (drawerPlannedMetrics && currentDrawerEntityId === parentEntity.id) {
+            drawerPlannedMetrics.textContent = `${parentEntity.places || 0} місць | ${parentEntity.weight || 0} кг | ${parentEntity.volume || 0} м³`;
+          }
+        }
+
+        if (!Array.isArray(cargo.movementHistory)) cargo.movementHistory = [];
+        if (isNew || whChanged) {
+          const nowStr = new Date().toISOString().slice(0, 16).replace('T', ' ');
+          cargo.movementHistory.push({
+            step: cargo.movementHistory.length + 1,
+            date: nowStr,
+            warehouse: newWh,
+            location: newLoc,
+            operation: isNew ? 'Первинна реєстрація вантажу на складі' : 'Оновлення даних / переміщення вантажу',
+            status: newStatus,
+            operator: parentEntity.logist || 'Оператор складу',
+            transportRef: newTrack || parentEntity.dfShipment || newNum,
+            comment: newNote || `Місць: ${newPlaces} шт, Вага: ${newWeight} кг, Об'єм: ${newVolume} м³`
+          });
+        }
+
+        closeCargoModal();
+        if (currentDrawerEntityId === parentEntity.id && !isStandaloneUnmarked) {
+          populateDrawerCargoStatusOptions(parentEntity);
+          renderDrawerCargoesSection(parentEntity);
+        }
+        renderAll();
+        showToast(`Вантаж ${newNum} успішно збережено`);
+      };
+    }
+  };
+
+  // --- П.5: Спеціалізована картка вантажу (Ерайву) + Історія переміщень між складами + Друк маршруту ---
+  window.openSpecializedCargoCardModal = function (entityId, cargoId, event) {
+    if (event) event.stopPropagation();
+    const target = resolveCargoTarget(entityId, cargoId);
+    if (!target) return;
+    if (target.isStandaloneUnmarked) {
+      openCargoInfoModal(entityId);
+      return;
+    }
+
+    const { parentEntity, cargo } = target;
+    const historyList = Array.isArray(cargo.movementHistory) ? cargo.movementHistory : [];
+    const dims = (cargo.length && cargo.width && cargo.height) ? `${cargo.length} × ${cargo.width} × ${cargo.height} см` : '110 × 80 × 95 см';
+    const isPromise = parentEntity.readinessCategory === 'planned' || parentEntity.entityType === 'promise';
+
+    const row = (label, value, mono = false) => `
+      <div class="bg-slate-50 p-2 rounded-lg border border-slate-200">
+        <span class="text-[10px] text-slate-400 uppercase font-bold block">${label}</span>
+        <span class="text-xs font-bold text-slate-800 ${mono ? 'font-mono' : ''}">${value || '—'}</span>
+      </div>`;
+
+    showCargoModal(`
+      <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-brand-50/60 rounded-t-2xl">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-bold uppercase text-brand-700">Спеціалізована картка вантажу (Ерайву)</span>
+            ${renderCargoStatusBadge(cargo.status)}
+          </div>
+          <div class="text-base font-bold text-slate-900 font-mono mt-0.5">${cargo.cargoId} <span class="text-xs font-normal text-slate-500">у складі ${isPromise ? 'Обіцянки' : 'Перевезення'} ${parentEntity.dfShipment || parentEntity.id}</span></div>
+        </div>
+        <button onclick="closeCargoModal()" class="text-slate-400 hover:text-slate-700 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div class="p-4 space-y-3 text-xs max-h-[72vh] overflow-y-auto">
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          ${row('DF Номер вантажу (Ерайв)', cargo.cargoId, true)}
+          ${row('Трек-номер', cargo.trackingNumber, true)}
+          ${row('Дата отримання', cargo.receiveDate, true)}
+          ${row('Поточний склад', cargo.warehouse || parentEntity.hub)}
+          ${row('Локація на складі', cargo.warehouseLocation || 'Зона A')}
+          ${row('Клієнт / Логіст', `${parentEntity.client} (${parentEntity.logist})`)}
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          ${row('Назва товару (UA)', cargo.titleUa)}
+          ${row('Назва товару (EN)', cargo.nameEn)}
+          ${row('Назва товару (CN)', cargo.nameCn)}
+        </div>
+
+        ${row('Повний опис вмісту вантажу', cargo.contentDescription || cargo.titleUa)}
+
+        <div class="text-[11px] font-bold text-slate-700 uppercase">Фізичні габарити та пакування</div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          ${row('Кількість місць', `${cargo.places || 0} шт`, true)}
+          ${row('Вага брутто', `${cargo.grossWeight || 0} кг`, true)}
+          ${row("Об'єм", `${cargo.volume || 0} м³`, true)}
+          ${row('Габарити Д×Ш×В', dims, true)}
+          ${row('Тип пакування', cargo.packageType || 'Палети')}
+          ${row('Негабарит', cargo.isOversized ? 'Так (Негабарит)' : 'Ні (Стандарт)')}
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          ${row('Додаткові послуги на складі', cargo.additionalServices)}
+          ${row('Примітка логіста', cargo.logistNote)}
+        </div>
+
+        <!-- Історія переміщень між складами всередині спеціалізованої картки -->
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="text-[11px] font-bold text-slate-800 uppercase flex items-center gap-1.5">
+              <i class="fa-solid fa-route text-brand-600"></i>
+              <span>Історія переміщень (${historyList.length})</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button type="button" onclick="window.printCargoRoute('${parentEntity.id}', '${cargo.cargoId}', event)"
+                class="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-[10px] font-bold inline-flex items-center gap-1 cursor-pointer shadow-2xs">
+                <i class="fa-solid fa-print"></i> Друкувати маршрут
+              </button>
+              <button type="button" onclick="window.openCargoMovementHistoryModal('${parentEntity.id}', '${cargo.cargoId}', event)"
+                class="px-2.5 py-1 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 text-[10px] font-bold inline-flex items-center gap-1 cursor-pointer">
+                <i class="fa-solid fa-timeline"></i> Детальна історія та +Переміщення
+              </button>
+            </div>
+          </div>
+
+          <div class="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+            ${historyList.map((st, idx) => `
+              <div class="bg-white p-2 rounded-lg border border-slate-200 flex items-start justify-between gap-2 text-[11px]">
+                <div class="flex items-start gap-2">
+                  <span class="w-5 h-5 rounded-full bg-brand-100 text-brand-800 font-mono font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">${idx + 1}</span>
+                  <div>
+                    <div class="font-bold text-slate-800">${st.warehouse} <span class="text-slate-400 font-normal">• ${st.location || 'Термінал'}</span></div>
+                    <div class="text-[10px] text-slate-600">${st.operation}</div>
+                    ${st.comment ? `<div class="text-[10px] text-slate-400 italic">${st.comment}</div>` : ''}
+                  </div>
+                </div>
+                <div class="text-right shrink-0">
+                  <span class="px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 text-[9px] font-bold block">${st.status}</span>
+                  <span class="text-[9px] font-mono text-slate-400">${st.date}</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 border-t border-slate-200 bg-slate-50 rounded-b-2xl flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="window.openEditCargoModal('${parentEntity.id}', '${cargo.cargoId}', event)"
+            class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-2xs">
+            <i class="fa-regular fa-pen-to-square"></i> Редагувати вантаж
+          </button>
+          <button type="button" onclick="window.printCargoRoute('${parentEntity.id}', '${cargo.cargoId}', event)"
+            class="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer">
+            <i class="fa-solid fa-print"></i> Друкувати маршрут
+          </button>
+        </div>
+        <button type="button" onclick="closeCargoModal()" class="px-3.5 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold cursor-pointer hover:bg-slate-100">Закрити</button>
+      </div>
+    `);
+  };
+
+  window.openCargoMovementHistoryModal = function (entityId, cargoId, event) {
+    if (event) event.stopPropagation();
+    const target = resolveCargoTarget(entityId, cargoId);
+    if (!target) return;
+
+    const { isStandaloneUnmarked, parentEntity, cargo } = target;
+    const cNum = isStandaloneUnmarked ? (cargo.cargoNumber || cargo.id) : cargo.cargoId;
+    if (!Array.isArray(cargo.movementHistory)) cargo.movementHistory = [];
+    const historyList = cargo.movementHistory;
+
+    const routeChainHtml = historyList.map((st, idx) => {
+      const isLast = idx === historyList.length - 1;
+      return `
+        <div class="flex items-center gap-1.5 shrink-0">
+          <div class="px-2.5 py-1.5 rounded-lg border ${isLast ? 'bg-brand-600 text-white border-brand-700 shadow-xs' : 'bg-white text-slate-800 border-slate-200'} text-[11px]">
+            <div class="font-bold flex items-center gap-1">
+              <span class="w-4 h-4 rounded-full ${isLast ? 'bg-white text-brand-700' : 'bg-slate-100 text-slate-700'} font-mono text-[9px] font-extrabold inline-flex items-center justify-center">${idx + 1}</span>
+              <span>${st.warehouse}</span>
+            </div>
+            <div class="text-[9px] ${isLast ? 'text-brand-100' : 'text-slate-400'} font-mono mt-0.5">${st.location || 'Зона A'} • ${st.date}</div>
+          </div>
+          ${!isLast ? '<i class="fa-solid fa-arrow-right text-slate-400 text-xs mx-0.5"></i>' : ''}
+        </div>
+      `;
+    }).join('');
+
+    showCargoModal(`
+      <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-sky-50/70 rounded-t-2xl">
+        <div>
+          <div class="text-[10px] font-bold uppercase text-sky-700 flex items-center gap-1.5">
+            <i class="fa-solid fa-route"></i>
+            <span>Історія переміщень вантажу (Ерайву) між складами</span>
+          </div>
+          <div class="text-base font-bold text-slate-900 font-mono mt-0.5">${cNum} <span class="text-xs font-normal text-slate-500">(${cargo.titleUa || cargo.contentDescription || 'Вантаж'})</span></div>
+        </div>
+        <div>
+          <button onclick="closeCargoModal()" class="text-slate-400 hover:text-slate-700 cursor-pointer p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+        </div>
+      </div>
+
+      <div class="p-4 space-y-3 text-xs max-h-[72vh] overflow-y-auto">
+        <!-- Візуальний ланцюжок складів -->
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <div class="text-[10px] font-bold uppercase text-slate-500 mb-2">Маршрут складських терміналів та транзитних хабів</div>
+          <div class="flex items-center gap-1 overflow-x-auto pb-1">
+            ${routeChainHtml || '<span class="text-slate-400 italic">Немає записів переміщень</span>'}
+          </div>
+        </div>
+
+        <!-- Таблиця всіх складських переміщень -->
+        <div class="border border-slate-200 rounded-xl overflow-hidden">
+          <table class="w-full text-left border-collapse text-[11px]">
+            <thead>
+              <tr class="bg-slate-100 text-slate-600 border-b border-slate-200 text-[10px] uppercase font-bold">
+                <th class="p-2">#</th>
+                <th class="p-2">Дата / Час</th>
+                <th class="p-2">Склад / Термінал</th>
+                <th class="p-2">Локація</th>
+                <th class="p-2">Операція</th>
+                <th class="p-2">Статус</th>
+                <th class="p-2">Відповідальний</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 bg-white">
+              ${historyList.map((st, idx) => `
+                <tr class="hover:bg-slate-50">
+                  <td class="p-2 font-mono font-bold text-slate-500">${idx + 1}</td>
+                  <td class="p-2 font-mono whitespace-nowrap text-slate-700">${st.date}</td>
+                  <td class="p-2 font-bold text-slate-800">${st.warehouse}</td>
+                  <td class="p-2 text-slate-600">${st.location || '—'}</td>
+                  <td class="p-2 text-slate-700">
+                    <div>${st.operation}</div>
+                    ${st.comment ? `<div class="text-[10px] text-slate-400">${st.comment}</div>` : ''}
+                  </td>
+                  <td class="p-2">${renderCargoStatusBadge(st.status)}</td>
+                  <td class="p-2 text-slate-600 whitespace-nowrap">${st.operator || 'Оператор'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Форма додавання нового переміщення між складами -->
+        <div class="bg-sky-50/60 p-3 rounded-xl border border-sky-200 space-y-2">
+          <div class="text-[10px] font-bold uppercase text-sky-900 flex items-center gap-1.5">
+            <i class="fa-solid fa-truck-ramp-box"></i>
+            <span>Зафіксувати нове переміщення між складами / зміну локації</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <input id="new-move-warehouse" type="text" placeholder="Новий склад (напр. Хаб Варшава)" value="${parentEntity.hub || 'Транзитний Хаб Варшава'}" class="border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-xs">
+            <input id="new-move-location" type="text" placeholder="Зона / Рампа / Стелаж" value="Крос-док • Рампа 04" class="border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-xs">
+            <select id="new-move-status" class="border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-xs font-semibold">
+              ${ALL_CARGO_STATUSES.map(st => `<option value="${st}" ${st === 'На складі призначення' ? 'selected' : ''}>${st}</option>`).join('')}
+            </select>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <input id="new-move-operation" type="text" placeholder="Операція (напр. Прибуття на транзитний склад)" value="Переміщення на транзитний склад та звірка місць" class="sm:col-span-2 border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-xs">
+            <button type="button" id="btn-add-cargo-movement" class="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs cursor-pointer shadow-2xs inline-flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-plus"></i> Додати переміщення
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 border-t border-slate-200 bg-slate-50 rounded-b-2xl flex items-center justify-between">
+        <button type="button" onclick="window.openEditCargoModal('${parentEntity.id}', ${isStandaloneUnmarked ? 'null' : `'${cargo.cargoId}'`}, event)"
+          class="px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer">
+          <i class="fa-regular fa-pen-to-square"></i> Редагувати вантаж
+        </button>
+        <button type="button" onclick="closeCargoModal()" class="px-3.5 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold cursor-pointer hover:bg-slate-100">Закрити</button>
+      </div>
+    `);
+
+    const addMoveBtn = document.getElementById('btn-add-cargo-movement');
+    if (addMoveBtn) {
+      addMoveBtn.onclick = () => {
+        const wh = document.getElementById('new-move-warehouse').value.trim();
+        const loc = document.getElementById('new-move-location').value.trim();
+        const st = document.getElementById('new-move-status').value;
+        const op = document.getElementById('new-move-operation').value.trim();
+        if (!wh || !op) {
+          showToast('Вкажіть склад та опис операції переміщення', true);
+          return;
+        }
+        const nowStr = new Date().toISOString().slice(0, 16).replace('T', ' ');
+        cargo.movementHistory.push({
+          step: cargo.movementHistory.length + 1,
+          date: nowStr,
+          warehouse: wh,
+          location: loc || 'Термінал',
+          operation: op,
+          status: st,
+          operator: parentEntity.logist || 'Черговий логіст',
+          transportRef: parentEntity.subvoyageId || parentEntity.dfShipment || cNum,
+          comment: `К-сть місць: ${cargo.places || 1} шт (${(isStandaloneUnmarked ? cargo.weight : cargo.grossWeight) || 100} кг / ${cargo.volume || 0.5} м³)`
+        });
+        cargo.warehouse = wh;
+        cargo.warehouseLocation = loc || cargo.warehouseLocation;
+        cargo.status = st;
+
+        if (currentDrawerEntityId === parentEntity.id && !isStandaloneUnmarked) {
+          populateDrawerCargoStatusOptions(parentEntity);
+          renderDrawerCargoesSection(parentEntity);
+        }
+        renderAll();
+        window.openCargoMovementHistoryModal(parentEntity.id, isStandaloneUnmarked ? null : cargo.cargoId);
+        showToast(`Додано переміщення на склад «${wh}»`);
+      };
+    }
+  };
+
+  // Друк маршрутного листа переміщень вантажу між складами
+  window.printCargoRoute = function (entityId, cargoId, event) {
+    if (event) event.stopPropagation();
+    const target = resolveCargoTarget(entityId, cargoId);
+    if (!target) return;
+
+    const { isStandaloneUnmarked, parentEntity, cargo } = target;
+    const cNum = isStandaloneUnmarked ? (cargo.cargoNumber || cargo.id) : cargo.cargoId;
+    const weightVal = isStandaloneUnmarked ? cargo.weight : cargo.grossWeight;
+    const pkgVal = isStandaloneUnmarked ? cargo.packagingType : cargo.packageType;
+    const historyList = Array.isArray(cargo.movementHistory) ? cargo.movementHistory : [];
+    const printDate = new Date().toLocaleString('uk-UA');
+
+    const printHtml = `<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <title>Маршрутний лист вантажу ${cNum}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #0f172a; margin: 24px; font-size: 12px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 16px; }
+    .title { font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; }
+    .subtitle { font-size: 12px; color: #475569; margin-top: 4px; }
+    .meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+    .meta-box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; background: #f8fafc; }
+    .meta-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b; display: block; }
+    .meta-val { font-size: 12px; font-weight: 700; color: #0f172a; margin-top: 2px; display: block; }
+    .route-chain { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px; border: 1px solid #94a3b8; border-radius: 8px; background: #f1f5f9; margin-bottom: 16px; }
+    .route-node { border: 1px solid #475569; border-radius: 6px; padding: 6px 10px; background: #ffffff; font-weight: 700; }
+    .route-arrow { font-weight: 900; color: #334155; font-size: 14px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; vertical-align: top; }
+    th { background: #e2e8f0; font-size: 10px; text-transform: uppercase; font-weight: 800; color: #1e293b; }
+    .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 28px; padding-top: 16px; border-top: 1px dashed #94a3b8; }
+    .sig-line { border-bottom: 1px solid #334155; height: 26px; margin-top: 16px; }
+    @media print {
+      .no-print { display: none !important; }
+      body { margin: 10mm; }
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="margin-bottom: 16px; display: flex; justify-content: flex-end; gap: 8px;">
+    <button onclick="window.print()" style="padding: 8px 16px; background: #0284c7; color: #fff; border: none; border-radius: 6px; font-weight: 700; cursor: pointer;">Друкувати документ</button>
+    <button onclick="window.close()" style="padding: 8px 14px; background: #e2e8f0; color: #0f172a; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">Закрити</button>
+  </div>
+
+  <div class="header">
+    <div>
+      <div class="title">Маршрутний лист переміщень вантажу (Ерайву) між складами</div>
+      <div class="subtitle">DF Вантаж: <strong>${cNum}</strong> • Трек: <strong>${cargo.trackingNumber || '—'}</strong> • Сутність: <strong>${parentEntity.dfShipment || parentEntity.id}</strong> (Обіцянка: ${parentEntity.dfPromise || '—'})</div>
+    </div>
+    <div style="text-align: right; font-size: 11px;">
+      <div><strong>Дата друку:</strong> ${printDate}</div>
+      <div><strong>Підрейс:</strong> ${parentEntity.subvoyageId || 'В пулі'}</div>
+    </div>
+  </div>
+
+  <div class="meta-grid">
+    <div class="meta-box">
+      <span class="meta-label">Найменування вантажу (UA / EN)</span>
+      <span class="meta-val">${cargo.titleUa || cargo.contentDescription || 'Вантаж'} ${cargo.nameEn ? `/ ${cargo.nameEn}` : ''}</span>
+    </div>
+    <div class="meta-box">
+      <span class="meta-label">Клієнт / Логіст</span>
+      <span class="meta-val">${parentEntity.client || '—'} / ${parentEntity.logist || '—'}</span>
+    </div>
+    <div class="meta-box">
+      <span class="meta-label">Поточний статус та склад</span>
+      <span class="meta-val">${cargo.status || 'На складі'} (${cargo.warehouse || parentEntity.hub || '—'})</span>
+    </div>
+    <div class="meta-box">
+      <span class="meta-label">Фізичні параметри</span>
+      <span class="meta-val">${cargo.places || 0} місць | ${weightVal || 0} кг | ${cargo.volume || 0} м³</span>
+    </div>
+    <div class="meta-box">
+      <span class="meta-label">Пакування та габарити</span>
+      <span class="meta-val">${pkgVal || 'Палети'} (${cargo.length || 100}×${cargo.width || 80}×${cargo.height || 90} см)</span>
+    </div>
+    <div class="meta-box">
+      <span class="meta-label">Маршрут перевезення</span>
+      <span class="meta-val">${parentEntity.transitSegment || `${parentEntity.originCountry || 'Китай'} ➔ ${parentEntity.destinationCountry || 'Україна'}`}</span>
+    </div>
+  </div>
+
+  <div style="font-weight: 800; text-transform: uppercase; font-size: 11px; margin-bottom: 6px;">Схема маршруту між складами:</div>
+  <div class="route-chain">
+    ${historyList.map((st, idx) => `
+      <div class="route-node">${idx + 1}. ${st.warehouse} (${st.location || 'Термінал'})</div>
+      ${idx < historyList.length - 1 ? '<span class="route-arrow">➔</span>' : ''}
+    `).join('')}
+  </div>
+
+  <div style="font-weight: 800; text-transform: uppercase; font-size: 11px; margin-bottom: 6px;">Журнал складських операцій та переміщень:</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 28px;">№</th>
+        <th style="width: 115px;">Дата та час</th>
+        <th>Склад / Логістичний хаб</th>
+        <th>Зона / Локація</th>
+        <th>Операція переміщення</th>
+        <th>Статус вантажу</th>
+        <th>Відповідальний</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${historyList.map((st, idx) => `
+        <tr>
+          <td><strong>${idx + 1}</strong></td>
+          <td style="font-family: monospace;">${st.date}</td>
+          <td><strong>${st.warehouse}</strong></td>
+          <td>${st.location || '—'}</td>
+          <td>${st.operation}${st.comment ? `<br><span style="color:#475569;font-size:11px;">${st.comment}</span>` : ''}</td>
+          <td><strong>${st.status}</strong></td>
+          <td>${st.operator || '—'}</td>
+        </tr>
+      `).join('')}
+    </tbody>
+  </table>
+
+  <div class="signatures">
+    <div>
+      <strong>Відпустив зі складу (ПІБ, підпис, печатка):</strong>
+      <div class="sig-line"></div>
+    </div>
+    <div>
+      <strong>Прийняв на склад / перевізник (ПІБ, підпис):</strong>
+      <div class="sig-line"></div>
+    </div>
+  </div>
+
+  <script>
+    window.onload = function() {
+      setTimeout(function() { window.print(); }, 250);
+    };
+  </script>
+</body>
+</html>`;
+
+    const printWin = window.open('', '_blank', 'width=960,height=760');
+    if (printWin) {
+      printWin.document.open();
+      printWin.document.write(printHtml);
+      printWin.document.close();
+    } else {
+      showToast('Дозвольте спливаючі вікна у браузері для друку маршруту', true);
+    }
+  };
+
   // Drawer (Повна інформація про Перевезення та Вантаж/Ерайв за специфікацією)
   window.handleShipmentRowClick = function (shipmentId, event) {
     if (event.target.closest('input') || event.target.closest('button') || event.target.closest('a')) return;
@@ -3415,6 +5232,18 @@ function initSubvoyagesPlannerModule() {
     const uInfo = getShipmentUrgencyInfo(tr);
 
     if (drawerShipmentId) drawerShipmentId.textContent = tr.dfShipment || tr.id;
+    const drawerCargoTypeBadge = document.getElementById('drawer-cargo-type-badge');
+    if (drawerCargoTypeBadge) {
+      if (tr.cargoType === 'Карго') {
+        drawerCargoTypeBadge.innerHTML = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-200 border border-amber-400/40 inline-flex items-center gap-1" title="Тип митного оформлення: Карго"><i class="fa-solid fa-box"></i> Карго</span>`;
+      } else if (tr.cargoType === 'Фрахт' || tr.cargoType === 'Біле') {
+        drawerCargoTypeBadge.innerHTML = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-200 border border-indigo-400/40 inline-flex items-center gap-1" title="Тип митного оформлення: Фрахт (Офіціал)"><i class="fa-solid fa-landmark"></i> Фрахт</span>`;
+      } else if (tr.cargoType) {
+        drawerCargoTypeBadge.innerHTML = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-700 text-slate-200 border border-slate-500">${tr.cargoType}</span>`;
+      } else {
+        drawerCargoTypeBadge.innerHTML = '';
+      }
+    }
     if (drawerStatusBadge) drawerStatusBadge.innerHTML = renderStatusBadge(tr.status);
     if (drawerUrgencyBadge) drawerUrgencyBadge.innerHTML = renderUrgencyBadge(uInfo);
     if (drawerShipmentPromise) drawerShipmentPromise.textContent = `Пов'язана Обіцянка: ${tr.dfPromise || '—'} | Підрейс: ${tr.subvoyageId || 'Не призначено'}`;
@@ -3498,7 +5327,7 @@ function initSubvoyagesPlannerModule() {
     if (drawerTransportType) {
       drawerTransportType.innerHTML = `<span class="inline-flex items-center gap-1.5">${renderTransportBadge(tr.transport)} <span>•</span> <span>${tr.transportType || 'Консолідація'} / ${tr.loadingType || 'LCL'}</span></span>`;
     }
-    if (drawerPlannedMetrics) drawerPlannedMetrics.textContent = `${tr.places || 0} місць | ${tr.weight || 0} т | ${tr.volume || 0} м³`;
+    if (drawerPlannedMetrics) drawerPlannedMetrics.textContent = `${tr.places || 0} місць | ${tr.weight || 0} кг | ${tr.volume || 0} м³`;
     if (drawerAdditionalDeliveryParams) drawerAdditionalDeliveryParams.textContent = tr.additionalDeliveryParams || 'Стандартні умови перевезення, обов\'язковий фотозвіт при завантаженні';
 
     if (drawerWarehouseAddress) drawerWarehouseAddress.textContent = tr.warehouseAddress || `${tr.hub || 'Транзитний склад'}`;
@@ -3532,66 +5361,15 @@ function initSubvoyagesPlannerModule() {
       drawerLastmileBlock.classList.add('hidden');
     }
 
-    // Відображення Вантажів (Ерайвів): Кількість місць, вага, об'єм, тип пакування, додаткові послуги, примітка логіста
-    const cargoes = tr.cargoes || [];
-    if (drawerCargoCount) drawerCargoCount.textContent = `${cargoes.length} ерайвів`;
+    currentDrawerEntityId = tr.id;
+    drawerCargoSearchQuery = '';
+    drawerCargoStatusFilter = 'ALL';
+    const searchInputEl = document.getElementById('drawer-cargo-search-input');
+    if (searchInputEl) searchInputEl.value = '';
 
-    if (drawerCargoesList) {
-      drawerCargoesList.innerHTML = cargoes.map(c => `
-        <div class="p-3 bg-white rounded-xl border border-slate-200 space-y-2 shadow-2xs">
-          <div class="flex justify-between items-start gap-2">
-            <div>
-              <div class="flex items-center gap-2 flex-wrap">
-                <strong class="text-slate-900 text-xs">${c.titleUa}</strong>
-                ${c.nameEn ? `<span class="text-[10px] text-slate-400 font-mono">/ ${c.nameEn}</span>` : ''}
-              </div>
-              <p class="text-[11px] text-slate-500 italic mt-0.5">${c.contentDescription || ''}</p>
-            </div>
-            <div class="text-right shrink-0">
-              <span class="text-[10px] font-mono font-bold bg-brand-50 text-brand-800 border border-brand-200 px-2 py-0.5 rounded block">Ерайв: ${c.cargoId}</span>
-              <span class="text-[9px] text-slate-400 font-mono">Трек: ${c.trackingNumber || 'TRK-' + c.cargoId}</span>
-            </div>
-          </div>
-
-          <!-- Основні габарити та пакування вантажу -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] font-mono bg-slate-50 p-2 rounded-lg border border-slate-200">
-            <div>
-              <span class="text-slate-400 block text-[9px] font-sans uppercase font-bold">Кількість місць:</span>
-              <strong class="text-slate-900 text-xs">${c.places || 0} місць</strong>
-            </div>
-            <div>
-              <span class="text-slate-400 block text-[9px] font-sans uppercase font-bold">Вага брутто:</span>
-              <strong class="text-slate-900 text-xs">${c.grossWeight || 0} т</strong>
-            </div>
-            <div>
-              <span class="text-slate-400 block text-[9px] font-sans uppercase font-bold">Об'єм:</span>
-              <strong class="text-slate-900 text-xs">${c.volume || 0} м³</strong>
-            </div>
-            <div>
-              <span class="text-slate-400 block text-[9px] font-sans uppercase font-bold">Тип пакування:</span>
-              <strong class="text-amber-900 font-sans font-bold">${c.packageType || '—'}</strong>
-            </div>
-          </div>
-
-          <!-- Додаткові послуги та Примітка логіста по вантажу -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-            <div class="bg-indigo-50/60 border border-indigo-100 p-2 rounded-lg">
-              <span class="text-[9px] uppercase font-bold text-indigo-700 block"><i class="fa-solid fa-screwdriver-wrench mr-1"></i>Додаткові послуги:</span>
-              <span class="text-slate-800 font-semibold">${c.additionalServices || 'Перепакування, фотозвіт, маркування'}</span>
-            </div>
-            <div class="bg-amber-50/70 border border-amber-200/80 p-2 rounded-lg">
-              <span class="text-[9px] uppercase font-bold text-amber-800 block"><i class="fa-regular fa-note-sticky mr-1"></i>Примітка логіста:</span>
-              <span class="text-slate-800 italic">${c.logistNote || 'Перевірено на складі відправлення, зауважень немає'}</span>
-            </div>
-          </div>
-
-          <div class="flex justify-between items-center text-[10px] text-slate-500 pt-1 border-t border-slate-100">
-            <span>Локація: <strong class="text-slate-700">${c.warehouseLocation || 'Склад'}</strong></span>
-            <span>Статус ерайву: <strong class="text-emerald-700">${c.status || 'На складі'}</strong></span>
-          </div>
-        </div>
-      `).join('');
-    }
+    renderDrawerEntityTasks(tr);
+    populateDrawerCargoStatusOptions(tr);
+    renderDrawerCargoesSection(tr);
 
     if (drawerBtnDetach) {
       drawerBtnDetach.style.display = tr.subvoyageId ? 'inline-flex' : 'none';
@@ -3640,6 +5418,7 @@ function initSubvoyagesPlannerModule() {
 
     setElText('sv-drawer-title', `${sv.name} (${sv.id})`);
     setElHtml('sv-drawer-status-badge', renderStatusBadge(sv.status));
+    setElHtml('sv-drawer-tasks-badge', renderSubvoyageTasksBadge(sv));
     setElHtml('sv-drawer-urgency-badge', renderUrgencyBadge(svUrgency));
     setElText('sv-drawer-subtitle', `Зовнішній рейс: ${sv.parentVoyage || '—'} | Шаблон: ${sv.template || 'Стандартний'}`);
 
@@ -3717,7 +5496,7 @@ function initSubvoyagesPlannerModule() {
       </div>
       <div>
         <div class="flex justify-between text-xs font-mono text-slate-700 mb-1">
-          <span>Вага брутто (т): <strong>${cap.weight.toFixed(1)}</strong> / ${sv.maxWeight} т</span>
+          <span>Вага брутто (кг): <strong>${Math.round(cap.weight)}</strong> / ${sv.maxWeight} кг</span>
           <span class="${themeWeight.text}">${cap.projPctWeight}%</span>
         </div>
         <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
@@ -3748,13 +5527,15 @@ function initSubvoyagesPlannerModule() {
             <div class="space-y-1">
               <div class="flex items-center gap-1.5 flex-wrap">
                 <span class="font-mono font-bold text-xs text-brand-700">${tr.dfShipment || tr.id}</span>
+                ${renderBlockingDepartureBadge(tr)}
                 ${renderStatusBadge(tr.status)}
                 ${routeInfo}
+                ${renderAcceptanceBadges(tr)}
               </div>
               <div class="text-[11px] text-slate-700 font-semibold">${tr.client} <span class="text-slate-400 font-normal">• ${tr.logist}</span></div>
             </div>
             <div class="text-right font-mono text-[11px] text-slate-700 shrink-0">
-              <div><strong>${tr.volume}</strong> м³ | <strong>${tr.weight}</strong> т | <strong>${tr.places}</strong> шт</div>
+              <div><strong>${tr.volume}</strong> м³ | <strong>${tr.weight}</strong> кг | <strong>${tr.places}</strong> шт</div>
               <div class="text-[10px] text-slate-500">Готовність: ${tr.dateReady || '—'}</div>
             </div>
           </div>
@@ -3785,19 +5566,207 @@ function initSubvoyagesPlannerModule() {
   if (btnCloseDrawer) btnCloseDrawer.addEventListener('click', closeContextDrawer);
   if (contextDrawerBackdrop) contextDrawerBackdrop.addEventListener('click', closeContextDrawer);
 
-  window.assignShipmentToSubvoyage = function (shipmentId, svId) {
-    const tr = transportsData.find(t => t.id === shipmentId);
+  // --- Attention: Вікно попередження при конфліктах параметрів підрейсу та перевезення ---
+  let pendingAttentionAssign = null;
+
+  function performAssignShipmentsToSubvoyage(shipmentIds, svId, confirmedRisk = false) {
     const sv = subVoyagesData.find(s => s.id === svId);
-    if (!tr || !sv) return;
-    tr.subvoyageId = svId;
-    tr.status = sv.status;
-    if (sv.plannedDeparture) {
-      tr.dateShipped = sv.plannedDeparture;
-    }
+    if (!sv) return;
+    let addedCount = 0;
+    let lastTr = null;
+    shipmentIds.forEach(id => {
+      const tr = transportsData.find(t => t.id === id);
+      if (!tr) return;
+      tr.subvoyageId = svId;
+      tr.status = sv.status;
+      if (sv.plannedDeparture) tr.dateShipped = sv.plannedDeparture;
+      if (confirmedRisk) tr.conflictConfirmed = true;
+      selectedUnassignedIds.delete(id);
+      addedCount++;
+      lastTr = tr;
+    });
+    if (addedCount === 0) return;
+    expandedSubvoyageIds.add(svId);
     syncSubvoyageAndShipmentsStatuses();
-    selectedUnassignedIds.delete(shipmentId);
-    showToast(`${isUnmarkedCargo(tr) ? 'Вантаж' : 'Перевезення'} ${tr.dfShipment || tr.id} додано в ${svId}`);
+    const msg = addedCount === 1 && lastTr
+      ? `${isUnmarkedCargo(lastTr) ? 'Вантаж' : 'Перевезення'} ${lastTr.dfShipment || lastTr.id} додано в ${svId}`
+      : `Додано ${addedCount} перевезень до ${svId} (Єдиний статус: ${sv.status})`;
+    showToast(confirmedRisk ? `${msg} (ризик підтверджено)` : msg);
     renderAll();
+  }
+
+  function renderAttentionConflictsModal() {
+    if (!pendingAttentionAssign) return;
+    const { sv, items } = pendingAttentionAssign;
+    const listEl = document.getElementById('attention-conflicts-list');
+    const summaryEl = document.getElementById('attention-conflicts-sv-summary');
+    const progressEl = document.getElementById('attention-conflicts-progress');
+    const saveBtn = document.getElementById('btn-attention-confirm-save');
+
+    if (summaryEl) {
+      const svSpecs = [
+        sv.transport,
+        `${sv.originCountry || '—'} ➔ ${sv.destinationCountry || '—'}`,
+        sv.cargoMode && sv.cargoMode !== 'all' ? sv.cargoMode : null,
+        ...(sv.keyMarkers || []).map(k => SUBVOYAGE_KEY_MARKER_LABELS[k] || k)
+      ].filter(Boolean).join(' • ');
+      summaryEl.innerHTML = `<strong>Підрейс ${sv.id} (${sv.name}):</strong> ${svSpecs}`;
+    }
+
+    if (listEl) {
+      const groupedMap = new Map();
+      items.forEach(item => {
+        const key = item.shipmentId || item.shipmentLabel;
+        if (!groupedMap.has(key)) {
+          groupedMap.set(key, {
+            shipmentId: item.shipmentId,
+            shipmentLabel: item.shipmentLabel,
+            items: []
+          });
+        }
+        groupedMap.get(key).items.push(item);
+      });
+
+      listEl.innerHTML = Array.from(groupedMap.values()).map(group => {
+        const groupConfirmedCount = group.items.filter(i => i.confirmed).length;
+        const groupAllConfirmed = groupConfirmedCount === group.items.length;
+        return `
+          <div class="rounded-xl border ${groupAllConfirmed ? 'border-emerald-300 bg-emerald-50/20' : 'border-amber-200 bg-white'} overflow-hidden shadow-2xs">
+            <div class="px-3.5 py-2 ${groupAllConfirmed ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50/80 border-amber-200'} border-b flex items-center justify-between gap-2 flex-wrap">
+              <div class="flex items-center gap-2">
+                <span class="font-mono font-bold text-brand-700 text-xs">${group.shipmentLabel}</span>
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${groupAllConfirmed ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'}">
+                  Підтверджено ${groupConfirmedCount} з ${group.items.length}
+                </span>
+              </div>
+            </div>
+            <div class="divide-y divide-slate-100">
+              ${group.items.map(item => `
+                <div class="p-3 flex items-center justify-between gap-3 transition ${item.confirmed ? 'bg-emerald-50/40' : 'bg-white'}">
+                  <div class="space-y-0.5 min-w-0">
+                    <div class="font-bold text-slate-900">${item.paramLabel}</div>
+                    <div class="text-[11px] text-slate-600">
+                      Підрейс: <strong class="text-slate-800">${item.svValue}</strong>
+                      <span class="mx-1 text-slate-400">≠</span>
+                      Перевезення: <strong class="text-rose-700">${item.trValue}</strong>
+                    </div>
+                  </div>
+                  <button type="button" onclick="toggleAttentionConflictConfirm('${item.uid}')"
+                    class="px-3 py-1.5 rounded-lg text-[11px] font-bold border transition shrink-0 cursor-pointer ${item.confirmed
+                      ? 'bg-emerald-600 text-white border-emerald-700'
+                      : 'bg-white hover:bg-amber-100 text-amber-900 border-amber-400'}">
+                    ${item.confirmed ? '<i class="fa-solid fa-check mr-1"></i>Підтверджено' : 'Підтверджую'}
+                  </button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    const confirmedCount = items.filter(i => i.confirmed).length;
+    const allConfirmed = items.length > 0 && confirmedCount === items.length;
+    if (progressEl) {
+      progressEl.textContent = `Підтверджено ${confirmedCount} з ${items.length}`;
+      progressEl.className = allConfirmed ? 'text-[11px] font-bold text-emerald-700' : 'text-[11px] font-bold text-amber-800';
+    }
+    if (saveBtn) saveBtn.disabled = !allConfirmed;
+  }
+
+  window.toggleAttentionConflictConfirm = function (uid) {
+    if (!pendingAttentionAssign) return;
+    const item = pendingAttentionAssign.items.find(i => i.uid === uid);
+    if (!item) return;
+    item.confirmed = !item.confirmed;
+    renderAttentionConflictsModal();
+  };
+
+  window.closeAttentionConflictsModal = function () {
+    pendingAttentionAssign = null;
+    const modal = document.getElementById('modal-attention-conflicts');
+    if (modal) modal.classList.add('hidden');
+  };
+
+  window.confirmAttentionConflictsAssign = function () {
+    if (!pendingAttentionAssign) return;
+    const { shipmentIds, svId, items } = pendingAttentionAssign;
+    if (!items.every(i => i.confirmed)) return;
+    closeAttentionConflictsModal();
+    performAssignShipmentsToSubvoyage(shipmentIds, svId, true);
+  };
+
+  function ensureAttentionConflictsModal() {
+    let modal = document.getElementById('modal-attention-conflicts');
+    if (modal) return modal;
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = `
+      <div id="modal-attention-conflicts" class="hidden fixed inset-0 z-[70] bg-slate-900/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
+        <div class="bg-white rounded-2xl shadow-2xl border border-amber-300 max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+          <div class="px-6 py-4 bg-amber-50 border-b border-amber-200 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center text-lg shadow-xs"><i class="fa-solid fa-triangle-exclamation"></i></div>
+              <div>
+                <h3 class="font-extrabold text-amber-950 text-base">Attention: Виявлено розбіжності параметрів</h3>
+                <p id="attention-conflicts-subtitle" class="text-[11px] text-amber-800 mt-0.5">Підтвердіть кожну розбіжність окремо, щоб додати перевезення на свій страх і ризик.</p>
+              </div>
+            </div>
+            <button type="button" onclick="closeAttentionConflictsModal()" class="w-8 h-8 rounded-lg text-amber-700 hover:bg-amber-100 flex items-center justify-center transition cursor-pointer text-xl leading-none">&times;</button>
+          </div>
+          <div class="p-5 overflow-y-auto custom-scrollbar flex-1 space-y-3 text-xs">
+            <div id="attention-conflicts-sv-summary" class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-700"></div>
+            <div id="attention-conflicts-list" class="space-y-2"></div>
+          </div>
+          <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between flex-wrap gap-3 shrink-0">
+            <span id="attention-conflicts-progress" class="text-[11px] font-bold text-amber-800">Підтверджено 0 з 0</span>
+            <div class="flex items-center gap-2.5">
+              <button type="button" onclick="closeAttentionConflictsModal()" class="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 font-bold text-xs hover:bg-slate-100 transition cursor-pointer">Скасувати</button>
+              <button type="button" id="btn-attention-confirm-save" disabled onclick="confirmAttentionConflictsAssign()" class="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold text-xs transition shadow-sm cursor-pointer inline-flex items-center gap-1.5">
+                <i class="fa-solid fa-check-double"></i><span>Додати в підрейс</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    modal = wrapper.firstElementChild;
+    document.body.appendChild(modal);
+    return modal;
+  }
+
+  function tryAssignShipmentsToSubvoyage(shipmentIds, svId) {
+    const sv = subVoyagesData.find(s => s.id === svId);
+    if (!sv || !shipmentIds.length) return;
+
+    const items = [];
+    shipmentIds.forEach(id => {
+      const tr = transportsData.find(t => t.id === id);
+      if (!tr) return;
+      getSubvoyageShipmentConflicts(tr, sv).forEach(c => {
+        items.push({
+          uid: `${tr.id}__${c.key}`,
+          shipmentId: tr.id,
+          shipmentLabel: tr.dfShipment || tr.id,
+          paramLabel: c.paramLabel,
+          svValue: c.svValue,
+          trValue: c.trValue,
+          confirmed: false
+        });
+      });
+    });
+
+    if (items.length === 0) {
+      performAssignShipmentsToSubvoyage(shipmentIds, svId, false);
+      return;
+    }
+
+    pendingAttentionAssign = { shipmentIds, svId, sv, items };
+    const modal = ensureAttentionConflictsModal();
+    renderAttentionConflictsModal();
+    if (modal) modal.classList.remove('hidden');
+  }
+
+  window.assignShipmentToSubvoyage = function (shipmentId, svId) {
+    tryAssignShipmentsToSubvoyage([shipmentId], svId);
   };
 
   window.detachShipmentFromSubvoyage = function (shipmentId) {
@@ -3808,7 +5777,8 @@ function initSubvoyagesPlannerModule() {
     if (tr.readinessCategory === 'planned') {
       tr.status = 'Плановий (обіцянка)';
     } else if (tr.readinessCategory === 'not_ready') {
-      tr.status = 'Очікує документів';
+      tr.status = resolveNotReadyStatus(tr);
+      tr.notReadyStatus = tr.status;
     } else if (tr.readinessCategory === 'unmarked') {
       tr.status = 'Непромаркований';
     } else {
@@ -3827,7 +5797,10 @@ function initSubvoyagesPlannerModule() {
         t.subvoyageId = null;
         t.dateShipped = null;
         if (t.readinessCategory === 'planned') t.status = 'Плановий (обіцянка)';
-        else if (t.readinessCategory === 'not_ready') t.status = 'Очікує документів';
+        else if (t.readinessCategory === 'not_ready') {
+          t.status = resolveNotReadyStatus(t);
+          t.notReadyStatus = t.status;
+        }
         else if (t.readinessCategory === 'unmarked') t.status = 'Непромаркований';
         else t.status = 'Готовий до завантаження';
       });
@@ -3839,23 +5812,8 @@ function initSubvoyagesPlannerModule() {
 
   if (btnBulkAssignToActive) {
     btnBulkAssignToActive.onclick = () => {
-      if (selectedUnassignedIds.size === 0) return;
-      const sv = subVoyagesData.find(s => s.id === activeSubvoyageId);
-      if (!sv) return;
-
-      const count = selectedUnassignedIds.size;
-      selectedUnassignedIds.forEach(id => {
-        const tr = transportsData.find(t => t.id === id);
-        if (tr) {
-          tr.subvoyageId = sv.id;
-          tr.status = sv.status;
-          if (sv.plannedDeparture) tr.dateShipped = sv.plannedDeparture;
-        }
-      });
-      selectedUnassignedIds.clear();
-      syncSubvoyageAndShipmentsStatuses();
-      showToast(`Додано ${count} перевезень до ${sv.id} (Єдиний статус: ${sv.status})`);
-      renderAll();
+      if (selectedUnassignedIds.size === 0 || !activeSubvoyageId) return;
+      tryAssignShipmentsToSubvoyage(Array.from(selectedUnassignedIds), activeSubvoyageId);
     };
   }
 
@@ -3897,7 +5855,7 @@ function initSubvoyagesPlannerModule() {
 
     // 2. Тип доставки (.sv-quick-delivery-btn)
     document.querySelectorAll('.sv-quick-delivery-btn').forEach(btn => {
-      const dMode = btn.getAttribute('data-delivery');
+      const dMode = btn.getAttribute('data-delivery') || btn.getAttribute('data-delivery-mode');
       const isActive = filters.deliveryMode === dMode;
       if (isActive) {
         btn.className = 'sv-quick-delivery-btn px-2 py-1 rounded-md transition bg-white text-brand-700 font-bold shadow-2xs cursor-pointer';
@@ -3912,7 +5870,7 @@ function initSubvoyagesPlannerModule() {
 
     // 4. Тип Карго / Фрахт (.sv-quick-cargotype-btn)
     document.querySelectorAll('.sv-quick-cargotype-btn').forEach(btn => {
-      const cType = btn.getAttribute('data-cargotype');
+      const cType = btn.getAttribute('data-cargotype') || btn.getAttribute('data-cargo-type');
       const isActive = filters.cargoType === cType;
       if (isActive) {
         btn.className = 'sv-quick-cargotype-btn px-2 py-1 rounded-md transition bg-white text-brand-700 font-bold shadow-2xs cursor-pointer';
@@ -3936,7 +5894,7 @@ function initSubvoyagesPlannerModule() {
     // 2. Перемикач типу доставки (Море / Авіа / Авто)
     document.querySelectorAll('.sv-quick-delivery-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        filters.deliveryMode = btn.getAttribute('data-delivery') || 'all';
+        filters.deliveryMode = btn.getAttribute('data-delivery') || btn.getAttribute('data-delivery-mode') || 'all';
         shipmentsCurrentPage = 1;
         applyQuickFiltersUIState();
         renderAll();
@@ -3956,7 +5914,7 @@ function initSubvoyagesPlannerModule() {
     // 4. Перемикач типу Карго / Фрахт
     document.querySelectorAll('.sv-quick-cargotype-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        filters.cargoType = btn.getAttribute('data-cargotype') || 'all';
+        filters.cargoType = btn.getAttribute('data-cargotype') || btn.getAttribute('data-cargo-type') || 'all';
         shipmentsCurrentPage = 1;
         applyQuickFiltersUIState();
         renderAll();

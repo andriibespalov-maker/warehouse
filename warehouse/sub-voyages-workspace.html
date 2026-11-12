@@ -45,7 +45,7 @@
         <!-- 3. Швидкий фільтр за типом: Карго / Фрахт -->
         <div class="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-[11px] font-semibold" id="quick-cargo-type-switcher">
           <button type="button" data-cargo-type="all" class="sv-quick-cargotype-btn px-2 py-1 rounded-md transition bg-white text-brand-700 font-bold shadow-2xs cursor-pointer">
-            Карго + Фрахт
+            Усі
           </button>
           <button type="button" data-cargo-type="Карго" class="sv-quick-cargotype-btn px-2.5 py-1 rounded-md transition text-slate-600 hover:text-slate-900 font-medium cursor-pointer">
             Карго
@@ -312,18 +312,11 @@
         </div>
       </div>
 
-      <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex items-center justify-between flex-wrap gap-2 shrink-0">
+      <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex items-center justify-end flex-wrap gap-2 shrink-0">
         <button type="button" onclick="window.closeSubvoyageDepartureBlockModal()"
           class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold transition cursor-pointer">
           Зрозуміло, залишити статус «Формування»
         </button>
-        <div class="flex items-center gap-2">
-          <button type="button" id="btn-sv-block-convert-all"
-            class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-xs inline-flex items-center gap-1.5">
-            <i class="fa-solid fa-check-double"></i>
-            <span>Промаркувати та підтвердити готовність усіх позицій</span>
-          </button>
-        </div>
       </div>
     </div>
   </div>

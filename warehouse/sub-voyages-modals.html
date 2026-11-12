@@ -1,16 +1,19 @@
 <!-- Context Drawer (Модальне вікно з усією інформацією про Перевезення та Вантаж/Ерайв) -->
-<div id="context-drawer-backdrop" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 transition-opacity"></div>
+<div id="context-drawer-backdrop" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 transition-opacity">
+</div>
 <div id="context-drawer"
   class="fixed top-0 right-0 h-full w-full max-w-2xl bg-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300 flex flex-col border-l border-slate-200">
 
   <div class="p-4 bg-slate-900 text-white flex justify-between items-center shrink-0">
     <div class="flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center font-bold">
+      <div
+        class="w-9 h-9 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center font-bold">
         <i class="fa-solid fa-boxes-stacked"></i>
       </div>
       <div>
         <div class="flex items-center gap-2 flex-wrap">
           <h3 class="font-bold text-sm" id="drawer-shipment-id">DF73-229</h3>
+          <span id="drawer-cargo-type-badge"></span>
           <span id="drawer-status-badge"></span>
         </div>
         <p class="text-[11px] text-slate-400" id="drawer-shipment-promise">Пов'язана Обіцянка: --</p>
@@ -28,7 +31,8 @@
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
       <div>
         <span class="text-slate-400 block text-[10px] uppercase font-bold">Клієнт:</span>
-        <a id="drawer-client-link" href="#" class="font-bold text-brand-700 hover:underline text-xs flex items-center gap-1 mt-0.5">
+        <a id="drawer-client-link" href="#"
+          class="font-bold text-brand-700 hover:underline text-xs flex items-center gap-1 mt-0.5">
           <i class="fa-solid fa-building"></i> <span id="drawer-client-name">--</span>
         </a>
       </div>
@@ -75,7 +79,8 @@
         </div>
 
         <!-- Точка Б: Дані про отримання в підрейсі (поточне плече) -->
-        <div id="drawer-subvoyage-receiving-card" class="bg-purple-50/70 p-2.5 rounded-lg border border-purple-200 space-y-1">
+        <div id="drawer-subvoyage-receiving-card"
+          class="bg-purple-50/70 p-2.5 rounded-lg border border-purple-200 space-y-1">
           <div class="flex items-center gap-1.5 text-purple-800 font-bold text-[10px] uppercase">
             <i class="fa-solid fa-truck-ramp-box text-purple-600 text-xs"></i>
             <span>Точка отримання в підрейсі (поточне плече)</span>
@@ -114,7 +119,8 @@
 
     <!-- 3. Параметри логістики, Митне оформлення, Митні умови та Дозволи -->
     <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2.5">
-      <span class="text-slate-400 block text-[10px] uppercase font-bold">Параметри логістики, Митниця та Специфіка:</span>
+      <span class="text-slate-400 block text-[10px] uppercase font-bold">Параметри логістики, Митниця та
+        Специфіка:</span>
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
         <div class="bg-white p-2 rounded-lg border border-slate-200">
           <span class="text-slate-400 block text-[9px] uppercase font-bold">Митне оформлення:</span>
@@ -161,7 +167,8 @@
     <!-- 4. Остання Миля (якщо є) -->
     <div id="drawer-lastmile-block" class="bg-purple-50 p-3 rounded-xl border border-purple-200 space-y-2 hidden">
       <div class="flex items-center justify-between font-bold text-purple-900 border-b border-purple-200/80 pb-1">
-        <span class="flex items-center gap-1.5"><i class="fa-solid fa-truck-ramp-box text-purple-600"></i> Остання Миля (Доставка клієнту)</span>
+        <span class="flex items-center gap-1.5"><i class="fa-solid fa-truck-ramp-box text-purple-600"></i> Остання Миля
+          (Доставка клієнту)</span>
         <span id="drawer-lastmile-type" class="px-2 py-0.5 bg-purple-200 text-purple-900 rounded text-[10px]">--</span>
       </div>
       <div class="space-y-1 text-purple-950 font-mono text-[11px]">
@@ -171,16 +178,62 @@
       </div>
     </div>
 
-    <!-- 5. Вантажі / Ерайви -->
-    <div>
-      <div class="flex justify-between items-center mb-2">
+    <!-- 4.5. Задачі по Обіцянці / Перевезенню -->
+    <div id="drawer-entity-tasks-section" class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2.5">
+      <div class="flex items-center justify-between gap-2 flex-wrap">
+        <h4 class="font-bold text-slate-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+          <i class="fa-solid fa-list-check text-amber-600"></i>
+          <span id="drawer-tasks-heading">Задачі по Перевезенню</span>
+        </h4>
+        <span id="drawer-tasks-counter-badge"
+          class="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-slate-100 text-slate-600 border-slate-200">0
+          задач</span>
+      </div>
+
+      <div id="drawer-entity-tasks-list" class="space-y-1.5">
+      </div>
+    </div>
+
+    <!-- 5. Вантажі / Ерайви (з внутрішнім пошуком по полях і статусах, повним описом та історією переміщень) -->
+    <div class="space-y-2.5">
+      <div class="flex justify-between items-center gap-2 flex-wrap">
         <h4 class="font-bold text-slate-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
           <i class="fa-solid fa-warehouse text-emerald-600"></i>
-          <span>Вантажі / Ерайви (Кількість місць, Вага, Об'єм, Пакування, Дод. послуги, Примітка логіста)</span>
+          <span>Вантажі (Ерайви) у складі</span>
         </h4>
-        <span id="drawer-cargo-count"
-          class="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded-full border border-emerald-200">0 вантажів</span>
+        <div class="flex items-center gap-1.5">
+          <span id="drawer-cargo-count"
+            class="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded-full border border-emerald-200">0
+            вантажів</span>
+        </div>
       </div>
+
+      <!-- Панель пошуку вантажу по полях і статусах в рамках Обіцянки або Перевезення -->
+      <div
+        class="bg-slate-100/90 p-2 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        <div class="relative flex-1">
+          <i
+            class="fa-solid fa-magnifying-glass text-slate-400 text-[11px] absolute left-2.5 top-1/2 -translate-y-1/2"></i>
+          <input type="text" id="drawer-cargo-search-input"
+            oninput="window.handleDrawerCargoFilterChange && window.handleDrawerCargoFilterChange()"
+            placeholder="Пошук вантажу за DF номером, треком, назвою (UA/EN/CN), локацією, пакуванням, приміткою..."
+            class="w-full bg-white border border-slate-200 rounded-lg pl-7 pr-6 py-1 text-[11px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-brand-500">
+          <button type="button" id="drawer-cargo-search-clear"
+            onclick="window.resetDrawerCargoFilters && window.resetDrawerCargoFilters()"
+            class="hidden absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+            title="Очистити пошук">
+            <i class="fa-solid fa-xmark text-[11px]"></i>
+          </button>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <select id="drawer-cargo-status-filter"
+            onchange="window.handleDrawerCargoFilterChange && window.handleDrawerCargoFilterChange()"
+            class="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-semibold text-slate-700 focus:outline-none focus:border-brand-500 cursor-pointer">
+            <option value="ALL">Усі статуси вантажів</option>
+          </select>
+        </div>
+      </div>
+
       <div id="drawer-cargoes-list" class="space-y-2.5">
       </div>
     </div>
@@ -201,19 +254,22 @@
 </div>
 
 <!-- Subvoyage Context Drawer (Вікно з усією інформацією про Підрейс) -->
-<div id="subvoyage-drawer-backdrop" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 transition-opacity"></div>
+<div id="subvoyage-drawer-backdrop"
+  class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 transition-opacity"></div>
 <div id="subvoyage-drawer"
   class="fixed top-0 right-0 h-full w-full max-w-2xl bg-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300 flex flex-col border-l border-slate-200">
 
   <div class="p-4 bg-slate-900 text-white flex justify-between items-center shrink-0">
     <div class="flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center font-bold">
+      <div
+        class="w-9 h-9 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center font-bold">
         <i class="fa-solid fa-truck-fast"></i>
       </div>
       <div>
         <div class="flex items-center gap-2 flex-wrap">
           <h3 class="font-bold text-sm" id="sv-drawer-title">Рейс FOS-KYI-1 (SV-4401)</h3>
           <span id="sv-drawer-status-badge"></span>
+          <span id="sv-drawer-tasks-badge"></span>
         </div>
         <p class="text-[11px] text-slate-400" id="sv-drawer-subtitle">Зовнішній рейс: -- | Шаблон: --</p>
       </div>
@@ -252,7 +308,8 @@
     <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2.5">
       <div class="flex justify-between items-center border-b border-slate-200/60 pb-2 flex-wrap gap-2">
         <div>
-          <span class="text-slate-400 block text-[10px] uppercase font-bold">Маршрут підрейсу (Країни та Транзит):</span>
+          <span class="text-slate-400 block text-[10px] uppercase font-bold">Маршрут підрейсу (Країни та
+            Транзит):</span>
           <strong id="sv-drawer-route" class="text-slate-900 font-bold text-xs">-- ➔ --</strong>
         </div>
         <div id="sv-drawer-hub"
@@ -328,7 +385,8 @@
           <span>Додані перевезення у підрейсі</span>
         </h4>
         <span id="sv-drawer-shipments-count"
-          class="text-[10px] bg-brand-50 text-brand-700 font-bold px-2 py-0.5 rounded-full border border-brand-200">0 перевезень</span>
+          class="text-[10px] bg-brand-50 text-brand-700 font-bold px-2 py-0.5 rounded-full border border-brand-200">0
+          перевезень</span>
       </div>
       <div id="sv-drawer-shipments-list" class="space-y-2">
       </div>
@@ -352,7 +410,8 @@
 <!-- Розширені фільтри планувальника підрейсів -->
 <div id="filter-modal"
   class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-  <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[85vh] flex flex-col border border-slate-200 overflow-hidden">
+  <div
+    class="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[85vh] flex flex-col border border-slate-200 overflow-hidden">
     <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
       <div class="flex items-center gap-3">
         <div class="w-8 h-8 rounded-lg bg-brand-100 text-brand-700 flex items-center justify-center">
@@ -391,39 +450,46 @@
 </div>
 
 <!-- Модальне вікно: Створити підрейс (повна відповідність дизайну зі скріншота) -->
-<div id="modal-create-subvoyage" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
-  <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-    
+<div id="modal-create-subvoyage"
+  class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
+  <div
+    class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+
     <!-- Шапка модального вікна -->
     <div class="px-6 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white shrink-0">
       <div class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center text-sm font-bold border border-brand-200">
+        <div
+          class="w-8 h-8 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center text-sm font-bold border border-brand-200">
           <i class="fa-regular fa-pen-to-square"></i>
         </div>
         <h3 class="font-bold text-slate-900 text-base">Створити підрейс</h3>
       </div>
-      <button type="button" onclick="closeCreateSubvoyageModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition cursor-pointer">
+      <button type="button" onclick="closeCreateSubvoyageModal()"
+        class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition cursor-pointer">
         <i class="fa-solid fa-xmark text-lg"></i>
       </button>
     </div>
 
     <!-- Тіло модального вікна: Дві колонки як на скріншоті -->
     <div class="p-6 overflow-y-auto custom-scrollbar flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 text-xs">
-      
+
       <!-- Ліва колонка: Дані зовнішнього рейсу (lg:col-span-4) -->
       <div class="lg:col-span-4 space-y-4 border-b lg:border-b-0 lg:border-r border-slate-200 pb-4 lg:pb-0 lg:pr-6">
         <h4 class="font-bold text-slate-900 text-sm">Дані зовнішнього рейсу</h4>
 
         <div>
-          <label class="block font-semibold text-slate-700 mb-1">Зовнішній рейс <span class="text-rose-500">*</span></label>
+          <label class="block font-semibold text-slate-700 mb-1">Зовнішній рейс <span
+              class="text-rose-500">*</span></label>
           <div class="flex gap-2">
-            <select id="new-sv-parent-voyage" class="flex-1 rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-white">
+            <select id="new-sv-parent-voyage"
+              class="flex-1 rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-white">
               <option value="Не обрано">Не обрано</option>
               <option value="VOY-2026-08">VOY-2026-08 (MSC Lines)</option>
               <option value="VOY-2026-09">VOY-2026-09 (CMA CGM)</option>
               <option value="VOY-2026-12">VOY-2026-12 (Lufthansa)</option>
             </select>
-            <button type="button" onclick="showToast('Додавання нового зовнішнього рейсу')" class="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-brand-600 font-bold text-[11px] whitespace-nowrap transition cursor-pointer">
+            <button type="button" onclick="showToast('Додавання нового зовнішнього рейсу')"
+              class="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-brand-600 font-bold text-[11px] whitespace-nowrap transition cursor-pointer">
               <i class="fa-solid fa-plus text-[10px]"></i> Додати новий
             </button>
           </div>
@@ -432,13 +498,16 @@
         <div>
           <label class="block font-semibold text-slate-700 mb-1.5">Спосіб перевезення</label>
           <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200">
-            <button type="button" onclick="setCreateSvTransport('Авто')" id="btn-create-sv-mode-auto" class="py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900 cursor-pointer">
+            <button type="button" onclick="setCreateSvTransport('Авто')" id="btn-create-sv-mode-auto"
+              class="py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900 cursor-pointer">
               <i class="fa-solid fa-truck"></i> Авто
             </button>
-            <button type="button" onclick="setCreateSvTransport('Морський')" id="btn-create-sv-mode-sea" class="py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-brand-600 text-white shadow-2xs cursor-pointer">
+            <button type="button" onclick="setCreateSvTransport('Морський')" id="btn-create-sv-mode-sea"
+              class="py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-brand-600 text-white shadow-2xs cursor-pointer">
               <i class="fa-solid fa-ship"></i> Море
             </button>
-            <button type="button" onclick="setCreateSvTransport('Авіа')" id="btn-create-sv-mode-air" class="py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900 cursor-pointer">
+            <button type="button" onclick="setCreateSvTransport('Авіа')" id="btn-create-sv-mode-air"
+              class="py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900 cursor-pointer">
               <i class="fa-solid fa-plane"></i> Авіа
             </button>
           </div>
@@ -446,7 +515,8 @@
 
         <div>
           <label class="block font-semibold text-slate-700 mb-1">Шаблон <span class="text-rose-500">*</span></label>
-          <select id="new-sv-template" class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
+          <select id="new-sv-template"
+            class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
             <option value="Морський (LCL/FCL)">Морський (LCL/FCL)</option>
             <option value="Морський (Мультимодальне плече)" selected>Морський (Мультимодальне плече)</option>
             <option value="Автотранспорт (LTL)">Автотранспорт (LTL)</option>
@@ -456,22 +526,30 @@
 
         <div>
           <label class="block font-semibold text-slate-700 mb-1">Статус <span class="text-rose-500">*</span></label>
-          <select id="new-sv-status" class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
-            <option value="Формування" selected>Формування</option>
-            <option value="Завантажений">Завантажений</option>
-            <option value="В дорозі">В дорозі</option>
-            <option value="Прибув на склад отримання">Прибув на склад отримання</option>
+          <select id="new-sv-status"
+            class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
+            <option value="Формування" selected>Формування (formation)</option>
+            <option value="Завантажений">Завантажений (packed)</option>
+            <option value="В дорозі">В дорозі (in_transit)</option>
+            <option value="На митниці на експорт">На митниці на експорт (at_export_customs)</option>
+            <option value="На митниці на імпорт">На митниці на імпорт (at_import_customs)</option>
+            <option value="Вивантажений">Вивантажений (despatched)</option>
+            <option value="Завершений">Завершений (completed)</option>
+            <option value="Вантаж видано отримувачам">Вантаж видано отримувачам (cargo_released_to_recipient)</option>
           </select>
         </div>
 
         <div>
-          <label class="block font-semibold text-slate-700 mb-1">Назва підрейсу <span class="text-rose-500">*</span></label>
-          <input type="text" id="new-sv-name" placeholder="Наприклад: Морський FOS-POL-2" class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500">
+          <label class="block font-semibold text-slate-700 mb-1">Назва підрейсу <span
+              class="text-rose-500">*</span></label>
+          <input type="text" id="new-sv-name" placeholder="Наприклад: Морський FOS-POL-2"
+            class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500">
         </div>
 
         <div>
           <label class="block font-semibold text-slate-700 mb-1">Відповідальний логіст</label>
-          <select id="new-sv-logist" class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
+          <select id="new-sv-logist"
+            class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
             <option value="І. Сидоренко">І. Сидоренко</option>
             <option value="О. Ковальчук">О. Ковальчук</option>
             <option value="М. Петренко">М. Петренко</option>
@@ -481,8 +559,10 @@
 
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block font-semibold text-slate-700 mb-1">Країна відправки <span class="text-rose-500">*</span></label>
-            <select id="new-sv-origin-country" class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
+            <label class="block font-semibold text-slate-700 mb-1">Країна відправки <span
+                class="text-rose-500">*</span></label>
+            <select id="new-sv-origin-country"
+              class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
               <option value="Китай" selected>Китай</option>
               <option value="Пакистан">Пакистан</option>
               <option value="Польща">Польща</option>
@@ -492,8 +572,10 @@
             </select>
           </div>
           <div>
-            <label class="block font-semibold text-slate-700 mb-1">Країна доставки <span class="text-rose-500">*</span></label>
-            <select id="new-sv-dest-country" class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
+            <label class="block font-semibold text-slate-700 mb-1">Країна доставки <span
+                class="text-rose-500">*</span></label>
+            <select id="new-sv-dest-country"
+              class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
               <option value="Польща" selected>Польща</option>
               <option value="Україна">Україна</option>
               <option value="Сінгапур">Сінгапур</option>
@@ -505,11 +587,13 @@
 
         <div class="flex items-center gap-4 pt-1">
           <label class="flex items-center gap-2 cursor-pointer font-medium text-slate-700">
-            <input type="checkbox" id="new-sv-is-main" checked class="rounded text-brand-600 focus:ring-brand-500 cursor-pointer">
+            <input type="checkbox" id="new-sv-is-main" checked
+              class="rounded text-brand-600 focus:ring-brand-500 cursor-pointer">
             <span>Основний підрейс</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer font-medium text-slate-700">
-            <input type="checkbox" id="new-sv-is-transit" checked class="rounded text-brand-600 focus:ring-brand-500 cursor-pointer">
+            <input type="checkbox" id="new-sv-is-transit" checked
+              class="rounded text-brand-600 focus:ring-brand-500 cursor-pointer">
             <span>Транзит</span>
           </label>
         </div>
@@ -517,26 +601,32 @@
 
       <!-- Права колонка: Маршрут, Терміни, Деталі лінії, Коментар (lg:col-span-8) -->
       <div class="lg:col-span-8 space-y-4">
-        
+
         <!-- Блок Маршрут -->
         <div>
           <h4 id="new-sv-route-heading" class="font-bold text-slate-900 text-sm mb-2.5">Маршрут - Море</h4>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block font-medium text-slate-600 mb-1">Місце завантаження</label>
-              <input type="text" id="new-sv-loading-place" placeholder="Введіть адресу (напр., Фошань, Склад A)" class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500">
+              <input type="text" id="new-sv-loading-place" placeholder="Введіть адресу (напр., Фошань, Склад A)"
+                class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500">
             </div>
             <div>
               <label id="new-sv-origin-port-label" class="block font-medium text-slate-600 mb-1">Порт відправки</label>
-              <input type="text" id="new-sv-origin-port" placeholder="Введіть адресу (напр., Port of Nansha)" class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500">
+              <input type="text" id="new-sv-origin-port" placeholder="Введіть адресу (напр., Port of Nansha)"
+                class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500">
             </div>
             <div>
-              <label class="block font-medium text-slate-600 mb-1">Місце розвантаження (Точка отримання підрейсу)</label>
-              <input type="text" id="new-sv-unloading-place" placeholder="Введіть адресу (напр., Порт Гданськ / Склад Варшава)" class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500">
+              <label class="block font-medium text-slate-600 mb-1">Місце розвантаження (Точка отримання
+                підрейсу)</label>
+              <input type="text" id="new-sv-unloading-place"
+                placeholder="Введіть адресу (напр., Порт Гданськ / Склад Варшава)"
+                class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500">
             </div>
             <div>
               <label id="new-sv-dest-port-label" class="block font-medium text-slate-600 mb-1">Порт доставки</label>
-              <input type="text" id="new-sv-dest-port" placeholder="Введіть адресу (напр., Port of Gdańsk)" class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500">
+              <input type="text" id="new-sv-dest-port" placeholder="Введіть адресу (напр., Port of Gdańsk)"
+                class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500">
             </div>
           </div>
         </div>
@@ -546,28 +636,36 @@
           <h4 class="font-bold text-slate-900 text-sm mb-2.5">Терміни</h4>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label class="block font-medium text-slate-600 mb-1">Дата завантаження контейнера <span class="text-rose-500">*</span></label>
-              <input type="date" id="new-sv-date-load" class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
+              <label class="block font-medium text-slate-600 mb-1">Дата завантаження контейнера <span
+                  class="text-rose-500">*</span></label>
+              <input type="date" id="new-sv-date-load"
+                class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
             </div>
             <div>
               <label class="block font-medium text-slate-600 mb-1">(ETD) План. дата судовиходу</label>
-              <input type="date" id="new-sv-etd" class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
+              <input type="date" id="new-sv-etd"
+                class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
             </div>
             <div>
               <label class="block font-medium text-slate-600 mb-1">(ATD) Факт. дата судовиходу</label>
-              <input type="date" id="new-sv-atd" class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
+              <input type="date" id="new-sv-atd"
+                class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
             </div>
             <div>
               <label class="block font-medium text-slate-600 mb-1">Дата вивант. на складі/перед. на ТЗ</label>
-              <input type="date" id="new-sv-date-unload" class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
+              <input type="date" id="new-sv-date-unload"
+                class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
             </div>
             <div>
-              <label class="block font-medium text-slate-600 mb-1">(ETA) План. дата судозаходу <span class="text-rose-500">*</span></label>
-              <input type="date" id="new-sv-eta" class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
+              <label class="block font-medium text-slate-600 mb-1">(ETA) План. дата судозаходу <span
+                  class="text-rose-500">*</span></label>
+              <input type="date" id="new-sv-eta"
+                class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
             </div>
             <div>
               <label class="block font-medium text-slate-600 mb-1">(ATA) Факт. дата судозаходу</label>
-              <input type="date" id="new-sv-ata" class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
+              <input type="date" id="new-sv-ata"
+                class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
             </div>
           </div>
         </div>
@@ -578,35 +676,92 @@
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label id="new-sv-carrier-label" class="block font-medium text-slate-600 mb-1">Морська лінія</label>
-              <input type="text" id="new-sv-carrier" placeholder="Введіть лінію (напр. MSC)" class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500">
+              <input type="text" id="new-sv-carrier" placeholder="Введіть лінію (напр. MSC)"
+                class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500">
             </div>
             <div>
               <label id="new-sv-booking-label" class="block font-medium text-slate-600 mb-1">Номер букінгу</label>
-              <input type="text" id="new-sv-booking" placeholder="Введіть номер букінгу" class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500">
+              <input type="text" id="new-sv-booking" placeholder="Введіть номер букінгу"
+                class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500">
             </div>
             <div>
               <label class="block font-medium text-slate-600 mb-1">Трекінг</label>
-              <input type="text" id="new-sv-tracking" placeholder="Введіть трекінг" class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500">
+              <input type="text" id="new-sv-tracking" placeholder="Введіть трекінг"
+                class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500">
             </div>
+          </div>
+        </div>
+
+        <!-- Ключові маркери та умови підрейсу (для рекомендацій пулу) -->
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <h4 class="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+              <i class="fa-solid fa-tags text-brand-600"></i>
+              <span>Ключові маркери та специфіка підрейсу (для рекомендацій пулу)</span>
+            </h4>
+            <div class="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-0.5 text-[11px]">
+              <label class="cursor-pointer">
+                <input type="radio" name="new-sv-cargo-mode" value="all" checked class="sr-only peer">
+                <span class="px-2 py-0.5 rounded-md block font-semibold text-slate-600 peer-checked:bg-slate-900 peer-checked:text-white transition">Будь-який</span>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="new-sv-cargo-mode" value="Карго" class="sr-only peer">
+                <span class="px-2 py-0.5 rounded-md block font-semibold text-slate-600 peer-checked:bg-blue-600 peer-checked:text-white transition">Карго</span>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="new-sv-cargo-mode" value="Не карго" class="sr-only peer">
+                <span class="px-2 py-0.5 rounded-md block font-semibold text-slate-600 peer-checked:bg-indigo-600 peer-checked:text-white transition">Не карго (Біле)</span>
+              </label>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px]">
+            <label class="flex items-center gap-2 p-2 bg-white border border-slate-200 hover:border-brand-400 rounded-lg cursor-pointer select-none">
+              <input type="checkbox" name="new-sv-key-marker" value="adr" class="accent-rose-600 rounded">
+              <span class="font-semibold text-slate-800">☣️ ADR (Небезпечний)</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 bg-white border border-slate-200 hover:border-brand-400 rounded-lg cursor-pointer select-none">
+              <input type="checkbox" name="new-sv-key-marker" value="batt_li" class="accent-amber-600 rounded">
+              <span class="font-semibold text-slate-800">🔋 Батареї (Li-ion / АКБ)</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 bg-white border border-slate-200 hover:border-brand-400 rounded-lg cursor-pointer select-none">
+              <input type="checkbox" name="new-sv-key-marker" value="close_exporter_docs" class="accent-teal-600 rounded">
+              <span class="font-semibold text-slate-800">📑 Закриття експорту</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 bg-white border border-slate-200 hover:border-brand-400 rounded-lg cursor-pointer select-none">
+              <input type="checkbox" name="new-sv-key-marker" value="fragile" class="accent-rose-500 rounded">
+              <span class="font-semibold text-slate-800">🍷 Крихке</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 bg-white border border-slate-200 hover:border-brand-400 rounded-lg cursor-pointer select-none">
+              <input type="checkbox" name="new-sv-key-marker" value="temp_control" class="accent-cyan-600 rounded">
+              <span class="font-semibold text-slate-800">❄️ Температурний режим</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 bg-white border border-slate-200 hover:border-brand-400 rounded-lg cursor-pointer select-none">
+              <input type="checkbox" name="new-sv-key-marker" value="oversized" class="accent-purple-600 rounded">
+              <span class="font-semibold text-slate-800">🚜 Негабарит</span>
+            </label>
           </div>
         </div>
 
         <!-- Коментар -->
         <div>
           <label class="block font-semibold text-slate-700 mb-1">Коментар</label>
-          <textarea id="new-sv-comment" rows="2" placeholder="Введіть коментар до підрейсу (інструкції, особливості завантаження)..." class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500"></textarea>
+          <textarea id="new-sv-comment" rows="2"
+            placeholder="Введіть коментар до підрейсу (інструкції, особливості завантаження)..."
+            class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500"></textarea>
         </div>
 
         <!-- Контейнери -->
         <div>
           <div class="flex items-center justify-between mb-1.5">
             <label class="font-bold text-slate-900 text-xs">Контейнери / Засоби завантаження</label>
-            <button type="button" onclick="showToast('Додано новий контейнер')" class="w-6 h-6 rounded-md bg-brand-50 text-brand-600 hover:bg-brand-100 flex items-center justify-center font-bold text-xs transition cursor-pointer">
+            <button type="button" onclick="showToast('Додано новий контейнер')"
+              class="w-6 h-6 rounded-md bg-brand-50 text-brand-600 hover:bg-brand-100 flex items-center justify-center font-bold text-xs transition cursor-pointer">
               <i class="fa-solid fa-plus text-[10px]"></i>
             </button>
           </div>
-          <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-500 text-[11px] flex items-center justify-between">
-            <span>Стандартний 40HC контейнер (об'єм: 68 м³, вага: 24 т)</span>
+          <div
+            class="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-500 text-[11px] flex items-center justify-between">
+            <span>Стандартний 40HC контейнер (об'єм: 68 м³, вага: 24 000 кг)</span>
             <span class="text-brand-600 font-semibold font-mono">MSCU-774411</span>
           </div>
         </div>
@@ -616,13 +771,57 @@
 
     <!-- Підвал дій: Скасувати / Підтвердити -->
     <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end items-center gap-3 shrink-0">
-      <button type="button" onclick="closeCreateSubvoyageModal()" class="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 font-bold text-xs hover:bg-slate-100 transition cursor-pointer">
+      <button type="button" onclick="closeCreateSubvoyageModal()"
+        class="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 font-bold text-xs hover:bg-slate-100 transition cursor-pointer">
         Скасувати
       </button>
-      <button type="button" onclick="submitCreateSubvoyageModal()" class="px-6 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-sm cursor-pointer">
+      <button type="button" onclick="submitCreateSubvoyageModal()"
+        class="px-6 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-sm cursor-pointer">
         Підтвердити
       </button>
     </div>
 
+  </div>
+</div>
+
+<!-- Модальне вікно попередження (Attention) при конфліктах параметрів підрейсу та перевезення -->
+<div id="modal-attention-conflicts"
+  class="hidden fixed inset-0 z-[70] bg-slate-900/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
+  <div class="bg-white rounded-2xl shadow-2xl border border-amber-300 max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+    <div class="px-6 py-4 bg-amber-50 border-b border-amber-200 flex items-center justify-between shrink-0">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center text-lg shadow-xs">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div>
+          <h3 class="font-extrabold text-amber-950 text-base">Attention: Виявлено розбіжності параметрів</h3>
+          <p id="attention-conflicts-subtitle" class="text-[11px] text-amber-800 mt-0.5">Підтвердіть кожну розбіжність окремо, щоб додати перевезення на свій страх і ризик.</p>
+        </div>
+      </div>
+      <button type="button" onclick="closeAttentionConflictsModal()"
+        class="w-8 h-8 rounded-lg text-amber-700 hover:bg-amber-100 flex items-center justify-center transition cursor-pointer text-xl leading-none">&times;</button>
+    </div>
+
+    <div class="p-5 overflow-y-auto custom-scrollbar flex-1 space-y-3 text-xs">
+      <div id="attention-conflicts-sv-summary" class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-700"></div>
+      <div id="attention-conflicts-list" class="space-y-2">
+        <!-- Динамічний список розбіжностей із кнопками «Підтверджую» -->
+      </div>
+    </div>
+
+    <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between flex-wrap gap-3 shrink-0">
+      <span id="attention-conflicts-progress" class="text-[11px] font-bold text-amber-800">Підтверджено 0 з 0</span>
+      <div class="flex items-center gap-2.5">
+        <button type="button" onclick="closeAttentionConflictsModal()"
+          class="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 font-bold text-xs hover:bg-slate-100 transition cursor-pointer">
+          Скасувати
+        </button>
+        <button type="button" id="btn-attention-confirm-save" disabled onclick="confirmAttentionConflictsAssign()"
+          class="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold text-xs transition shadow-sm cursor-pointer inline-flex items-center gap-1.5">
+          <i class="fa-solid fa-check-double"></i>
+          <span>Додати в підрейс</span>
+        </button>
+      </div>
+    </div>
   </div>
 </div>

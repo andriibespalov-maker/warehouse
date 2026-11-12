@@ -362,21 +362,44 @@
                 class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
             </div>
 
-            <!-- Підрядник -->
-            <div>
-              <label class="block text-slate-800 text-xs font-semibold mb-1.5">
-                Підрядник <span class="text-rose-500">*</span>
-              </label>
-              <div class="flex items-center gap-2">
-                <div class="relative flex-1">
-                  <input type="text" id="input-contractor-search" list="contractors-list" required
-                    placeholder="Оберіть або знайдіть підрядника..."
-                    class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
-                  <datalist id="contractors-list">
-                    <option value="ТОВ Логістік Груп"></option>
-                    <option value="Global Cargo Logistics"></option>
-                    <option value="Партнер-Логістик"></option>
-                  </datalist>
+            <!-- Підрядник (Searchable Combobox + Smart Create) -->
+            <div class="relative" id="contractor-combobox-wrapper">
+              <div class="flex items-center justify-between mb-1.5">
+                <label for="input-contractor-search" class="block text-slate-800 text-xs font-semibold">
+                  Підрядник <span class="text-rose-500">*</span>
+                </label>
+                <span id="contractor-selected-badge"
+                  class="hidden text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded-md items-center gap-1">
+                  <i class="fa-solid fa-circle-check text-[9px] text-emerald-500"></i>
+                  <span>Обрано зі списку</span>
+                </span>
+              </div>
+
+              <div class="relative group">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-600 transition-colors text-xs pointer-events-none"></i>
+                <input type="text" id="input-contractor-search" required autocomplete="off"
+                  placeholder="Пошук підрядника за назвою, країною або ЄДРПОУ..."
+                  class="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-14 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
+                <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+                  <button type="button" id="btn-clear-contractor"
+                    class="hidden w-6 h-6 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 items-center justify-center transition cursor-pointer"
+                    title="Очистити поле підрядника">
+                    <i class="fa-solid fa-xmark text-xs"></i>
+                  </button>
+                  <button type="button" id="btn-toggle-contractor-menu"
+                    class="w-6 h-6 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition cursor-pointer"
+                    title="Відкрити список підрядників">
+                    <i id="contractor-dropdown-arrow" class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Випадаючий список підрядників із живим пошуком та Smart Create -->
+              <div id="contractor-dropdown-menu"
+                class="hidden absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl z-40 overflow-hidden">
+                <div id="contractor-options-list" class="max-h-56 overflow-y-auto custom-scrollbar p-1.5 space-y-0.5">
+                </div>
+                <div id="contractor-smart-create-bar" class="border-t border-slate-100 bg-slate-50/90 p-1.5">
                 </div>
               </div>
             </div>
@@ -1459,9 +1482,140 @@
     </div>
   </div>
 
+  <!-- Modal 10: Створення підрядника поверх форми складу -->
+  <div id="modal-create-contractor"
+    class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[80] hidden [&:not(.hidden)]:flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div
+      class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col my-auto border border-slate-200 transform transition-all">
+
+      <!-- Modal Header -->
+      <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/70">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-9 h-9 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-600 shadow-2xs">
+            <i class="fa-solid fa-building-user text-sm"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-900 text-base leading-tight">Створити підрядника</h3>
+            <p class="text-[11px] text-slate-500 mt-0.5">Новий підрядник одразу з'явиться у списку та буде обраний</p>
+          </div>
+        </div>
+        <button type="button" id="btn-close-create-contractor"
+          class="close-modal w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer text-xl font-light">
+          &times;
+        </button>
+      </div>
+
+      <!-- Modal Form Body -->
+      <form id="form-create-contractor" class="p-5 space-y-4">
+        <div>
+          <label for="input-new-contractor-name" class="block text-slate-800 text-xs font-semibold mb-1.5">
+            Назва підрядника / компанії <span class="text-rose-500">*</span>
+          </label>
+          <div class="relative group">
+            <i class="fa-solid fa-building absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-600 transition-colors text-xs"></i>
+            <input type="text" id="input-new-contractor-name" required
+              placeholder="Наприклад: ТОВ ТрансЛогістик Сервіс"
+              class="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition shadow-2xs">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div>
+            <label for="select-new-contractor-country" class="block text-slate-700 text-xs font-semibold mb-1.5">
+              Країна реєстрації
+            </label>
+            <select id="select-new-contractor-country"
+              class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition cursor-pointer">
+              <option value="Україна">Україна</option>
+              <option value="Китай">Китай</option>
+              <option value="Польща">Польща</option>
+              <option value="Німеччина">Німеччина</option>
+              <option value="Інша">Інша</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="input-new-contractor-tax-id" class="block text-slate-700 text-xs font-semibold mb-1.5">
+              Код ЄДРПОУ / Tax ID
+            </label>
+            <div class="relative group">
+              <i class="fa-solid fa-hashtag absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-600 transition-colors text-xs"></i>
+              <input type="text" id="input-new-contractor-tax-id"
+                placeholder="Наприклад: 40291847"
+                class="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition shadow-2xs">
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div>
+            <label for="input-new-contractor-contact" class="block text-slate-700 text-xs font-semibold mb-1.5">
+              Контактна особа
+            </label>
+            <div class="relative group">
+              <i class="fa-regular fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-600 transition-colors text-xs"></i>
+              <input type="text" id="input-new-contractor-contact"
+                placeholder="ПІБ менеджера"
+                class="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition shadow-2xs">
+            </div>
+          </div>
+
+          <div>
+            <label for="input-new-contractor-phone" class="block text-slate-700 text-xs font-semibold mb-1.5">
+              Телефон
+            </label>
+            <div class="relative group">
+              <i class="fa-solid fa-phone absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-600 transition-colors text-xs"></i>
+              <input type="text" id="input-new-contractor-phone"
+                placeholder="+380 ... або +86 ..."
+                class="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition shadow-2xs">
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div>
+            <label for="input-new-contractor-email" class="block text-slate-700 text-xs font-semibold mb-1.5">
+              Email
+            </label>
+            <div class="relative group">
+              <i class="fa-regular fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-600 transition-colors text-xs"></i>
+              <input type="email" id="input-new-contractor-email"
+                placeholder="partner@company.com"
+                class="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition shadow-2xs">
+            </div>
+          </div>
+
+          <div>
+            <label for="input-new-contractor-notes" class="block text-slate-700 text-xs font-semibold mb-1.5">
+              Примітка
+            </label>
+            <input type="text" id="input-new-contractor-notes"
+              placeholder="Спеціалізація або умови..."
+              class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition shadow-2xs">
+          </div>
+        </div>
+      </form>
+
+      <!-- Modal Footer -->
+      <div class="px-5 py-3.5 border-t border-slate-100 flex items-center justify-end gap-2.5 bg-slate-50/80">
+        <button type="button" id="btn-cancel-create-contractor"
+          class="close-modal px-4 py-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 rounded-xl text-xs font-semibold transition cursor-pointer shadow-2xs">
+          Скасувати
+        </button>
+        <button type="submit" form="form-create-contractor" id="btn-submit-create-contractor"
+          class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-semibold shadow-sm shadow-brand-500/20 transition flex items-center gap-1.5 cursor-pointer">
+          <i class="fa-solid fa-check text-xs"></i>
+          <span>Зберегти підрядника</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification -->
   <div id="copy-toast"
-    class="fixed bottom-6 right-6 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-xl z-[80] flex items-center gap-2.5 text-xs font-medium transition-all duration-300 translate-y-16 opacity-0 pointer-events-none border border-slate-700">
+    class="fixed bottom-6 right-6 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-xl z-[90] flex items-center gap-2.5 text-xs font-medium transition-all duration-300 translate-y-16 opacity-0 pointer-events-none border border-slate-700">
     <i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
     <span id="copy-toast-text">Скопійовано в буфер обміну</span>
   </div>

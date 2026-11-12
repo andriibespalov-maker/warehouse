@@ -55,6 +55,238 @@ document.addEventListener('DOMContentLoaded', async () => {
   let warehousesData = [];
   let currentTab = 'active';
   let activeTargetWarehouseId = null;
+  let selectedContractorValue = '';
+
+  const contractorsDirectory = [
+    { name: 'Global Cargo Logistics', country: 'Китай', taxId: 'USCI-91440605', contact: 'Чжан Вей' },
+    { name: 'Shenzhen Partner Express', country: 'Китай', taxId: 'USCI-91440300', contact: 'Лі Мін' },
+    { name: 'ТОВ Логістік Груп', country: 'Україна', taxId: '40291847', contact: 'Олександр Коваль' },
+    { name: 'Партнер-Логістик PL', country: 'Польща', taxId: 'NIP-52139014', contact: 'Марек Ковальський' },
+    { name: 'EuroTransit Sp. z o.o.', country: 'Польща', taxId: 'NIP-53425891', contact: 'Пйотр Новак' },
+    { name: 'Партнер-Логістик', country: 'Україна', taxId: '38910422', contact: 'Ірина Мельник' }
+  ];
+
+  function syncContractorsFromWarehouses() {
+    warehousesData.forEach(w => {
+      const cName = (w.contractor || '').trim();
+      if (cName && !contractorsDirectory.some(c => c.name.toLowerCase() === cName.toLowerCase())) {
+        contractorsDirectory.push({
+          name: cName,
+          country: w.country || 'Україна',
+          taxId: '',
+          contact: w.contacts?.[0]?.fullName || ''
+        });
+      }
+    });
+  }
+
+  function escapeHtmlStr(str = '') {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function highlightMatch(text, query) {
+    const safeText = escapeHtmlStr(text);
+    const cleanQ = (query || '').trim();
+    if (!cleanQ) return safeText;
+    const escapedQ = cleanQ.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapedQ})`, 'gi');
+    return safeText.replace(regex, '<mark class="bg-brand-100 text-brand-800 rounded px-0.5 font-bold">$1</mark>');
+  }
+
+  function updateContractorBadgeAndClearBtn() {
+    const inputEl = document.getElementById('input-contractor-search');
+    const clearBtn = document.getElementById('btn-clear-contractor');
+    const badgeEl = document.getElementById('contractor-selected-badge');
+    const currentVal = (inputEl?.value || '').trim();
+
+    if (clearBtn) {
+      clearBtn.classList.toggle('hidden', !currentVal);
+      clearBtn.classList.toggle('flex', Boolean(currentVal));
+    }
+
+    const isExactMatch = Boolean(
+      currentVal &&
+      contractorsDirectory.some(c => c.name.toLowerCase() === currentVal.toLowerCase())
+    );
+
+    if (badgeEl) {
+      badgeEl.classList.toggle('hidden', !isExactMatch);
+      badgeEl.classList.toggle('inline-flex', isExactMatch);
+    }
+  }
+
+  function setContractorValue(name = '', highlight = false) {
+    const cleanName = (name || '').trim();
+    selectedContractorValue = cleanName;
+    const inputEl = document.getElementById('input-contractor-search');
+    if (inputEl) {
+      inputEl.value = cleanName;
+      if (highlight) {
+        inputEl.classList.add('ring-2', 'ring-emerald-500/40', 'border-emerald-500');
+        setTimeout(() => {
+          inputEl.classList.remove('ring-2', 'ring-emerald-500/40', 'border-emerald-500');
+        }, 1600);
+      }
+    }
+    updateContractorBadgeAndClearBtn();
+    closeContractorDropdownMenu();
+  }
+
+  function openContractorDropdownMenu(filterQuery = null) {
+    const menu = document.getElementById('contractor-dropdown-menu');
+    const arrow = document.getElementById('contractor-dropdown-arrow');
+    const inputEl = document.getElementById('input-contractor-search');
+    const q = filterQuery !== null ? filterQuery : (inputEl?.value || '');
+    renderContractorComboboxList(q);
+    if (menu) {
+      menu.classList.remove('hidden');
+      arrow?.classList.add('rotate-180');
+    }
+  }
+
+  function closeContractorDropdownMenu() {
+    const menu = document.getElementById('contractor-dropdown-menu');
+    const arrow = document.getElementById('contractor-dropdown-arrow');
+    if (menu) {
+      menu.classList.add('hidden');
+      arrow?.classList.remove('rotate-180');
+    }
+  }
+
+  function openCreateContractorModalWithPrefill(prefillName = '') {
+    const formCreateContractor = document.getElementById('form-create-contractor');
+    formCreateContractor?.reset();
+
+    const nameInp = document.getElementById('input-new-contractor-name');
+    if (nameInp) nameInp.value = (prefillName || '').trim();
+
+    const whCountry = document.getElementById('select-warehouse-country')?.value;
+    const contractorCountrySelect = document.getElementById('select-new-contractor-country');
+    if (contractorCountrySelect && whCountry) {
+      contractorCountrySelect.value = whCountry;
+    }
+
+    closeContractorDropdownMenu();
+    openModal('modal-create-contractor');
+    setTimeout(() => {
+      if (nameInp) {
+        nameInp.focus();
+        nameInp.setSelectionRange(nameInp.value.length, nameInp.value.length);
+      }
+    }, 50);
+  }
+
+  function renderContractorComboboxList(rawQuery = '') {
+    const listContainer = document.getElementById('contractor-options-list');
+    const smartCreateBar = document.getElementById('contractor-smart-create-bar');
+    if (!listContainer || !smartCreateBar) return;
+
+    const q = (rawQuery || '').trim();
+    const qLower = q.toLowerCase();
+
+    // Якщо в полі стоїть уже точно обраний підрядник і користувач просто відкрив меню — показуємо всіх, але виділяємо поточного
+    const isShowingSelectedWithoutTyping = Boolean(
+      q &&
+      selectedContractorValue &&
+      q.toLowerCase() === selectedContractorValue.toLowerCase()
+    );
+
+    const filtered = isShowingSelectedWithoutTyping
+      ? [...contractorsDirectory]
+      : contractorsDirectory.filter(c => {
+        if (!qLower) return true;
+        return (
+          c.name.toLowerCase().includes(qLower) ||
+          (c.country && c.country.toLowerCase().includes(qLower)) ||
+          (c.taxId && c.taxId.toLowerCase().includes(qLower)) ||
+          (c.contact && c.contact.toLowerCase().includes(qLower))
+        );
+      });
+
+    const hasExactMatch = Boolean(
+      q && contractorsDirectory.some(c => c.name.toLowerCase() === qLower)
+    );
+
+    if (filtered.length === 0) {
+      const safeQ = escapeHtmlStr(q);
+      listContainer.innerHTML = `
+        <div class="p-3 text-center space-y-2.5">
+          <div class="w-9 h-9 rounded-xl bg-brand-50 text-brand-600 border border-brand-100 flex items-center justify-center mx-auto">
+            <i class="fa-solid fa-building-circle-arrow-right text-sm"></i>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-slate-800">Підрядника «${safeQ}» ще немає в списку</p>
+            <p class="text-[11px] text-slate-500 mt-0.5">Створіть його зараз за 5 секунд без переходу з форми складу</p>
+          </div>
+          <button type="button" data-create-contractor-name="${safeQ}"
+            class="btn-smart-create-contractor w-full py-2 px-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-semibold shadow-sm shadow-brand-500/20 transition flex items-center justify-center gap-2 cursor-pointer">
+            <i class="fa-solid fa-plus text-[11px]"></i>
+            <span>Створити «${safeQ}»</span>
+            <kbd class="ml-1 px-1.5 py-0.5 text-[10px] font-mono bg-brand-700/80 text-brand-100 rounded border border-brand-400/40">Enter ↵</kbd>
+          </button>
+        </div>
+      `;
+      smartCreateBar.classList.add('hidden');
+      return;
+    }
+
+    smartCreateBar.classList.remove('hidden');
+
+    listContainer.innerHTML = filtered.map(c => {
+      const isSelected = Boolean(
+        selectedContractorValue &&
+        c.name.toLowerCase() === selectedContractorValue.toLowerCase()
+      );
+      const flag = countryFlags[c.country] || '🏢';
+      const highlightQuery = isShowingSelectedWithoutTyping ? '' : q;
+      const metaParts = [c.country ? `${flag} ${c.country}` : '', c.taxId || '', c.contact || ''].filter(Boolean);
+
+      return `
+        <button type="button" data-select-contractor="${escapeHtmlStr(c.name)}"
+          class="contractor-option-item w-full text-left px-3 py-2 rounded-lg transition flex items-center justify-between gap-2 cursor-pointer ${isSelected
+          ? 'bg-brand-50/90 text-brand-900 border border-brand-200/80 font-semibold'
+          : 'hover:bg-slate-100/90 text-slate-700 border border-transparent'
+        }">
+          <div class="min-w-0">
+            <div class="text-xs font-semibold text-slate-800 truncate">${highlightMatch(c.name, highlightQuery)}</div>
+            ${metaParts.length > 0 ? `<div class="text-[10px] text-slate-400 truncate mt-0.5">${escapeHtmlStr(metaParts.join(' • '))}</div>` : ''}
+          </div>
+          ${isSelected ? `
+            <span class="shrink-0 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-md">
+              <i class="fa-solid fa-check text-[9px]"></i> Обрано
+            </span>
+          ` : `
+            <i class="fa-solid fa-arrow-turn-down -rotate-90 text-[10px] text-slate-300 shrink-0"></i>
+          `}
+        </button>
+      `;
+    }).join('');
+
+    if (q && !hasExactMatch) {
+      const safeQ = escapeHtmlStr(q);
+      smartCreateBar.innerHTML = `
+        <button type="button" data-create-contractor-name="${safeQ}"
+          class="btn-smart-create-contractor w-full px-3 py-2 rounded-lg bg-brand-50 hover:bg-brand-600 text-brand-700 hover:text-white border border-brand-200/80 hover:border-brand-600 text-xs font-semibold transition flex items-center justify-between gap-2 cursor-pointer group">
+          <span class="flex items-center gap-2 min-w-0 truncate">
+            <i class="fa-solid fa-plus-circle text-brand-600 group-hover:text-white transition"></i>
+            <span class="truncate">Створити нового підрядника <strong>«${safeQ}»</strong></span>
+          </span>
+          <kbd class="shrink-0 px-1.5 py-0.5 text-[10px] font-mono bg-white group-hover:bg-brand-700 text-slate-500 group-hover:text-brand-100 rounded border border-slate-200 group-hover:border-brand-500">Enter ↵</kbd>
+        </button>
+      `;
+    } else {
+      smartCreateBar.innerHTML = `
+        <button type="button" data-create-contractor-name=""
+          class="btn-smart-create-contractor w-full px-3 py-1.5 rounded-lg hover:bg-white text-slate-600 hover:text-brand-600 text-[11px] font-semibold transition flex items-center justify-between gap-2 cursor-pointer">
+          <span class="text-[10px] text-brand-600 font-bold">+ Створити</span>
+        </button>
+      `;
+    }
+  }
 
   // Pagination State
   let currentPage = 1;
@@ -926,6 +1158,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ];
       }
     }
+    syncContractorsFromWarehouses();
     renderAllWarehouses();
   }
 
@@ -1769,11 +2002,137 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateFormMdStatusPreview(e.target.value);
   });
 
+  // Пошук підрядника (Searchable Combobox) + Smart Create у формі складу
+  const contractorSearchInput = document.getElementById('input-contractor-search');
+  const btnClearContractor = document.getElementById('btn-clear-contractor');
+  const btnToggleContractorMenu = document.getElementById('btn-toggle-contractor-menu');
+  const contractorDropdownMenu = document.getElementById('contractor-dropdown-menu');
+  const formCreateContractor = document.getElementById('form-create-contractor');
+
+  contractorSearchInput?.addEventListener('focus', () => {
+    openContractorDropdownMenu(contractorSearchInput.value);
+  });
+
+  contractorSearchInput?.addEventListener('click', () => {
+    openContractorDropdownMenu(contractorSearchInput.value);
+  });
+
+  contractorSearchInput?.addEventListener('input', (e) => {
+    const val = e.target.value;
+    const exact = contractorsDirectory.find(c => c.name.toLowerCase() === val.trim().toLowerCase());
+    selectedContractorValue = exact ? exact.name : '';
+    updateContractorBadgeAndClearBtn();
+    openContractorDropdownMenu(val);
+  });
+
+  contractorSearchInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeContractorDropdownMenu();
+      return;
+    }
+    if (e.key === 'Enter') {
+      const q = (contractorSearchInput.value || '').trim();
+      if (!q) return;
+      const exact = contractorsDirectory.find(c => c.name.toLowerCase() === q.toLowerCase());
+      if (exact) {
+        e.preventDefault();
+        setContractorValue(exact.name, true);
+      } else {
+        e.preventDefault();
+        openCreateContractorModalWithPrefill(q);
+      }
+    }
+  });
+
+  btnClearContractor?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setContractorValue('');
+    openContractorDropdownMenu('');
+    contractorSearchInput?.focus();
+  });
+
+  btnToggleContractorMenu?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isHidden = contractorDropdownMenu?.classList.contains('hidden');
+    if (isHidden) {
+      openContractorDropdownMenu(contractorSearchInput?.value || '');
+      contractorSearchInput?.focus();
+    } else {
+      closeContractorDropdownMenu();
+    }
+  });
+
+  contractorDropdownMenu?.addEventListener('click', (e) => {
+    const optionBtn = e.target.closest('.contractor-option-item');
+    if (optionBtn) {
+      const name = optionBtn.getAttribute('data-select-contractor') || '';
+      setContractorValue(name, true);
+      return;
+    }
+
+    const createBtn = e.target.closest('.btn-smart-create-contractor');
+    if (createBtn) {
+      const prefill = createBtn.getAttribute('data-create-contractor-name') || contractorSearchInput?.value.trim() || '';
+      openCreateContractorModalWithPrefill(prefill);
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#contractor-combobox-wrapper')) {
+      closeContractorDropdownMenu();
+    }
+  });
+
+  formCreateContractor?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const nameInp = document.getElementById('input-new-contractor-name');
+    const newContractorName = nameInp?.value.trim() || '';
+    if (!newContractorName) return;
+
+    const newCountry = document.getElementById('select-new-contractor-country')?.value || 'Україна';
+    const newTaxId = document.getElementById('input-new-contractor-tax-id')?.value.trim() || '';
+    const newContact = document.getElementById('input-new-contractor-contact')?.value.trim() || '';
+    const newPhone = document.getElementById('input-new-contractor-phone')?.value.trim() || '';
+    const newEmail = document.getElementById('input-new-contractor-email')?.value.trim() || '';
+    const newNotes = document.getElementById('input-new-contractor-notes')?.value.trim() || '';
+
+    const existingIdx = contractorsDirectory.findIndex(
+      c => c.name.toLowerCase() === newContractorName.toLowerCase()
+    );
+
+    if (existingIdx === -1) {
+      contractorsDirectory.unshift({
+        name: newContractorName,
+        country: newCountry,
+        taxId: newTaxId,
+        contact: newContact,
+        phone: newPhone,
+        email: newEmail,
+        notes: newNotes
+      });
+    } else {
+      contractorsDirectory[existingIdx] = {
+        ...contractorsDirectory[existingIdx],
+        country: newCountry || contractorsDirectory[existingIdx].country,
+        taxId: newTaxId || contractorsDirectory[existingIdx].taxId,
+        contact: newContact || contractorsDirectory[existingIdx].contact
+      };
+    }
+
+    setContractorValue(newContractorName, true);
+    closeModal('modal-create-contractor');
+    formCreateContractor.reset();
+    showToast(`Підрядника «${newContractorName}» створено та обрано`);
+  });
+
   document.getElementById('btn-create')?.addEventListener('click', () => {
     activeTargetWarehouseId = null;
     if (formWarehouseId) formWarehouseId.value = '';
     if (modalWarehouseTitle) modalWarehouseTitle.textContent = 'Створити склад';
     if (formSubmitText) formSubmitText.textContent = 'Створити склад';
+
+    if (inputWarehouseName) inputWarehouseName.value = '';
+    setContractorValue('');
 
     // Встановлюємо дефолтне значення "Власні"
     updateCustomDropdown('select-warehouse-type', 'Власні');
@@ -1854,8 +2213,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const nameInput = document.getElementById('input-warehouse-name');
     if (nameInput) nameInput.value = item.name || '';
 
-    const contractorInput = document.getElementById('input-contractor-search');
-    if (contractorInput) contractorInput.value = item.contractor || '';
+    syncContractorsFromWarehouses();
+    setContractorValue(item.contractor || '');
 
     const typeValue = item.type || 'Власні';
     updateCustomDropdown('select-warehouse-type', typeValue);
@@ -2640,9 +2999,9 @@ document.addEventListener('DOMContentLoaded', async () => {
               <div class="mt-1 flex items-center gap-2 flex-wrap">
                 <span class="tariff-doc-status-badge">
                   ${isActive
-                    ? `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 inline-flex items-center gap-1 shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Активний прайс-лист</span>`
-                    : `<span class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-200/70 text-slate-600 border border-slate-300/60 inline-flex items-center gap-1"><i class="fa-solid fa-box-archive text-[9px] text-slate-400"></i> Неактивний (архів)</span>`
-                  }
+        ? `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 inline-flex items-center gap-1 shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Активний прайс-лист</span>`
+        : `<span class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-200/70 text-slate-600 border border-slate-300/60 inline-flex items-center gap-1"><i class="fa-solid fa-box-archive text-[9px] text-slate-400"></i> Неактивний (архів)</span>`
+      }
                 </span>
               </div>
             </div>

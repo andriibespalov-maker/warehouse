@@ -29,8 +29,8 @@ const STATUS_GROUP_MAPPING = {
 };
 
 const STATUS_CONFIG = {
-  'at_origin_warehouse': {title: 'На складі відправки', class: 'bg-blue-100 text-blue-800 border-blue-300'},
-  'received_unmarked': {title: 'Отримано непромаркованим', class: 'bg-amber-100 text-amber-800 border-amber-300'},
+  'at_origin_warehouse': { title: 'На складі відправки', class: 'bg-blue-100 text-blue-800 border-blue-300' },
+  'received_unmarked': { title: 'Отримано непромаркованим', class: 'bg-amber-100 text-amber-800 border-amber-300' },
   'transfered_to_logistician_for_marking': {
     title: 'Передано логісту на маркування',
     class: 'bg-indigo-100 text-indigo-800 border-indigo-300'
@@ -39,17 +39,17 @@ const STATUS_CONFIG = {
     title: 'Передано Складу на маркування',
     class: 'bg-indigo-100 text-indigo-800 border-indigo-300'
   },
-  'storaging_in_warehouse': {title: 'Зберігання на складі', class: 'bg-slate-100 text-slate-800 border-slate-300'},
+  'storaging_in_warehouse': { title: 'Зберігання на складі', class: 'bg-slate-100 text-slate-800 border-slate-300' },
   'waiting_for_task_execution': {
     title: 'Очікує виконання завдання по вантажу',
     class: 'bg-amber-100 text-amber-800 border-amber-300'
   },
-  'waiting_for_other_parts': {title: 'Очікує інші частини', class: 'bg-amber-100 text-amber-800 border-amber-300'},
-  'awaiting_readiness': {title: 'Очікує готовності', class: 'bg-indigo-100 text-indigo-800 border-indigo-300'},
-  'ready_for_loading': {title: 'Готовий до завантаження', class: 'bg-emerald-100 text-emerald-800 border-emerald-300'},
-  'in_transit': {title: 'В дорозі', class: 'bg-purple-100 text-purple-800 border-purple-300'},
-  'at_destination_warehouse': {title: 'На складі призначення', class: 'bg-teal-100 text-teal-800 border-teal-300'},
-  'handed_over_to_self_pickup': {title: 'Передано на самовивіз', class: 'bg-sky-100 text-sky-800 border-sky-300'},
+  'waiting_for_other_parts': { title: 'Очікує інші частини', class: 'bg-amber-100 text-amber-800 border-amber-300' },
+  'awaiting_readiness': { title: 'Очікує готовності', class: 'bg-indigo-100 text-indigo-800 border-indigo-300' },
+  'ready_for_loading': { title: 'Готовий до завантаження', class: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
+  'in_transit': { title: 'В дорозі', class: 'bg-purple-100 text-purple-800 border-purple-300' },
+  'at_destination_warehouse': { title: 'На складі призначення', class: 'bg-teal-100 text-teal-800 border-teal-300' },
+  'handed_over_to_self_pickup': { title: 'Передано на самовивіз', class: 'bg-sky-100 text-sky-800 border-sky-300' },
   'preparing_for_last_mile': {
     title: 'Готується до відправки останньої милі',
     class: 'bg-cyan-100 text-cyan-800 border-cyan-300'
@@ -58,8 +58,8 @@ const STATUS_CONFIG = {
     title: 'Відправлено кур`єрською службою',
     class: 'bg-violet-100 text-violet-800 border-violet-300'
   },
-  'issued': {title: 'Виданий', class: 'bg-emerald-200 text-emerald-900 border-emerald-400'},
-  'returned_to_customer': {title: 'Повернено клієнту', class: 'bg-rose-100 text-rose-800 border-rose-300'}
+  'issued': { title: 'Виданий', class: 'bg-emerald-200 text-emerald-900 border-emerald-400' },
+  'returned_to_customer': { title: 'Повернено клієнту', class: 'bg-rose-100 text-rose-800 border-rose-300' }
 };
 
 // Global Dynamic Datasets
@@ -91,11 +91,11 @@ function getCargoStatusGroup(cargo) {
 
 function getCapacityTheme(percentage) {
   if (percentage >= 100) {
-    return {bg: 'bg-rose-600', badge: 'bg-rose-100 text-rose-800 border-rose-300 animate-pulse'};
+    return { bg: 'bg-rose-600', badge: 'bg-rose-100 text-rose-800 border-rose-300 animate-pulse' };
   } else if (percentage > 80) {
-    return {bg: 'bg-amber-500', badge: 'bg-amber-100 text-amber-800 border-amber-300'};
+    return { bg: 'bg-amber-500', badge: 'bg-amber-100 text-amber-800 border-amber-300' };
   } else {
-    return {bg: 'bg-emerald-500', badge: 'bg-emerald-100 text-emerald-800 border-emerald-300'};
+    return { bg: 'bg-emerald-500', badge: 'bg-emerald-100 text-emerald-800 border-emerald-300' };
   }
 }
 
@@ -272,7 +272,7 @@ function renderSubvoyageTabs() {
     name: 'Усі підрейси',
     mode: 'Сумарно за підрейсами',
     logist: logistLabel,
-    capacity: {volMax: subvolMax, weightMax: subweightMax, placesMax: subplacesMax}
+    capacity: { volMax: subvolMax, weightMax: subweightMax, placesMax: subplacesMax }
   };
 
   const listToRender = [allTabObj, ...visibleSubvoyages];
@@ -294,7 +294,7 @@ function renderSubvoyageTabs() {
     }
 
     const volMax = sv.capacity?.volMax ?? 67.0;
-    const weightMax = sv.capacity?.weightMax ?? 10.0;
+    const weightMax = sv.capacity?.weightMax ?? 10000;
     const placesMax = sv.capacity?.placesMax ?? 300;
 
     const volPct = volMax > 0 ? Math.min(100, Math.round((volActual / volMax) * 100)) : 0;
@@ -305,11 +305,10 @@ function renderSubvoyageTabs() {
     const theme = getCapacityTheme(compositeMax);
 
     const cardHtml = `
-            <div data-sv-id="${sv.id}" class="tab-card cursor-pointer rounded-xl p-3 border transition-all duration-200 relative overflow-hidden select-none ${
-      isActive
+            <div data-sv-id="${sv.id}" class="tab-card cursor-pointer rounded-xl p-3 border transition-all duration-200 relative overflow-hidden select-none ${isActive
         ? 'bg-slate-900 text-white border-slate-900 shadow-md ring-2 ring-brand-500/50'
         : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200'
-    }">
+      }">
                 <div class="flex items-center justify-between mb-1">
                     <span class="font-bold text-xs uppercase tracking-wide ${isActive ? 'text-brand-400' : 'text-slate-700'}">${sv.name}</span>
                     <div class="flex items-center gap-1.5">
@@ -337,7 +336,7 @@ function renderSubvoyageTabs() {
 
                     <div>
                         <div class="flex justify-between mb-0.5 opacity-90">
-                            <span>Вага: ${weightActual.toFixed(2)}/${weightMax.toFixed(2)} кг</span>
+                            <span>Вага: ${Number.isInteger(weightActual) ? weightActual : weightActual.toFixed(1)}/${Number.isInteger(weightMax) ? weightMax : weightMax.toFixed(1)} кг</span>
                             <span class="font-bold">${weightPct}%</span>
                         </div>
                         <div class="w-full h-1.5 bg-slate-200/40 rounded-full overflow-hidden">
@@ -396,7 +395,7 @@ function isCargoInSubvoyageScope(c) {
 }
 
 function updateStatusGroupTabs() {
-  const groupCounts = {on_warehouse: 0, unmarked: 0, awaiting_arrival: 0, last_mile: 0, archive: 0};
+  const groupCounts = { on_warehouse: 0, unmarked: 0, awaiting_arrival: 0, last_mile: 0, archive: 0 };
   const groupKeys = ['on_warehouse', 'unmarked', 'awaiting_arrival', 'last_mile', 'archive'];
 
   (cargoesData || []).forEach(c => {
@@ -569,12 +568,12 @@ function renderTasksList(cargo) {
 
 function openAssignSubvoyageModal(shipmentKey, reqVol, reqWeight, reqPlaces, shipmentMode, shipmentLogist) {
   currentAssignShipmentKey = shipmentKey;
-  currentShipmentContext = {shipmentKey, reqVol, reqWeight, reqPlaces, shipmentMode, shipmentLogist};
+  currentShipmentContext = { shipmentKey, reqVol, reqWeight, reqPlaces, shipmentMode, shipmentLogist };
 
   document.getElementById('m-assign-shipment-id').innerText = shipmentKey;
   document.getElementById('m-assign-req-places').innerText = reqPlaces;
   document.getElementById('m-assign-req-vol').innerText = reqVol.toFixed(1);
-  document.getElementById('m-assign-req-weight').innerText = reqWeight.toFixed(2);
+  document.getElementById('m-assign-req-weight').innerText = Number.isInteger(reqWeight) ? reqWeight : reqWeight.toFixed(1);
 
   document.getElementById('m-assign-mode-badge').innerHTML = `<i class="fa-solid ${getTransportIcon(shipmentMode)} mr-1.5"></i>${shipmentMode || 'Без транспорту'}`;
   document.getElementById('m-assign-logist-badge').innerHTML = `<i class="fa-regular fa-user text-slate-500 mr-1.5"></i>Логіст: ${shipmentLogist || 'Не призначено'}`;
@@ -598,7 +597,7 @@ function openAssignSubvoyageModal(shipmentKey, reqVol, reqWeight, reqPlaces, shi
 
 function renderAssignSubvoyagesList() {
   if (!currentShipmentContext) return;
-  const {shipmentKey, reqVol, reqWeight, reqPlaces, shipmentMode, shipmentLogist} = currentShipmentContext;
+  const { shipmentKey, reqVol, reqWeight, reqPlaces, shipmentMode, shipmentLogist } = currentShipmentContext;
 
   const sameModeElem = document.getElementById('m-filter-same-mode');
   const filterSameMode = sameModeElem ? sameModeElem.checked : false;
@@ -617,14 +616,14 @@ function renderAssignSubvoyagesList() {
     const currentPlaces = svCargoes.reduce((sum, c) => sum + c.places, 0);
 
     const freeVol = (sv.capacity?.volMax ?? 67) - currentVol;
-    const freeWeight = (sv.capacity?.weightMax ?? 10.0) - currentWeight;
+    const freeWeight = (sv.capacity?.weightMax ?? 10000) - currentWeight;
     const freePlaces = (sv.capacity?.placesMax ?? 300) - currentPlaces;
 
     const isEnough = (freeVol >= reqVol) && (freeWeight >= reqWeight) && (freePlaces >= reqPlaces);
     const isModeMatch = shipmentMode ? (sv.mode.toLowerCase().includes(shipmentMode.toLowerCase()) || shipmentMode.toLowerCase().includes(sv.mode.toLowerCase())) : true;
     const isLogistMatch = shipmentLogist ? (sv.logist === shipmentLogist) : true;
 
-    return {sv, freeVol, freeWeight, freePlaces, isEnough, isModeMatch, isLogistMatch};
+    return { sv, freeVol, freeWeight, freePlaces, isEnough, isModeMatch, isLogistMatch };
   });
 
   if (filterSameMode && shipmentMode) {
@@ -654,7 +653,7 @@ function renderAssignSubvoyagesList() {
     return;
   }
 
-  processed.forEach(({sv, freeVol, freeWeight, freePlaces, isEnough, isLogistMatch}) => {
+  processed.forEach(({ sv, freeVol, freeWeight, freePlaces, isEnough, isLogistMatch }) => {
     const cardClass = isEnough
       ? 'bg-slate-50 hover:bg-brand-50 border-slate-200'
       : 'bg-slate-100 opacity-60 border-slate-200 cursor-not-allowed';
@@ -674,7 +673,7 @@ function renderAssignSubvoyagesList() {
 
             <div class="text-right text-[10px] font-mono">
                 <div class="text-slate-600">
-                    Вільний об'єм: <strong>${freeVol.toFixed(1)} m³</strong> | Вага: <strong>${freeWeight.toFixed(2)} кг</strong> | Вільні місця: <strong>${freePlaces} шт</strong>
+                    Вільний об'єм: <strong>${freeVol.toFixed(1)} m³</strong> | Вага: <strong>${Number.isInteger(freeWeight) ? freeWeight : freeWeight.toFixed(1)} кг</strong> | Вільні місця: <strong>${freePlaces} шт</strong>
                 </div>
             </div>
         </label>
@@ -1123,17 +1122,17 @@ function buildCargoRowHtml(c) {
         <!-- 20. Кількість місць -->
         <td class="p-3 text-right font-bold text-brand-600 font-mono">${c.places} шт</td>
         <!-- 21. Вага брутто -->
-        <td class="p-3 text-right font-bold text-slate-800 font-mono">${c.weight.toFixed(2)} т</td>
+        <td class="p-3 text-right font-bold text-slate-800 font-mono">${Number.isInteger(c.weight) ? c.weight : c.weight.toFixed(1)} кг</td>
         <!-- 22. Об'єм -->
         <td class="p-3 text-right font-bold text-slate-800 font-mono">${c.volume} m³</td>
         <!-- 23. Негабарит -->
         <td class="p-3">
             ${c.isOversized
-    ? `<span class="bg-rose-100 text-rose-800 text-[11px] font-bold px-2 py-0.5 rounded-full border border-rose-300 inline-flex items-center gap-1" title="${c.oversizeComment}">
+      ? `<span class="bg-rose-100 text-rose-800 text-[11px] font-bold px-2 py-0.5 rounded-full border border-rose-300 inline-flex items-center gap-1" title="${c.oversizeComment}">
                    <i class="fa-solid fa-ruler-combined"></i> ${c.oversizeComment}
                  </span>`
-    : `<span class="text-slate-400 text-xs">${c.oversizeComment || '—'}</span>`
-  }
+      : `<span class="text-slate-400 text-xs">${c.oversizeComment || '—'}</span>`
+    }
         </td>
         <!-- 24. Тип пакування -->
         <td class="p-3 text-slate-600 text-xs">${c.packageType || '—'}</td>
@@ -1148,11 +1147,11 @@ function buildCargoRowHtml(c) {
         <!-- 29. Посилання на фото -->
         <td class="p-3 text-center">
             ${c.photoUrl
-    ? `<a href="${c.photoUrl}" target="_blank" onclick="event.stopPropagation();" class="text-brand-600 hover:text-brand-800 hover:underline font-medium inline-flex items-center gap-1">
+      ? `<a href="${c.photoUrl}" target="_blank" onclick="event.stopPropagation();" class="text-brand-600 hover:text-brand-800 hover:underline font-medium inline-flex items-center gap-1">
                    <i class="fa-solid fa-image"></i> Фото
                  </a>`
-    : `<span class="text-slate-400">Немає</span>`
-  }
+      : `<span class="text-slate-400">Немає</span>`
+    }
         </td>
         <!-- 30. ДІЇ (Закріплена колонка) -->
         <td class="p-3 text-center sticky right-0 z-10 bg-white group-hover:bg-slate-50">
@@ -1350,7 +1349,7 @@ function renderTable() {
                         </div>
 
                         <div class="font-mono text-xs text-slate-700 font-medium flex items-center gap-3 bg-slate-100 px-3 py-1 rounded-lg border border-slate-300">
-                            <span>Сума ваги: <strong>${gWeight.toFixed(2)} т</strong></span>
+                            <span>Сума ваги: <strong>${Number.isInteger(gWeight) ? gWeight : gWeight.toFixed(1)} кг</strong></span>
                             <span>•</span>
                             <span>Об'єм: <strong>${gVolume.toFixed(1)} m³</strong></span>
                             <span>•</span>
@@ -1381,7 +1380,7 @@ function renderTable() {
   }
 
   const sumWeight = document.getElementById('page-sum-weight');
-  if (sumWeight) sumWeight.innerText = `${totalWeight.toFixed(2)} т`;
+  if (sumWeight) sumWeight.innerText = `${Number.isInteger(totalWeight) ? totalWeight : totalWeight.toFixed(1)} кг`;
 
   const sumVol = document.getElementById('page-sum-volume');
   if (sumVol) sumVol.innerText = `${totalVolume.toFixed(1)} m³`;
@@ -1468,15 +1467,15 @@ function getTransportIcon(mode) {
 }
 
 function setupMultiSelectDropdown({
-                                    btnId,
-                                    menuId,
-                                    btnTextId,
-                                    selectAllId,
-                                    clearAllId,
-                                    checkboxClass,
-                                    labelPrefix,
-                                    totalCount
-                                  }) {
+  btnId,
+  menuId,
+  btnTextId,
+  selectAllId,
+  clearAllId,
+  checkboxClass,
+  labelPrefix,
+  totalCount
+}) {
   const btn = document.getElementById(btnId);
   const menu = document.getElementById(menuId);
   const btnText = document.getElementById(btnTextId);
@@ -1568,6 +1567,54 @@ function openTraceabilityModal(cargoId) {
         </div>
     `;
     }
+  }
+
+  const printBtn = document.getElementById('btn-print-traceability-route');
+  if (printBtn) {
+    printBtn.onclick = () => {
+      const steps = Array.isArray(cargo.timeline) ? cargo.timeline : [];
+      const printDate = new Date().toLocaleString('uk-UA');
+      const printWin = window.open('', '_blank', 'width=900,height=720');
+      if (!printWin) return;
+      printWin.document.open();
+      printWin.document.write(`<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <title>Маршрут переміщень вантажу ${cargo.id}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #0f172a; margin: 24px; font-size: 12px; }
+    .header { border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 14px; display: flex; justify-content: space-between; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
+    th { background: #e2e8f0; font-size: 10px; text-transform: uppercase; }
+    @media print { .no-print { display: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="text-align:right;margin-bottom:12px;">
+    <button onclick="window.print()" style="padding:6px 14px;background:#0284c7;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;">Друкувати</button>
+  </div>
+  <div class="header">
+    <div>
+      <div style="font-size:16px;font-weight:800;text-transform:uppercase;">Маршрутний лист переміщень вантажу між складами</div>
+      <div>Вантаж (Ерайв): <strong>${cargo.id}</strong> — ${cargo.titleUa || ''} (${cargo.status || ''})</div>
+    </div>
+    <div style="text-align:right;font-size:11px;">Дата друку: ${printDate}</div>
+  </div>
+  <table>
+    <thead>
+      <tr><th>№</th><th>Дата / Час</th><th>Склад / Операція</th><th>Деталі переміщення</th></tr>
+    </thead>
+    <tbody>
+      ${steps.map((s, idx) => `<tr><td>${idx + 1}</td><td>${s.time || ''}</td><td><strong>${s.title || ''}</strong></td><td>${s.desc || ''}</td></tr>`).join('')}
+    </tbody>
+  </table>
+  <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 200); };</script>
+</body>
+</html>`);
+      printWin.document.close();
+    };
   }
 
   document.getElementById('modal-traceability').classList.remove('hidden');
@@ -1946,7 +1993,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btn-save-arrive')?.addEventListener('click', handleSaveArrive);
 
   // Перемикання між Реєстром Ерайвів та Планувальником Підрейсів
-  window.toggleSubvoyagePlannerMode = function(showPlanner) {
+  window.toggleSubvoyagePlannerMode = function (showPlanner) {
     const registryContainer = document.getElementById('cargo-registry-container');
     const plannerWorkspace = document.getElementById('sub-voyages-management-workspace');
     // Фільтри списку — показуємо тільки в режимі "Список"
@@ -1997,7 +2044,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   };
 
-  window.openSubvoyageInPlanner = function(svId) {
+  window.openSubvoyageInPlanner = function (svId) {
     window.toggleSubvoyagePlannerMode(true);
     if (typeof window.selectActiveSubvoyage === 'function') {
       window.selectActiveSubvoyage(svId);

@@ -49,7 +49,7 @@
               <!-- Підрядник -->
               <div id="wh-display-contractor"></div>
 
-              <!-- Блок 3.1: Компактний індикатор закінчення дії тарифів (< 1 місяця або прострочений) -->
+              <!-- Блок 3.1: Компактний індикатор закінчення дії тарифів (≤ 14 днів або прострочений) -->
               <div id="wh-tariff-expiry-banner" class="hidden"></div>
             </div>
 
@@ -597,9 +597,9 @@
     </div>
   </div>
 
-  <!-- МОДАЛЬНЕ ВІКНО ПРИЙМАННЯ ВАНТАЖУ НА СКЛАД (Блок 3.2: Обов'язковий звіт приймання — «Захист від дурня») -->
+  <!-- МОДАЛЬНЕ ВІКНО ОТРИМАННЯ ПІДРЕЙСУ НА БАЛАНС СКЛАДУ (Блок 3.2 / 1.5: Форма отримання підрейсу) -->
   <div id="modal-accept-voyage" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-    <div class="bg-white rounded-2xl max-w-4xl w-full overflow-hidden shadow-2xl border border-slate-200 flex flex-col my-auto max-h-[92vh]">
+    <div class="bg-white rounded-2xl max-w-6xl w-full overflow-hidden shadow-2xl border border-slate-200 flex flex-col my-auto max-h-[94vh]">
       <!-- Modal Header -->
       <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between shrink-0">
         <div class="flex items-center gap-3">
@@ -608,13 +608,10 @@
           </div>
           <div>
             <div class="flex items-center gap-2 flex-wrap">
-              <h3 class="font-bold text-base">Приймання рейсу на баланс складу</h3>
+              <h3 class="font-bold text-base">Отримання підрейсу на баланс складу</h3>
               <span id="accept-voyage-id-badge" class="px-2.5 py-0.5 rounded-md bg-indigo-500/30 border border-indigo-400/40 text-indigo-200 font-mono text-xs font-bold">SV-2026-101</span>
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-400/30">
-                Етап 1: Автономний контур складу
-              </span>
             </div>
-            <p class="text-[11px] text-slate-400 mt-0.5">Без заповнення обов'язкового звіту приймання («Захист від дурня») вантаж не переходить на баланс складу</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">Фактичні параметри вводяться вручну після вивантаження. Недостача не зупиняє роботу з вантажем — відповідальний менеджер отримує сповіщення.</p>
           </div>
         </div>
         <button type="button" onclick="DashboardModule.closeAcceptVoyageModal()" class="w-8 h-8 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer text-xl leading-none">&times;</button>
@@ -624,162 +621,157 @@
       <div class="p-6 space-y-5 bg-white overflow-y-auto custom-scrollbar flex-1 text-xs">
         <input type="hidden" id="accept-voyage-target-id" value="">
 
-        <!-- 1. Загальна інформація про рейс та очікувані показники -->
-        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
-          <div class="space-y-1">
-            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Маршрут та перевізник</div>
-            <div id="accept-voyage-route-info" class="font-bold text-slate-900 text-sm">Гуанчжоу ➔ New FOSHAN Hub</div>
-            <div id="accept-voyage-meta-info" class="text-[11px] text-slate-500 font-mono">Перевезень у рейсі: 3</div>
-          </div>
-
-          <!-- Підтвердження фактичних габаритів, ваги та кількості місць -->
-          <div class="grid grid-cols-3 gap-3">
-            <div class="bg-white border border-slate-200 rounded-lg p-2.5">
-              <label class="block text-[10px] font-bold text-slate-500 uppercase">Кількість місць (шт) <span class="text-rose-500">*</span></label>
-              <div class="flex items-center gap-1.5 mt-1">
-                <input type="number" id="accept-voyage-actual-places" min="0" step="1"
-                  class="w-20 bg-slate-50 border border-slate-300 rounded px-2 py-1 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                <span class="text-[10px] text-slate-400 font-mono">/ План: <strong id="accept-voyage-expected-places">0</strong></span>
-              </div>
+        <!-- 1. Інформація про підрейс -->
+        <section class="space-y-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+            <span class="w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] flex items-center justify-center">1</span>
+            Інформація про підрейс
+          </h4>
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div class="md:col-span-2 space-y-1">
+              <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Назва підрейсу</div>
+              <div id="accept-voyage-route-info" class="font-bold text-slate-900 text-sm">—</div>
+              <div id="accept-voyage-meta-info" class="text-[11px] text-slate-500 font-mono">—</div>
             </div>
-            <div class="bg-white border border-slate-200 rounded-lg p-2.5">
-              <label class="block text-[10px] font-bold text-slate-500 uppercase">Факт. вага (т) <span class="text-rose-500">*</span></label>
-              <div class="flex items-center gap-1.5 mt-1">
-                <input type="number" id="accept-voyage-actual-weight" min="0" step="0.01"
-                  class="w-20 bg-slate-50 border border-slate-300 rounded px-2 py-1 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                <span class="text-[10px] text-slate-400 font-mono">/ План: <strong id="accept-voyage-expected-weight">0.0</strong></span>
-              </div>
-            </div>
-            <div class="bg-white border border-slate-200 rounded-lg p-2.5">
-              <label class="block text-[10px] font-bold text-slate-500 uppercase">Факт. об'єм (м³) <span class="text-rose-500">*</span></label>
-              <div class="flex items-center gap-1.5 mt-1">
-                <input type="number" id="accept-voyage-actual-volume" min="0" step="0.1"
-                  class="w-20 bg-slate-50 border border-slate-300 rounded px-2 py-1 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                <span class="text-[10px] text-slate-400 font-mono">/ План: <strong id="accept-voyage-expected-volume">0.0</strong></span>
-              </div>
+            <div>
+              <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Дата отримання на складі</div>
+              <div id="accept-voyage-receive-date" class="mt-1 font-mono font-bold text-slate-900 text-sm">—</div>
             </div>
           </div>
-        </div>
+        </section>
 
-        <!-- 2. Вибір режиму звіту: Чекбокс «Все добре» або фіксація проблемних перевезень -->
-        <div class="space-y-3">
-          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-            Результат вхідного контролю при розвантаженні <span class="text-rose-500">*</span>
-          </label>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <label id="accept-mode-ok-card" class="flex items-start gap-3 p-3.5 rounded-xl border-2 border-emerald-500 bg-emerald-50/50 cursor-pointer transition select-none">
-              <input type="checkbox" id="accept-voyage-all-good-checkbox" checked onchange="DashboardModule.toggleAcceptVoyageMode(this.checked)"
-                class="mt-0.5 w-4 h-4 accent-emerald-600 rounded cursor-pointer">
-              <div>
-                <div class="font-bold text-emerald-950 text-xs flex items-center gap-1.5">
-                  <i class="fa-solid fa-circle-check text-emerald-600"></i>
-                  <span>Все добре (прийнято без розбіжностей та пошкоджень)</span>
-                </div>
-                <p class="text-[11px] text-emerald-800/80 mt-0.5">Кількість місць, вага, габарити та цілісність упаковки повністю відповідають маніфесту рейсу.</p>
+        <!-- 2. Отримані параметри рейсу після вивантаження -->
+        <section class="space-y-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+            <span class="w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] flex items-center justify-center">2</span>
+            Отримані параметри рейсу після вивантаження
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="bg-white border border-slate-200 rounded-xl p-3">
+              <label for="accept-voyage-actual-places" class="block text-[10px] font-bold text-slate-500 uppercase">Кількість місць (шт) <span class="text-rose-500">*</span></label>
+              <div class="flex items-center gap-2 mt-1">
+                <input type="number" id="accept-voyage-actual-places" min="0" step="1" placeholder="Факт"
+                  oninput="DashboardModule.updateAcceptParamsDiff()"
+                  class="w-24 bg-slate-50 border border-slate-300 rounded px-2 py-1 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <span class="text-[10px] text-slate-400 font-mono">Очікувалось: <strong id="accept-voyage-expected-places">0</strong></span>
               </div>
-            </label>
-
-            <label id="accept-mode-issues-card" onclick="const cb = document.getElementById('accept-voyage-all-good-checkbox'); if (cb) { cb.checked = false; DashboardModule.toggleAcceptVoyageMode(false); }"
-              class="flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:border-amber-300 cursor-pointer transition select-none">
-              <div class="mt-0.5 w-4 h-4 rounded-full border-2 border-amber-500 flex items-center justify-center shrink-0">
-                <span id="accept-mode-issues-dot" class="hidden w-2 h-2 rounded-full bg-amber-600"></span>
+              <div id="accept-voyage-diff-places" class="mt-1 text-[10px] font-bold"></div>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-xl p-3">
+              <label for="accept-voyage-actual-volume" class="block text-[10px] font-bold text-slate-500 uppercase">Об'єм (м³) <span class="text-rose-500">*</span></label>
+              <div class="flex items-center gap-2 mt-1">
+                <input type="number" id="accept-voyage-actual-volume" min="0" step="0.01" placeholder="Факт"
+                  oninput="DashboardModule.updateAcceptParamsDiff()"
+                  class="w-24 bg-slate-50 border border-slate-300 rounded px-2 py-1 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <span class="text-[10px] text-slate-400 font-mono">Очікувалось: <strong id="accept-voyage-expected-volume">0.0</strong></span>
               </div>
-              <div>
-                <div class="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-                  <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
-                  <span>Виявлено проблеми / розбіжності при прийманні</span>
-                </div>
-                <p class="text-[11px] text-slate-500 mt-0.5">Відмітьте проблемні перевезення зі списку, вкажіть тип проблеми (нестача, пошкодження, розбіжність габаритів/ваги).</p>
+              <div id="accept-voyage-diff-volume" class="mt-1 text-[10px] font-bold"></div>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-xl p-3">
+              <label for="accept-voyage-actual-weight" class="block text-[10px] font-bold text-slate-500 uppercase">Вага (кг) <span class="text-rose-500">*</span></label>
+              <div class="flex items-center gap-2 mt-1">
+                <input type="number" id="accept-voyage-actual-weight" min="0" step="0.1" placeholder="Факт"
+                  oninput="DashboardModule.updateAcceptParamsDiff()"
+                  class="w-24 bg-slate-50 border border-slate-300 rounded px-2 py-1 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <span class="text-[10px] text-slate-400 font-mono">Очікувалось: <strong id="accept-voyage-expected-weight">0</strong> кг</span>
               </div>
-            </label>
+              <div id="accept-voyage-diff-weight" class="mt-1 text-[10px] font-bold"></div>
+            </div>
           </div>
-        </div>
+          <!-- Банер розбіжності параметрів -->
+          <div id="accept-voyage-mismatch-banner" class="hidden p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-[11px] flex items-start gap-2">
+            <i class="fa-solid fa-triangle-exclamation text-amber-600 mt-0.5"></i>
+            <span id="accept-voyage-mismatch-text">Параметри не збігаються з очікуваними — позначте у списку нижче, в яких перевезеннях не вистачає місць.</span>
+          </div>
+        </section>
 
-        <!-- 3. Блок вибору проблемних перевезень та типів проблем (активний, коли "Все добре" знято, або для огляду складу рейсу) -->
-        <div id="accept-voyage-problems-section" class="hidden bg-amber-50/50 border border-amber-200 rounded-xl p-4 space-y-4">
+        <!-- 3. Перевезення підрейсу: недостача та стан коробок -->
+        <section class="space-y-2">
           <div class="flex items-center justify-between flex-wrap gap-2">
-            <h4 class="font-bold text-amber-950 text-xs flex items-center gap-1.5">
-              <i class="fa-solid fa-boxes-packing text-amber-600"></i>
-              <span>Оберіть проблемні перевезення зі списку рейсу та типи виявлених проблем:</span>
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <span class="w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] flex items-center justify-center">3</span>
+              Перевезення підрейсу: недостача та стан коробок
             </h4>
-            <span class="text-[10px] font-bold text-rose-700 bg-rose-100 border border-rose-200 px-2 py-0.5 rounded">
-              Обов'язково оберіть хоча б 1 проблемне перевезення та тип розбіжності
-            </span>
-          </div>
-
-          <!-- Типи проблем -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
-            <label class="flex items-center gap-2 p-2.5 bg-white border border-amber-200 rounded-lg cursor-pointer hover:border-amber-400">
-              <input type="checkbox" name="accept-problem-type" value="Нестача місць" class="accent-amber-600 rounded">
-              <span class="font-semibold text-slate-800 text-[11px]">Нестача місць</span>
-            </label>
-            <label class="flex items-center gap-2 p-2.5 bg-white border border-amber-200 rounded-lg cursor-pointer hover:border-amber-400">
-              <input type="checkbox" name="accept-problem-type" value="Пошкодження упаковки/товару" class="accent-amber-600 rounded">
-              <span class="font-semibold text-slate-800 text-[11px]">Пошкодження упаковки/товару</span>
-            </label>
-            <label class="flex items-center gap-2 p-2.5 bg-white border border-amber-200 rounded-lg cursor-pointer hover:border-amber-400">
-              <input type="checkbox" name="accept-problem-type" value="Розбіжність габаритів/ваги" class="accent-amber-600 rounded">
-              <span class="font-semibold text-slate-800 text-[11px]">Розбіжність габаритів/ваги</span>
-            </label>
-            <label class="flex items-center gap-2 p-2.5 bg-white border border-amber-200 rounded-lg cursor-pointer hover:border-amber-400">
-              <input type="checkbox" name="accept-problem-type" value="Відсутнє / некоректне маркування" class="accent-amber-600 rounded">
-              <span class="font-semibold text-slate-800 text-[11px]">Порушення маркування</span>
-            </label>
-          </div>
-
-          <!-- Список перевезень у рейсі для вибору проблемних -->
-          <div class="space-y-1.5">
-            <div class="text-[11px] font-bold text-slate-700">Перевезення у складі рейсу (відмітьте проблемні позиції):</div>
-            <div id="accept-voyage-shipments-checklist" class="space-y-1.5 max-h-44 overflow-y-auto custom-scrollbar pr-1">
-              <!-- Генерується динамічно -->
-            </div>
-          </div>
-        </div>
-
-        <!-- 4. Обов'язкове завантаження фото звіту та примітки -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="space-y-2">
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center justify-between">
-              <span><i class="fa-solid fa-camera text-indigo-600 mr-1"></i> Фотофіксація приймання вантажу <span class="text-rose-500">*</span></span>
-              <span id="accept-voyage-photos-count" class="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">Додано: 1 фото</span>
-            </label>
-            <div class="border-2 border-dashed border-slate-300 hover:border-indigo-400 rounded-xl p-3.5 bg-slate-50/70 space-y-2.5 transition">
-              <div class="flex items-center justify-between gap-2 flex-wrap">
-                <label class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-bold cursor-pointer inline-flex items-center gap-1.5 shadow-2xs transition">
-                  <i class="fa-solid fa-cloud-arrow-up"></i>
-                  <span>Завантажити фото розвантаження</span>
-                  <input type="file" id="accept-voyage-photo-input" multiple accept="image/*" class="hidden" onchange="DashboardModule.handleAcceptPhotoUpload(this)">
-                </label>
-                <span class="text-[10px] text-slate-400">JPG, PNG, WEBP (обов'язково мін. 1 фото)</span>
-              </div>
-              <div id="accept-voyage-photos-list" class="flex flex-wrap gap-2">
-                <!-- Список прикріплених фото -->
-              </div>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-[10px] text-slate-500">Проставити всім:</span>
+              <button type="button" onclick="DashboardModule.setAllAcceptDamage('green')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 cursor-pointer inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Зелений</button>
+              <button type="button" onclick="DashboardModule.setAllAcceptDamage('yellow')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 cursor-pointer inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span>Жовтий</button>
+              <button type="button" onclick="DashboardModule.setAllAcceptDamage('red')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 cursor-pointer inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span>Червоний</button>
             </div>
           </div>
 
-          <div class="space-y-2">
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-              <i class="fa-regular fa-comment-dots text-indigo-600 mr-1"></i> Примітки комірника / Акт приймання <span id="accept-notes-required-star" class="text-slate-400 text-[10px] font-normal">(обов'язково при проблемах)</span>
+          <div class="border border-slate-200 rounded-xl overflow-hidden">
+            <div class="max-h-72 overflow-y-auto custom-scrollbar">
+              <table class="w-full text-left text-[11px]">
+                <thead class="bg-slate-100 text-slate-600 uppercase text-[9px] tracking-wider sticky top-0 z-10">
+                  <tr>
+                    <th class="p-2">Перевезення / клієнт</th>
+                    <th class="p-2">Менеджер</th>
+                    <th class="p-2 whitespace-nowrap">Очікувалось</th>
+                    <th class="p-2 whitespace-nowrap">Недостача місць</th>
+                    <th class="p-2 whitespace-nowrap">Стан коробок <span class="text-rose-500">*</span></th>
+                  </tr>
+                </thead>
+                <tbody id="accept-voyage-shipments-checklist" class="divide-y divide-slate-100">
+                  <!-- Генерується динамічно -->
+                </tbody>
+              </table>
+            </div>
+            <div id="accept-voyage-shortage-summary" class="px-3 py-2 bg-slate-50 border-t border-slate-200 text-[10px] text-slate-600 flex flex-wrap items-center gap-3"></div>
+          </div>
+        </section>
+
+        <!-- 4. Масова фотофіксація та примітки -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="lg:col-span-2 space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                <span class="w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] flex items-center justify-center">4</span>
+                Фото вивантаження <span class="text-rose-500">*</span>
+              </h4>
+              <div class="flex items-center gap-2">
+                <span id="accept-voyage-photos-count" class="text-[10px] font-mono text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded font-bold">Додано: 0 фото</span>
+                <button type="button" id="accept-voyage-photos-clear" onclick="DashboardModule.clearAcceptPhotos()" class="hidden text-[10px] text-slate-500 hover:text-rose-600 underline cursor-pointer">Видалити всі</button>
+              </div>
+            </div>
+            <label id="accept-voyage-photo-dropzone"
+              ondragover="event.preventDefault(); this.classList.add('border-indigo-500','bg-indigo-50/60')"
+              ondragleave="this.classList.remove('border-indigo-500','bg-indigo-50/60')"
+              ondrop="event.preventDefault(); this.classList.remove('border-indigo-500','bg-indigo-50/60'); DashboardModule.handleAcceptPhotoFiles(event.dataTransfer.files)"
+              class="block border-2 border-dashed border-slate-300 hover:border-indigo-400 rounded-xl p-4 bg-slate-50/70 text-center cursor-pointer transition">
+              <input type="file" id="accept-voyage-photo-input" multiple accept="image/*" class="hidden" onchange="DashboardModule.handleAcceptPhotoUpload(this)">
+              <i class="fa-solid fa-images text-2xl text-indigo-500"></i>
+              <div class="mt-1 font-bold text-slate-800 text-[11px]">Перетягніть сюди фото або натисніть, щоб обрати кілька файлів одразу</div>
+              <div class="text-[10px] text-slate-400">JPG, PNG, WEBP · масове завантаження · мін. 1 фото</div>
             </label>
-            <textarea id="accept-voyage-notes" rows="4"
-              placeholder="Вкажіть номер пломби, стан пакування або детальний опис виявлених пошкоджень чи нестачі місць..."
+            <div id="accept-voyage-photos-list" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+              <!-- Мініатюри фото -->
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label for="accept-voyage-notes" class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              <i class="fa-regular fa-comment-dots text-indigo-600 mr-1"></i> Примітка логіста
+              <span id="accept-notes-required-star" class="text-slate-400 text-[10px] font-normal normal-case">(необов'язково)</span>
+            </label>
+            <textarea id="accept-voyage-notes" rows="6"
+              placeholder="Номер пломби, обставини недостачі, деталі пошкоджень..."
               class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"></textarea>
           </div>
-        </div>
+        </section>
 
-        <!-- Повідомлення про помилку валідації звіту («Захист від дурня») -->
+        <!-- Повідомлення про помилку валідації -->
         <div id="accept-voyage-validation-error" class="hidden p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-2">
           <i class="fa-solid fa-circle-exclamation text-rose-600 text-sm shrink-0"></i>
-          <span id="accept-voyage-validation-error-text">Заповніть обов'язкові поля звіту приймання.</span>
+          <span id="accept-voyage-validation-error-text">Заповніть обов'язкові поля форми отримання.</span>
         </div>
       </div>
 
       <!-- Modal Footer -->
       <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex items-center justify-between flex-wrap gap-3 shrink-0">
         <div class="text-[11px] text-slate-500 flex items-center gap-1.5">
-          <i class="fa-solid fa-lock text-slate-400"></i>
-          <span>Після підтвердження звіту перевезення рейсу переходять на баланс складу («Готові до завантаження»).</span>
+          <i class="fa-solid fa-bell text-amber-500"></i>
+          <span id="accept-voyage-footer-hint">Перевезення переходять на баланс складу. При недостачі менеджеру надійде сповіщення.</span>
         </div>
         <div class="flex items-center gap-2.5">
           <button type="button" onclick="DashboardModule.closeAcceptVoyageModal()"
@@ -789,7 +781,7 @@
           <button type="button" onclick="DashboardModule.submitAcceptVoyageReport()"
             class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-sm">
             <i class="fa-solid fa-check-double"></i>
-            <span>Підтвердити звіт та прийняти на склад</span>
+            <span>Прийняти підрейс на склад</span>
           </button>
         </div>
       </div>

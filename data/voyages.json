@@ -8,7 +8,7 @@
       "logist": "І. Сидоренко",
       "capacity": {
         "volMax": 50.0,
-        "weightMax": 10.0,
+        "weightMax": 10000,
         "placesMax": 250
       }
     },
@@ -20,7 +20,7 @@
       "logist": "І. Сидоренко",
       "capacity": {
         "volMax": 5.1,
-        "weightMax": 10.0,
+        "weightMax": 10000,
         "placesMax": 100
       }
     },
@@ -32,7 +32,7 @@
       "logist": "І. Сидоренко",
       "capacity": {
         "volMax": 85.0,
-        "weightMax": 26.0,
+        "weightMax": 26000,
         "placesMax": 600
       }
     },
@@ -44,7 +44,7 @@
       "logist": "В. Василенко",
       "capacity": {
         "volMax": 85.0,
-        "weightMax": 26.0,
+        "weightMax": 26000,
         "placesMax": 600
       }
     },
@@ -56,7 +56,7 @@
       "logist": "М. Коваленко",
       "capacity": {
         "volMax": 60.0,
-        "weightMax": 15.0,
+        "weightMax": 15000,
         "placesMax": 400
       }
     }
@@ -84,7 +84,7 @@
       "arrivalDate": "2026-09-21",
       "createdStatus": "Створено",
       "places": 12,
-      "weight": 0.31,
+      "weight": 310,
       "volume": 2.4,
       "isOversized": false,
       "oversizeComment": "Стандартний габарит (120x80x160)",
@@ -124,7 +124,10 @@
             }
           ],
           "comment": "Упаковка без зауважень, маркування відповідає інвойсу.",
-          "tags": ["#New_FOSHAN", "#Норма"]
+          "tags": [
+            "#New_FOSHAN",
+            "#Норма"
+          ]
         }
       ],
       "timeline": [
@@ -137,7 +140,7 @@
         {
           "time": "2026-09-21 09:15",
           "title": "Прибуття: Склад New FOSHAN",
-          "desc": "Прийнято на воротах №3. Вхідне зважування (0.31 т)",
+          "desc": "Прийнято на воротах №3. Вхідне зважування (310 кг)",
           "icon": "fa-warehouse"
         }
       ]
@@ -164,10 +167,10 @@
       "arrivalDate": "2026-09-22",
       "createdStatus": "Створено",
       "places": 4,
-      "weight": 4.2,
+      "weight": 4200,
       "volume": 8.6,
       "isOversized": true,
-      "oversizeComment": "Перевищення ваги та висоти (>4т)",
+      "oversizeComment": "Перевищення ваги та висоти (>4000 кг)",
       "packageType": "Посилений дерев'яний каркас",
       "extraServices": "Ообрешітка посилена, навантаження 5T",
       "manager": "М. Гриценко",
@@ -187,7 +190,7 @@
         {
           "time": "2026-09-22 11:40",
           "title": "Прибуття: Склад New FOSHAN",
-          "desc": "Прийнято важковаговий керамограніт (4.2 т)",
+          "desc": "Прийнято важковаговий керамограніт (4200 кг)",
           "icon": "fa-warehouse"
         }
       ]
@@ -214,7 +217,7 @@
       "arrivalDate": "2026-09-23",
       "createdStatus": "Створено",
       "places": 45,
-      "weight": 1.15,
+      "weight": 1150,
       "volume": 5.1,
       "isOversized": false,
       "oversizeComment": "Стандартний габарит",
@@ -264,7 +267,7 @@
       "arrivalDate": "2026-09-21",
       "createdStatus": "Створено",
       "places": 5,
-      "weight": 0.48,
+      "weight": 480,
       "volume": 3.6,
       "isOversized": false,
       "oversizeComment": "Стандартний габарит у коробках",
@@ -314,7 +317,7 @@
       "arrivalDate": "2026-09-25",
       "createdStatus": "Відправлено",
       "places": 3,
-      "weight": 0.89,
+      "weight": 890,
       "volume": 4.2,
       "isOversized": true,
       "oversizeComment": "Висота > 200 см",
@@ -357,7 +360,7 @@
       "arrivalDate": "2026-09-21",
       "createdStatus": "Створено",
       "places": 8,
-      "weight": 1.4,
+      "weight": 1400,
       "volume": 12.8,
       "isOversized": true,
       "oversizeComment": "Великогабаритні дивани",
@@ -400,7 +403,7 @@
       "arrivalDate": "2026-09-23",
       "createdStatus": "Створено",
       "places": 2,
-      "weight": 0.65,
+      "weight": 650,
       "volume": 1.1,
       "isOversized": false,
       "oversizeComment": "Компактний важкий вантаж",
@@ -450,7 +453,7 @@
       "arrivalDate": "2026-09-23",
       "createdStatus": "Створено",
       "places": 25,
-      "weight": 0.48,
+      "weight": 480,
       "volume": 3.2,
       "isOversized": false,
       "oversizeComment": "Стандартний габарит",
@@ -500,7 +503,7 @@
       "arrivalDate": "2026-09-24",
       "createdStatus": "Прибув",
       "places": 18,
-      "weight": 3.8,
+      "weight": 3800,
       "volume": 7.4,
       "isOversized": false,
       "oversizeComment": "Небезпечний вантаж (Lithium Batteries)",
@@ -543,7 +546,7 @@
       "arrivalDate": "2026-09-24",
       "createdStatus": "Створено",
       "places": 16,
-      "weight": 0.92,
+      "weight": 920,
       "volume": 6.8,
       "isOversized": false,
       "oversizeComment": "Стандартні заводські короби",
@@ -593,7 +596,7 @@
       "arrivalDate": "2026-09-24",
       "createdStatus": "Завершено",
       "places": 6,
-      "weight": 0.24,
+      "weight": 240,
       "volume": 1.8,
       "isOversized": false,
       "oversizeComment": "Високоцінний вантаж у захисних кейсах",
@@ -620,7 +623,9 @@
             }
           ],
           "comment": "Акт приймання-передачі підписано.",
-          "tags": ["#Видача_клієнту"]
+          "tags": [
+            "#Видача_клієнту"
+          ]
         }
       ],
       "timeline": [
@@ -653,7 +658,7 @@
       "arrivalDate": "2026-09-26",
       "createdStatus": "Прибув",
       "places": 5,
-      "weight": 0.45,
+      "weight": 450,
       "volume": 1.2,
       "isOversized": false,
       "oversizeComment": "Стандартний габарит",

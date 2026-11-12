@@ -48,7 +48,7 @@ const warehouseInfoData = {
   ],
 
   // 5. Умови роботи / Правила прийому вантажу
-  rules: "1. Вантаж приймається суворо за наявності маркування та супровідного інвойсу/ТТН.\n2. Приймання важковагових місць (> 2.0 т) вимагає попереднього узгодження за 24 години.\n3. Обов'язкова вхідна фотофіксація стану упаковки та перевірка на наявність пошкоджень.",
+  rules: "1. Вантаж приймається суворо за наявності маркування та супровідного інвойсу/ТТН.\n2. Приймання важковагових місць (> 2000 кг) вимагає попереднього узгодження за 24 години.\n3. Обов'язкова вхідна фотофіксація стану упаковки та перевірка на наявність пошкоджень.",
 
   // 6. Графік роботи складу
   schedule: [
@@ -132,7 +132,7 @@ const warehouseInfoData = {
 - Водій повинен надати видаткову накладну (Delivery Note) із зазначенням трек-номера доставки.`,
 
   // 10. Особливі Примітки
-  specialNotes: "Склад обладнаний рампою для великогабаритного транспорту та вилковими навантажувачами до 5 тонн. У разі доставки небезпечних вантажів (напр. Lithium Batteries) обов'язково надавати MSDS та сертифікат UN38.3 до заїзду авто."
+  specialNotes: "Склад обладнаний рампою для великогабаритного транспорту та вилковими навантажувачами до 5000 кг. У разі доставки небезпечних вантажів (напр. Lithium Batteries) обов'язково надавати MSDS та сертифікат UN38.3 до заїзду авто."
 };
 
 /**
@@ -673,7 +673,7 @@ function evaluateDashboardValidity(dateStr) {
       classNames: 'bg-rose-100 text-rose-800 border-rose-300 font-bold',
       icon: 'fa-solid fa-circle-xmark text-rose-600'
     };
-  } else if (diffDays <= 30) {
+  } else if (diffDays <= 14) {
     const dayWord = diffDays === 0 ? 'сьогодні' : `${diffDays} дн.`;
     return {
       status: 'expiring',
@@ -1422,17 +1422,17 @@ const incomingVoyagesData = [
   {
     id: 'IN-SV-2026-88',
     name: 'Гуанчжоу ➔ Фошань (Збірний шатл #88)',
-    carrier: 'SF Express Freight (Авто 20т)',
+    carrier: 'SF Express Freight (Авто 20 000 кг)',
     vehicleNumber: '粤A-88421',
     etaDate: '2026-11-05 14:30',
     status: 'В дорозі',
     expectedPlaces: 48,
-    expectedWeight: 4.85,
+    expectedWeight: 4850,
     expectedVolume: 26.4,
     shipments: [
-      { id: 'DF-8801-CN', client: 'ТОВ ТехноІмпорт (DF-540)', places: 20, weight: 2.1, volume: 11.2, cargoName: 'Серверні шафи та комплектуючі' },
-      { id: 'DF-8802-CN', client: 'ФОП Коваленко (DF-119)', places: 16, weight: 1.45, volume: 8.6, cargoName: 'Світлодіодні панелі (Крихке)' },
-      { id: 'DF-8803-CN', client: 'AgroParts UA (DF-302)', places: 12, weight: 1.3, volume: 6.6, cargoName: 'Запчастини до с/г техніки на палетах' }
+      { id: 'DF-8801-CN', client: 'ТОВ ТехноІмпорт (DF-540)', places: 20, weight: 2100, volume: 11.2, cargoName: 'Серверні шафи та комплектуючі' },
+      { id: 'DF-8802-CN', client: 'ФОП Коваленко (DF-119)', places: 16, weight: 1450, volume: 8.6, cargoName: 'Світлодіодні панелі (Крихке)' },
+      { id: 'DF-8803-CN', client: 'AgroParts UA (DF-302)', places: 12, weight: 1300, volume: 6.6, cargoName: 'Запчастини до с/г техніки на палетах' }
     ]
   },
   {
@@ -1443,11 +1443,11 @@ const incomingVoyagesData = [
     etaDate: '2026-11-06 10:00',
     status: 'В дорозі',
     expectedPlaces: 32,
-    expectedWeight: 3.2,
+    expectedWeight: 3200,
     expectedVolume: 18.5,
     shipments: [
-      { id: 'DF-9101-CN', client: 'SolarEnergy Lviv (DF-771)', places: 18, weight: 2.2, volume: 10.5, cargoName: 'Інвертори та BMS модулі (Batt)' },
-      { id: 'DF-9102-CN', client: 'BeautyLine Kyiv (DF-410)', places: 14, weight: 1.0, volume: 8.0, cargoName: 'Косметичні дисплеї та тара' }
+      { id: 'DF-9101-CN', client: 'SolarEnergy Lviv (DF-771)', places: 18, weight: 2200, volume: 10.5, cargoName: 'Інвертори та BMS модулі (Batt)' },
+      { id: 'DF-9102-CN', client: 'BeautyLine Kyiv (DF-410)', places: 14, weight: 1000, volume: 8.0, cargoName: 'Косметичні дисплеї та тара' }
     ]
   }
 ];
@@ -1507,7 +1507,7 @@ function renderIncomingVoyages() {
           </div>
           <div>
             <span class="text-[9px] text-slate-400 uppercase block">Вага</span>
-            <strong class="text-slate-900">${v.expectedWeight.toFixed(2)} т</strong>
+            <strong class="text-slate-900">${Math.round(v.expectedWeight)} кг</strong>
           </div>
           <div>
             <span class="text-[9px] text-slate-400 uppercase block">Місць</span>
@@ -1529,6 +1529,35 @@ function renderIncomingVoyages() {
   `).join('');
 }
 
+// ===== Форма отримання підрейсу на баланс складу =====
+// 1) Інформація про підрейс (назва, дата отримання на складі)
+// 2) Фактичні параметри після вивантаження (вводяться вручну) + позначення недостачі по перевезеннях → сповіщення менеджеру
+// 3) Масове завантаження фото
+// 4) Ступінь пошкодження коробок по кожному перевезенню (зелений / жовтий / червоний)
+
+const ACCEPT_DAMAGE_LEVELS = {
+  green: { label: 'Зелений', short: 'Цілі', dot: 'bg-emerald-500', on: 'bg-emerald-500 text-white border-emerald-600', off: 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50', desc: 'Коробки максимально мають вигляд, як при відправці з Китаю' },
+  yellow: { label: 'Жовтий', short: 'Ремонт', dot: 'bg-amber-400', on: 'bg-amber-400 text-amber-950 border-amber-500', off: 'bg-white text-amber-700 border-amber-300 hover:bg-amber-50', desc: 'Коробки мають пошкодження, їх реально підремонтувати' },
+  red: { label: 'Червоний', short: 'Заміна', dot: 'bg-rose-500', on: 'bg-rose-500 text-white border-rose-600', off: 'bg-white text-rose-700 border-rose-300 hover:bg-rose-50', desc: 'Коробки критично пошкоджені, мокрі, потребують повну заміну пакування' }
+};
+window.ACCEPT_DAMAGE_LEVELS = ACCEPT_DAMAGE_LEVELS;
+
+const ACCEPT_FALLBACK_MANAGERS = ['Н. Ткаченко', 'А. Мороз', 'В. Лисенко', 'Д. Савчук'];
+let currentAcceptVoyage = null;
+let acceptShipmentState = {};
+
+// Журнал сповіщень менеджерам (недостача при отриманні підрейсу)
+window.managerNotifications = Array.isArray(window.managerNotifications) ? window.managerNotifications : [];
+
+function resolveShipmentManager(t, idx = 0) {
+  return t?.manager || t?.responsibleManager || t?.responsible_manager || ACCEPT_FALLBACK_MANAGERS[idx % ACCEPT_FALLBACK_MANAGERS.length];
+}
+
+function toLocalDateTimeText(d = new Date()) {
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function openAcceptVoyageModal(voyageId, event = null) {
   if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
 
@@ -1540,7 +1569,7 @@ function openAcceptVoyageModal(voyageId, event = null) {
   if (svObj) {
     const assigned = trList.filter(t => t.subvoyageId === svObj.id);
     const expPlaces = assigned.reduce((sum, t) => sum + (Number(t.places ?? t.totalPlaces) || 0), 0) || svObj.maxPlaces || 30;
-    const expWeight = assigned.reduce((sum, t) => sum + (Number(t.weight ?? t.totalWeight) || 0), 0) || 2.8;
+    const expWeight = assigned.reduce((sum, t) => sum + (Number(t.weight ?? t.totalWeight) || 0), 0) || 2800;
     const expVolume = assigned.reduce((sum, t) => sum + (Number(t.volume ?? t.totalVolume) || 0), 0) || 14.5;
     const carrierName = svObj.transportDetails?.shippingLine || svObj.transportDetails?.airline || svObj.transportDetails?.carrier || svObj.transport || 'Перевізник';
     const vehicleNum = svObj.transportDetails?.containerNumber || svObj.transportDetails?.awbNumber || svObj.transportDetails?.vehicleDetails || svObj.transportDetails?.bookingNumber || svObj.id;
@@ -1557,19 +1586,22 @@ function openAcceptVoyageModal(voyageId, event = null) {
       expectedVolume: expVolume,
       isPlannerSubvoyage: true,
       shipments: assigned.length > 0
-        ? assigned.map(t => ({
+        ? assigned.map((t, idx) => ({
             id: t.dfShipment || t.id,
             rawId: t.id,
             client: t.client || 'Клієнт',
+            manager: resolveShipmentManager(t, idx),
             places: Number(t.places ?? t.totalPlaces) || 10,
-            weight: Number(t.weight ?? t.totalWeight) || 1.0,
+            weight: Number(t.weight ?? t.totalWeight) || 1000,
             volume: Number(t.volume ?? t.totalVolume) || 5.0,
             cargoName: t.cargoes?.[0]?.titleUa || t.cargoes?.[0]?.name || `${t.cargoType || 'Карго'} (${t.packagingType || 'Палети'})`
           }))
         : [
-            { id: `DF-${svObj.id}-01`, rawId: `DF-${svObj.id}-01`, client: 'ТОВ ТехноІмпорт (Маніфест)', places: expPlaces, weight: expWeight, volume: expVolume, cargoName: 'Консолідований вантаж за маніфестом підрейсу' }
+            { id: `DF-${svObj.id}-01`, rawId: `DF-${svObj.id}-01`, client: 'ТОВ ТехноІмпорт (Маніфест)', manager: ACCEPT_FALLBACK_MANAGERS[0], places: expPlaces, weight: expWeight, volume: expVolume, cargoName: 'Консолідований вантаж за маніфестом підрейсу' }
           ]
     };
+  } else if (voyage) {
+    voyage.shipments.forEach((sh, idx) => { sh.manager = resolveShipmentManager(sh, idx); });
   }
 
   if (!voyage) return;
@@ -1577,49 +1609,32 @@ function openAcceptVoyageModal(voyageId, event = null) {
   const modal = document.getElementById('modal-accept-voyage');
   if (!modal) return;
 
+  currentAcceptVoyage = voyage;
+  acceptShipmentState = {};
+  voyage.shipments.forEach(sh => {
+    acceptShipmentState[sh.id] = { shortage: false, shortagePlaces: 0, damage: null };
+  });
+
+  // 1. Інформація про підрейс
   document.getElementById('accept-voyage-target-id').value = voyage.id;
   document.getElementById('accept-voyage-id-badge').innerText = voyage.id;
-  document.getElementById('accept-voyage-route-info').innerText = `${voyage.name} (${voyage.carrier})`;
-  document.getElementById('accept-voyage-meta-info').innerText = `Борт / Контейнер: ${voyage.vehicleNumber} • ETA: ${voyage.etaDate} • Перевезень у маніфесті: ${voyage.shipments.length}`;
+  document.getElementById('accept-voyage-route-info').innerText = voyage.name;
+  document.getElementById('accept-voyage-meta-info').innerText = `${voyage.carrier} • Борт / Контейнер: ${voyage.vehicleNumber} • ETA: ${voyage.etaDate} • Перевезень: ${voyage.shipments.length}`;
+  const dateEl = document.getElementById('accept-voyage-receive-date');
+  if (dateEl) dateEl.innerText = toLocalDateTimeText();
 
+  // 2. Очікувані параметри (факт логіст вводить вручну — поля порожні)
   document.getElementById('accept-voyage-expected-places').innerText = voyage.expectedPlaces;
-  document.getElementById('accept-voyage-expected-weight').innerText = voyage.expectedWeight.toFixed(2);
-  document.getElementById('accept-voyage-expected-volume').innerText = voyage.expectedVolume.toFixed(1);
+  document.getElementById('accept-voyage-expected-weight').innerText = Math.round(voyage.expectedWeight);
+  document.getElementById('accept-voyage-expected-volume').innerText = Number(voyage.expectedVolume).toFixed(2);
+  ['places', 'weight', 'volume'].forEach(k => {
+    const el = document.getElementById(`accept-voyage-actual-${k}`);
+    if (el) el.value = '';
+  });
 
-  document.getElementById('accept-voyage-actual-places').value = voyage.expectedPlaces;
-  document.getElementById('accept-voyage-actual-weight').value = voyage.expectedWeight.toFixed(2);
-  document.getElementById('accept-voyage-actual-volume').value = voyage.expectedVolume.toFixed(1);
-
-  const allGoodCheckbox = document.getElementById('accept-voyage-all-good-checkbox');
-  if (allGoodCheckbox) allGoodCheckbox.checked = true;
-  toggleAcceptVoyageMode(true);
-
-  // Скидаємо чекбокси типів проблем
-  document.querySelectorAll('input[name="accept-problem-type"]').forEach(cb => { cb.checked = false; });
-
-  // Рендеримо список перевезень рейсу для вибору проблемних
-  const checklist = document.getElementById('accept-voyage-shipments-checklist');
-  if (checklist) {
-    checklist.innerHTML = voyage.shipments.map(sh => `
-      <label class="flex items-center justify-between gap-3 p-2.5 bg-white border border-amber-200 hover:border-amber-400 rounded-lg cursor-pointer transition">
-        <div class="flex items-center gap-2.5">
-          <input type="checkbox" name="accept-problem-shipment" value="${sh.id}" class="accent-rose-600 w-3.5 h-3.5 rounded cursor-pointer">
-          <div>
-            <div class="font-bold text-slate-900 text-xs font-mono">${sh.id} <span class="font-sans font-semibold text-slate-600">— ${sh.client}</span></div>
-            <div class="text-[11px] text-slate-500">${sh.cargoName}</div>
-          </div>
-        </div>
-        <div class="text-right font-mono text-[11px] text-slate-700 shrink-0">
-          <strong>${sh.volume.toFixed(1)} м³</strong> | ${sh.weight.toFixed(2)} т | ${sh.places} шт
-        </div>
-      </label>
-    `).join('');
-  }
-
-  // За замовчуванням додаємо 1 демо-фото розвантаження рампи, але дозволяємо видаляти/додавати, щоб перевірити "Захист від дурня"
-  currentAcceptVoyagePhotos = [
-    { name: `Unloading_Ramp_${voyage.id}_Seal.jpg`, size: '1.4 MB' }
-  ];
+  // 3. Фото — порожньо, масове завантаження
+  currentAcceptVoyagePhotos.forEach(p => { if (p.url) URL.revokeObjectURL(p.url); });
+  currentAcceptVoyagePhotos = [];
   renderAcceptVoyagePhotos();
 
   const notesElem = document.getElementById('accept-voyage-notes');
@@ -1628,6 +1643,8 @@ function openAcceptVoyageModal(voyageId, event = null) {
   const errElem = document.getElementById('accept-voyage-validation-error');
   if (errElem) errElem.classList.add('hidden');
 
+  renderAcceptShipmentsList();
+  updateAcceptParamsDiff();
   modal.classList.remove('hidden');
 }
 
@@ -1636,161 +1653,378 @@ function closeAcceptVoyageModal() {
   if (modal) modal.classList.add('hidden');
 }
 
-function toggleAcceptVoyageMode(isAllGood) {
-  const problemsSection = document.getElementById('accept-voyage-problems-section');
-  const okCard = document.getElementById('accept-mode-ok-card');
-  const issuesCard = document.getElementById('accept-mode-issues-card');
-  const issuesDot = document.getElementById('accept-mode-issues-dot');
-  const notesStar = document.getElementById('accept-notes-required-star');
+// Сумісність зі старими викликами (режим «Все добре / Проблеми» замінено новою формою)
+function toggleAcceptVoyageMode() { }
 
-  if (isAllGood) {
-    if (problemsSection) problemsSection.classList.add('hidden');
-    if (okCard) okCard.className = 'flex items-start gap-3 p-3.5 rounded-xl border-2 border-emerald-500 bg-emerald-50/50 cursor-pointer transition select-none';
-    if (issuesCard) issuesCard.className = 'flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:border-amber-300 cursor-pointer transition select-none';
-    if (issuesDot) issuesDot.classList.add('hidden');
-    if (notesStar) notesStar.innerHTML = '(необов\'язково при «Все добре»)';
-  } else {
-    if (problemsSection) problemsSection.classList.remove('hidden');
-    if (okCard) okCard.className = 'flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:border-emerald-300 cursor-pointer transition select-none';
-    if (issuesCard) issuesCard.className = 'flex items-start gap-3 p-3.5 rounded-xl border-2 border-amber-500 bg-amber-50/60 cursor-pointer transition select-none';
-    if (issuesDot) issuesDot.classList.remove('hidden');
-    if (notesStar) notesStar.innerHTML = '<span class="text-rose-600 font-bold">* (обов\'язково опишіть розбіжності)</span>';
-  }
+function getAcceptActualParams() {
+  return {
+    places: parseInt(document.getElementById('accept-voyage-actual-places')?.value, 10),
+    weight: parseFloat(document.getElementById('accept-voyage-actual-weight')?.value),
+    volume: parseFloat(document.getElementById('accept-voyage-actual-volume')?.value)
+  };
 }
 
+function getAcceptMismatch() {
+  const v = currentAcceptVoyage;
+  if (!v) return { any: false };
+  const a = getAcceptActualParams();
+  const expPlaces = Number(v.expectedPlaces) || 0;
+  const expWeight = Math.round(Number(v.expectedWeight) || 0);
+  const expVolume = Number((Number(v.expectedVolume) || 0).toFixed(2));
+  const placesDiff = isNaN(a.places) ? null : a.places - expPlaces;
+  const weightDiff = isNaN(a.weight) ? null : Number((a.weight - expWeight).toFixed(1));
+  const volumeDiff = isNaN(a.volume) ? null : Number((a.volume - expVolume).toFixed(2));
+  return {
+    placesDiff, weightDiff, volumeDiff,
+    places: placesDiff !== null && placesDiff !== 0,
+    weight: weightDiff !== null && weightDiff !== 0,
+    volume: volumeDiff !== null && volumeDiff !== 0,
+    get any() { return this.places || this.weight || this.volume; }
+  };
+}
+
+function updateAcceptParamsDiff() {
+  const m = getAcceptMismatch();
+  const fmt = (diff, unit) => {
+    if (diff === null) return '';
+    if (diff === 0) return `<span class="text-emerald-600"><i class="fa-solid fa-check mr-0.5"></i>Збігається</span>`;
+    const cls = diff < 0 ? 'text-rose-600' : 'text-amber-600';
+    return `<span class="${cls}"><i class="fa-solid fa-not-equal mr-0.5"></i>${diff > 0 ? '+' : ''}${diff} ${unit}</span>`;
+  };
+  const setHtml = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+  setHtml('accept-voyage-diff-places', fmt(m.placesDiff, 'шт'));
+  setHtml('accept-voyage-diff-weight', fmt(m.weightDiff, 'кг'));
+  setHtml('accept-voyage-diff-volume', fmt(m.volumeDiff, 'м³'));
+
+  const banner = document.getElementById('accept-voyage-mismatch-banner');
+  const bannerText = document.getElementById('accept-voyage-mismatch-text');
+  if (banner) banner.classList.toggle('hidden', !m.any);
+  if (bannerText && m.any) {
+    bannerText.innerText = m.places && m.placesDiff < 0
+      ? `Не вистачає ${Math.abs(m.placesDiff)} місць відносно очікуваних. Позначте у списку нижче, в яких перевезеннях недостача — відповідальні менеджери отримають сповіщення.`
+      : 'Параметри не збігаються з очікуваними. Якщо в якомусь перевезенні не вистачає місць — позначте недостачу у списку нижче.';
+  }
+  renderAcceptShortageSummary();
+}
+
+function renderAcceptShipmentsList() {
+  const tbody = document.getElementById('accept-voyage-shipments-checklist');
+  if (!tbody || !currentAcceptVoyage) return;
+
+  tbody.innerHTML = currentAcceptVoyage.shipments.map(sh => {
+    const st = acceptShipmentState[sh.id] || {};
+    const damageBtns = Object.entries(ACCEPT_DAMAGE_LEVELS).map(([key, lvl]) => `
+      <button type="button" onclick="DashboardModule.setAcceptDamage('${sh.id}', '${key}')" title="${lvl.label}: ${lvl.desc}"
+        class="px-1.5 py-1 rounded-md border text-[10px] font-bold inline-flex items-center gap-1 cursor-pointer transition ${st.damage === key ? lvl.on : lvl.off}">
+        <span class="w-2 h-2 rounded-full ${st.damage === key ? 'bg-white/80' : lvl.dot}"></span>${lvl.short}
+      </button>
+    `).join('');
+
+    return `
+      <tr class="${st.shortage ? 'bg-rose-50/60' : 'bg-white'} align-top">
+        <td class="p-2">
+          <div class="font-mono font-bold text-slate-900">${sh.id}</div>
+          <div class="text-slate-600 font-semibold">${sh.client}</div>
+          <div class="text-[10px] text-slate-400">${sh.cargoName}</div>
+        </td>
+        <td class="p-2 whitespace-nowrap text-slate-700"><i class="fa-regular fa-user text-slate-400 mr-1"></i>${sh.manager}</td>
+        <td class="p-2 font-mono whitespace-nowrap text-slate-700">
+          <div><strong>${sh.places}</strong> шт</div>
+          <div class="text-[10px] text-slate-500">${Number(sh.volume).toFixed(2)} м³ · ${sh.weight} кг</div>
+        </td>
+        <td class="p-2 whitespace-nowrap">
+          <label class="inline-flex items-center gap-1.5 cursor-pointer select-none">
+            <input type="checkbox" ${st.shortage ? 'checked' : ''} onchange="DashboardModule.toggleAcceptShortage('${sh.id}', this.checked)"
+              class="accent-rose-600 w-3.5 h-3.5 rounded cursor-pointer">
+            <span class="font-bold ${st.shortage ? 'text-rose-700' : 'text-slate-600'}">Недостача</span>
+          </label>
+          ${st.shortage ? `
+            <div class="mt-1 flex items-center gap-1">
+              <span class="text-[10px] text-slate-500">не вистачає</span>
+              <input type="number" min="1" max="${sh.places}" step="1" value="${st.shortagePlaces || ''}" placeholder="к-сть"
+                oninput="DashboardModule.setAcceptShortagePlaces('${sh.id}', this.value)"
+                class="w-14 bg-white border border-rose-300 rounded px-1.5 py-0.5 font-mono font-bold text-rose-800 text-[11px] focus:ring-2 focus:ring-rose-400 focus:outline-none">
+              <span class="text-[10px] text-slate-500">шт</span>
+            </div>
+            <div class="text-[9px] text-amber-700 mt-0.5"><i class="fa-solid fa-bell mr-0.5"></i>Сповіщення: ${sh.manager}</div>
+          ` : ''}
+        </td>
+        <td class="p-2">
+          <div class="flex items-center gap-1 flex-wrap">${damageBtns}</div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  renderAcceptShortageSummary();
+}
+
+function renderAcceptShortageSummary() {
+  const el = document.getElementById('accept-voyage-shortage-summary');
+  if (!el || !currentAcceptVoyage) return;
+  const states = currentAcceptVoyage.shipments.map(sh => acceptShipmentState[sh.id] || {});
+  const shortageCount = states.filter(s => s.shortage).length;
+  const shortagePlaces = states.reduce((sum, s) => sum + (s.shortage ? (Number(s.shortagePlaces) || 0) : 0), 0);
+  const counts = { green: 0, yellow: 0, red: 0 };
+  states.forEach(s => { if (s.damage) counts[s.damage]++; });
+  const unset = states.filter(s => !s.damage).length;
+  const m = getAcceptMismatch();
+  const expectedShortage = m.placesDiff !== null && m.placesDiff < 0 ? Math.abs(m.placesDiff) : 0;
+
+  el.innerHTML = `
+    <span><i class="fa-solid fa-box-open text-rose-500 mr-1"></i>Недостача: <strong class="${shortageCount ? 'text-rose-700' : ''}">${shortageCount}</strong> перевез. / <strong>${shortagePlaces}</strong> місць</span>
+    ${expectedShortage && shortagePlaces !== expectedShortage ? `<span class="text-amber-700 font-bold"><i class="fa-solid fa-triangle-exclamation mr-0.5"></i>За параметрами рейсу не вистачає ${expectedShortage} шт</span>` : ''}
+    <span class="ml-auto inline-flex items-center gap-2">
+      <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>${counts.green}</span>
+      <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span>${counts.yellow}</span>
+      <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span>${counts.red}</span>
+      ${unset ? `<span class="text-rose-600 font-bold">Не вказано стан: ${unset}</span>` : ''}
+    </span>
+  `;
+}
+
+function toggleAcceptShortage(shipmentId, checked) {
+  const st = acceptShipmentState[shipmentId];
+  if (!st) return;
+  st.shortage = !!checked;
+  if (!checked) st.shortagePlaces = 0;
+  renderAcceptShipmentsList();
+}
+
+function setAcceptShortagePlaces(shipmentId, value) {
+  const st = acceptShipmentState[shipmentId];
+  if (!st) return;
+  st.shortagePlaces = Math.max(0, parseInt(value, 10) || 0);
+  renderAcceptShortageSummary();
+}
+
+function setAcceptDamage(shipmentId, level) {
+  const st = acceptShipmentState[shipmentId];
+  if (!st || !ACCEPT_DAMAGE_LEVELS[level]) return;
+  st.damage = level;
+  renderAcceptShipmentsList();
+}
+
+function setAllAcceptDamage(level) {
+  if (!ACCEPT_DAMAGE_LEVELS[level]) return;
+  Object.values(acceptShipmentState).forEach(st => { st.damage = level; });
+  renderAcceptShipmentsList();
+}
+
+// --- Масове завантаження фото ---
 function renderAcceptVoyagePhotos() {
   const listElem = document.getElementById('accept-voyage-photos-list');
   const countElem = document.getElementById('accept-voyage-photos-count');
+  const clearBtn = document.getElementById('accept-voyage-photos-clear');
+  const n = currentAcceptVoyagePhotos.length;
   if (countElem) {
-    countElem.innerText = `Додано: ${currentAcceptVoyagePhotos.length} фото`;
-    countElem.className = currentAcceptVoyagePhotos.length > 0
+    countElem.innerText = `Додано: ${n} фото`;
+    countElem.className = n > 0
       ? 'text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded'
       : 'text-[10px] font-mono text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded font-bold';
   }
+  if (clearBtn) clearBtn.classList.toggle('hidden', n === 0);
   if (!listElem) return;
-  if (currentAcceptVoyagePhotos.length === 0) {
-    listElem.innerHTML = `<span class="text-[11px] text-rose-600 font-semibold italic">Жодного фото не прикріплено (обов'язково додайте фото розвантаження!)</span>`;
+  if (n === 0) {
+    listElem.innerHTML = '';
     return;
   }
   listElem.innerHTML = currentAcceptVoyagePhotos.map((p, idx) => `
-    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[11px] text-slate-700 shadow-2xs">
-      <i class="fa-regular fa-image text-indigo-600"></i>
-      <span class="font-medium truncate max-w-[180px]">${p.name}</span>
-      <span class="text-[9px] text-slate-400 font-mono">(${p.size})</span>
-      <button type="button" onclick="DashboardModule.removeAcceptPhoto(${idx})" class="text-slate-400 hover:text-rose-600 ml-1 cursor-pointer" title="Видалити фото">&times;</button>
+    <div class="relative group aspect-square rounded-lg overflow-hidden border border-slate-200 bg-slate-100" title="${p.name} (${p.size})">
+      ${p.url
+        ? `<img src="${p.url}" alt="${p.name}" class="w-full h-full object-cover">`
+        : `<div class="w-full h-full flex items-center justify-center text-slate-400"><i class="fa-regular fa-image text-xl"></i></div>`}
+      <button type="button" onclick="DashboardModule.removeAcceptPhoto(${idx})"
+        class="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-slate-900/70 hover:bg-rose-600 text-white text-xs leading-none flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition" title="Видалити фото">&times;</button>
     </div>
   `).join('');
 }
 
-function handleAcceptPhotoUpload(input) {
-  const files = Array.from(input?.files || []);
+function handleAcceptPhotoFiles(fileList) {
+  const files = Array.from(fileList || []).filter(f => !f.type || f.type.startsWith('image/'));
   files.forEach(f => {
-    const sizeKb = Math.max(120, Math.round((f.size || 850000) / 1024));
+    const sizeKb = Math.max(1, Math.round((f.size || 0) / 1024));
+    let url = '';
+    try { url = URL.createObjectURL(f); } catch (e) { url = ''; }
     currentAcceptVoyagePhotos.push({
       name: f.name,
-      size: sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`
+      size: sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`,
+      url
     });
   });
   renderAcceptVoyagePhotos();
+  if (files.length > 1 && typeof showToast === 'function') showToast(`Додано ${files.length} фото`);
+}
+
+function handleAcceptPhotoUpload(input) {
+  handleAcceptPhotoFiles(input?.files);
   if (input) input.value = '';
 }
 
 function removeAcceptPhoto(idx) {
-  currentAcceptVoyagePhotos.splice(idx, 1);
+  const [removed] = currentAcceptVoyagePhotos.splice(idx, 1);
+  if (removed?.url) URL.revokeObjectURL(removed.url);
   renderAcceptVoyagePhotos();
+}
+
+function clearAcceptPhotos() {
+  currentAcceptVoyagePhotos.forEach(p => { if (p.url) URL.revokeObjectURL(p.url); });
+  currentAcceptVoyagePhotos = [];
+  renderAcceptVoyagePhotos();
+}
+
+// --- Сповіщення відповідальному менеджеру про недостачу ---
+function notifyManagerAboutShortage({ manager, shipmentId, subvoyageId, subvoyageName, shortagePlaces, expectedPlaces, damageLevel, receiveDate, notes }) {
+  const notification = {
+    id: `NTF-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    type: 'shortage',
+    recipient: manager,
+    shipmentId,
+    subvoyageId,
+    title: `Недостача ${shortagePlaces || '?'} з ${expectedPlaces} місць у перевезенні ${shipmentId}`,
+    message: `Підрейс ${subvoyageId}${subvoyageName ? ` (${subvoyageName})` : ''} отримано на складі ${receiveDate}. У перевезенні ${shipmentId} не вистачає ${shortagePlaces || 'невизначену кількість'} місць. Запустіть компенсацію / комунікацію з клієнтом.${damageLevel ? ` Стан коробок: ${ACCEPT_DAMAGE_LEVELS[damageLevel]?.label}.` : ''}${notes ? ` Примітка логіста: ${notes}` : ''}`,
+    createdAt: new Date().toISOString(),
+    read: false
+  };
+  window.managerNotifications.unshift(notification);
+  return notification;
 }
 
 function submitAcceptVoyageReport() {
   const voyageId = document.getElementById('accept-voyage-target-id')?.value;
   const svList = Array.isArray(window.svManagementSubvoyages) ? window.svManagementSubvoyages : [];
   const svObj = svList.find(s => s.id === voyageId);
-  const voyage = incomingVoyagesData.find(v => v.id === voyageId);
+  const voyage = currentAcceptVoyage && currentAcceptVoyage.id === voyageId ? currentAcceptVoyage : incomingVoyagesData.find(v => v.id === voyageId);
   if (!svObj && !voyage) return;
 
-  const actualPlaces = parseInt(document.getElementById('accept-voyage-actual-places')?.value, 10);
-  const actualWeight = parseFloat(document.getElementById('accept-voyage-actual-weight')?.value);
-  const actualVolume = parseFloat(document.getElementById('accept-voyage-actual-volume')?.value);
-  const isAllGood = document.getElementById('accept-voyage-all-good-checkbox')?.checked;
+  const receiveDate = (document.getElementById('accept-voyage-receive-date')?.innerText || '').trim() || toLocalDateTimeText();
+  const { places: actualPlaces, weight: actualWeight, volume: actualVolume } = getAcceptActualParams();
   const notes = (document.getElementById('accept-voyage-notes')?.value || '').trim();
 
   const errBox = document.getElementById('accept-voyage-validation-error');
   const errText = document.getElementById('accept-voyage-validation-error-text');
   const showError = (msg) => {
     if (errText) errText.innerText = msg;
-    if (errBox) errBox.classList.remove('hidden');
+    if (errBox) {
+      errBox.classList.remove('hidden');
+      errBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   };
 
-  // Валідація «Захист від дурня»
-  if (isNaN(actualPlaces) || actualPlaces <= 0 || isNaN(actualWeight) || actualWeight <= 0 || isNaN(actualVolume) || actualVolume <= 0) {
-    showError('Помилка валідації («Захист від дурня»): вкажіть фактичну кількість місць, вагу та об\'єм прийнятого вантажу.');
+  if (!receiveDate) {
+    showError('Вкажіть дату отримання підрейсу на складі.');
+    return;
+  }
+  if (isNaN(actualPlaces) || actualPlaces < 0 || isNaN(actualWeight) || actualWeight <= 0 || isNaN(actualVolume) || actualVolume <= 0) {
+    showError('Вкажіть фактичні параметри після вивантаження: кількість місць, об\'єм та вагу.');
     return;
   }
 
+  const shipmentsReport = voyage.shipments.map(sh => {
+    const st = acceptShipmentState[sh.id] || {};
+    return {
+      id: sh.id,
+      rawId: sh.rawId || sh.id,
+      manager: sh.manager,
+      expectedPlaces: sh.places,
+      shortage: !!st.shortage,
+      shortagePlaces: st.shortage ? (Number(st.shortagePlaces) || 0) : 0,
+      damageLevel: st.damage || null
+    };
+  });
+
+  const mismatch = getAcceptMismatch();
+  const shortageItems = shipmentsReport.filter(s => s.shortage);
+  if (mismatch.places && mismatch.placesDiff < 0 && shortageItems.length === 0) {
+    showError(`Кількість місць не збігається (не вистачає ${Math.abs(mismatch.placesDiff)} шт). Позначте у списку перевезення, в яких недостача.`);
+    return;
+  }
+  const badShortage = shortageItems.find(s => s.shortagePlaces <= 0 || s.shortagePlaces > s.expectedPlaces);
+  if (badShortage) {
+    showError(`Вкажіть кількість місць, яких не вистачає, у перевезенні ${badShortage.id} (від 1 до ${badShortage.expectedPlaces}).`);
+    return;
+  }
+  const noDamage = shipmentsReport.filter(s => !s.damageLevel);
+  if (noDamage.length > 0) {
+    showError(`Проставте ступінь пошкодження коробок для всіх перевезень (не вказано: ${noDamage.map(s => s.id).join(', ')}).`);
+    return;
+  }
   if (currentAcceptVoyagePhotos.length === 0) {
-    showError('Помилка валідації («Захист від дурня»): без обов\'язкового фотозвіту приймання вантаж не може перейти на баланс складу!');
+    showError('Додайте хоча б одне фото вивантаження.');
     return;
   }
 
-  const selectedProblemTypes = Array.from(document.querySelectorAll('input[name="accept-problem-type"]:checked')).map(el => el.value);
-  const selectedProblemShipments = Array.from(document.querySelectorAll('input[name="accept-problem-shipment"]:checked')).map(el => el.value);
+  // Сповіщення менеджерам про недостачу (процес роботи з вантажем не зупиняється)
+  const notifications = shortageItems.map(s => notifyManagerAboutShortage({
+    manager: s.manager,
+    shipmentId: s.id,
+    subvoyageId: voyage.id,
+    subvoyageName: voyage.name,
+    shortagePlaces: s.shortagePlaces,
+    expectedPlaces: s.expectedPlaces,
+    damageLevel: s.damageLevel,
+    receiveDate,
+    notes
+  }));
 
-  if (!isAllGood) {
-    if (selectedProblemTypes.length === 0) {
-      showError('Помилка валідації: ви відмітили наявність проблем — оберіть хоча б один тип проблеми (нестача, пошкодження, габарити/вага).');
-      return;
-    }
-    if (selectedProblemShipments.length === 0) {
-      showError('Помилка валідації: відмітьте у списку конкретні проблемні перевезення, до яких стосується акт розбіжностей.');
-      return;
-    }
-    if (!notes) {
-      showError('Помилка валідації: при фіксації проблем обов\'язково заповніть поле «Примітки комірника / Акт приймання».');
-      return;
-    }
-  }
+  const reportData = {
+    receiveDate,
+    actualPlaces,
+    actualWeight,
+    actualVolume,
+    expectedPlaces: voyage.expectedPlaces,
+    expectedWeight: voyage.expectedWeight,
+    expectedVolume: voyage.expectedVolume,
+    paramsMismatch: mismatch.any,
+    shipmentsReport,
+    notifications,
+    notes,
+    photos: currentAcceptVoyagePhotos.map(p => ({ name: p.name, size: p.size, url: p.url })),
+    // Сумісність зі старим форматом звіту
+    isAllGood: shortageItems.length === 0 && shipmentsReport.every(s => s.damageLevel === 'green'),
+    selectedProblemShipments: shortageItems.map(s => s.id)
+  };
 
-  // Якщо це підрейс із Дошки Підрейсів — викликаємо обробник планувальника підрейсів
+  // Підрейс із Дошки Підрейсів — обробник планувальника
   if (svObj && typeof window.acceptSubvoyageToWarehouse === 'function') {
-    window.acceptSubvoyageToWarehouse(voyageId, {
-      actualPlaces,
-      actualWeight,
-      actualVolume,
-      isAllGood,
-      selectedProblemTypes,
-      selectedProblemShipments,
-      notes,
-      photos: [...currentAcceptVoyagePhotos]
-    });
+    window.acceptSubvoyageToWarehouse(voyageId, reportData);
     closeAcceptVoyageModal();
+    renderIncomingVoyages();
     return;
   }
 
-  // Етап 1 автономної реалізації (для окремих рейсів): переводимо рейс у прийнятий на баланс складу
-  if (voyage) {
-    voyage.status = 'Прибув на склад отримання';
-    voyage.acceptedAt = new Date().toLocaleString('uk-UA');
-  }
+  // Автономний вхідний рейс (incomingVoyagesData)
+  voyage.status = 'Прибув на склад отримання';
+  voyage.acceptedAt = receiveDate;
+  voyage.acceptanceReport = reportData;
 
   if (Array.isArray(window.svManagementShipments)) {
     voyage.shipments.forEach((sh, index) => {
-      const hasProblem = !isAllGood && selectedProblemShipments.includes(sh.id);
+      const rep = shipmentsReport.find(r => r.id === sh.id) || {};
       const exists = window.svManagementShipments.some(existing => existing.id === sh.id);
       if (!exists) {
         window.svManagementShipments.unshift({
           id: sh.id,
+          dfShipment: sh.id,
+          client: sh.client,
+          manager: sh.manager,
           name: `${sh.client} — ${sh.cargoName}`,
           originWarehouse: 'Гуанчжоу (Транзит)',
           destinationHub: 'Китай ➔ Україна (Київ)',
           routeCountry: 'Україна',
-          status: hasProblem ? 'Формування' : 'Готовий до завантаження',
-          readinessCategory: hasProblem ? 'not_ready' : 'ready',
+          status: 'Прибув на склад отримання',
+          readinessCategory: 'ready',
           cargoType: index % 2 === 0 ? 'Карго' : 'Фрахт',
           deliveryType: 'Море',
           packagingType: 'Палети',
+          volume: sh.volume,
+          weight: sh.weight,
+          places: sh.places,
           totalVolume: sh.volume,
           totalWeight: sh.weight,
           totalPlaces: sh.places,
-          readyDate: '2026-11-05',
+          readyDate: receiveDate.split(' ')[0],
+          dateReady: receiveDate.split(' ')[0],
           subvoyageId: null,
           isLastMile: false,
           customsClearance: true,
@@ -1800,11 +2034,27 @@ function submitAcceptVoyageReport() {
           isFragile: sh.cargoName.includes('Крихке'),
           isOversized: false,
           logist: 'Коваленко О.',
+          acceptance: {
+            subvoyageId: voyage.id,
+            receiveDate,
+            damageLevel: rep.damageLevel,
+            shortage: !!rep.shortage,
+            shortagePlaces: rep.shortagePlaces || 0,
+            receivedPlaces: sh.places - (rep.shortagePlaces || 0)
+          },
+          tasks: rep.shortage ? [{
+            id: `TSK-SH-${Date.now()}-${index}`,
+            title: `Недостача ${rep.shortagePlaces} з ${sh.places} місць при отриманні ${voyage.id} — запустити компенсацію`,
+            assignee: sh.manager,
+            dueDate: receiveDate.split(' ')[0],
+            status: 'open',
+            type: 'shortage'
+          }] : [],
           cargoes: [
             {
               id: `${sh.id}/1`,
               name: sh.cargoName,
-              status: hasProblem ? 'Пошкоджено / Нестача' : 'На складі',
+              status: 'На складі',
               volume: sh.volume,
               weight: sh.weight,
               places: sh.places,
@@ -1827,9 +2077,11 @@ function submitAcceptVoyageReport() {
   }
 
   if (typeof showToast === 'function') {
-    showToast(`Рейс ${voyage.id} прийнято на баланс складу! Звіт приймання збережено (${voyage.shipments.length} перевезень зараховано).`);
+    const ntf = notifications.length ? ` Сповіщено менеджерів про недостачу: ${notifications.length}.` : '';
+    showToast(`Рейс ${voyage.id} прийнято на баланс складу (${voyage.shipments.length} перевезень).${ntf}`);
   }
 }
+
 function copyClientInstruction() {
   const instructionElem = document.getElementById('wh-display-instruction');
   const text = instructionElem?.value || warehouseInfoData.clientInstruction || warehouseInfoData.shippingInstructions || '';
@@ -1962,7 +2214,14 @@ window.DashboardModule = {
   closeAcceptVoyageModal: closeAcceptVoyageModal,
   toggleAcceptVoyageMode: toggleAcceptVoyageMode,
   handleAcceptPhotoUpload: handleAcceptPhotoUpload,
+  handleAcceptPhotoFiles: handleAcceptPhotoFiles,
   removeAcceptPhoto: removeAcceptPhoto,
+  clearAcceptPhotos: clearAcceptPhotos,
+  updateAcceptParamsDiff: updateAcceptParamsDiff,
+  toggleAcceptShortage: toggleAcceptShortage,
+  setAcceptShortagePlaces: setAcceptShortagePlaces,
+  setAcceptDamage: setAcceptDamage,
+  setAllAcceptDamage: setAllAcceptDamage,
   submitAcceptVoyageReport: submitAcceptVoyageReport,
   openInfoModal: openWarehouseInfoModal,
   closeInfoModal: closeWarehouseInfoModal,
