@@ -465,6 +465,16 @@ function initSubvoyagesPlannerModule() {
     subVoyagesData.forEach(sv => {
       if (sv.status === 'Відкритий') sv.status = 'В дорозі';
       if (sv.status === 'Заплановано' || sv.status === 'Формується') sv.status = 'Формування';
+      if (!sv.receivingWarehouse) {
+        if (sv.destinationCountry === 'Польща') sv.receivingWarehouse = 'Склад Варшава';
+        else if (sv.destinationCountry === 'Україна') {
+          if (sv.hub && sv.hub.includes('Львів')) sv.receivingWarehouse = 'Склад Львів (EU Gate)';
+          else if (sv.hub && sv.hub.includes('Одеса')) sv.receivingWarehouse = 'Склад Одеса (Південний Хаб)';
+          else sv.receivingWarehouse = 'Склад Київ-1';
+        } else {
+          sv.receivingWarehouse = sv.hub || `${sv.destinationCountry} (Хаб)`;
+        }
+      }
     });
 
     transportsData.forEach(tr => {
@@ -1665,6 +1675,100 @@ function initSubvoyagesPlannerModule() {
 
   let currentModalTransport = 'Морський';
 
+  // Реєстр складів отримання для підрейсів (для підрейсу можливий виключно один склад)
+  const DEFAULT_RECEIVING_WAREHOUSES = [
+    { id: 'poland', name: 'Склад Варшава', country: 'Польща', city: 'Варшава', address: 'ul. Logistyczna 12, 05-800 Pruszków (Warszawa)', flag: '🇵🇱', type: 'Партнерський' },
+    { id: 'chelm', name: 'Склад Холм (Транзит)', country: 'Польща', city: 'Холм', address: 'Chelm, ul. Lwowska 88, 22-100 Chelm', flag: '🇵🇱', type: 'Партнерський' },
+    { id: 'gdansk', name: 'Склад Гданськ (Портовий)', country: 'Польща', city: 'Гданськ', address: 'ul. Kontenerowa 9, 80-601 Gdańsk', flag: '🇵🇱', type: 'Партнерський' },
+    { id: 'kyiv', name: 'Склад Київ-1', country: 'Україна', city: 'Київ', address: 'м. Київ, вул. Пирогівський шлях, 135', flag: '🇺🇦', type: 'Власний (Difreight)' },
+    { id: 'lviv', name: 'Склад Львів (EU Gate)', country: 'Україна', city: 'Львів', address: 'м. Львів, вул. Городоцька, 280', flag: '🇺🇦', type: 'Партнерський' },
+    { id: 'odesa', name: 'Склад Одеса (Південний Хаб)', country: 'Україна', city: 'Одеса', address: 'м. Одеса, вул. Балтська дорога, 14', flag: '🇺🇦', type: 'Партнерський' },
+    { id: 'hamburg', name: 'Склад Гамбург (Хаб)', country: 'Німеччина', city: 'Гамбург', address: 'Altenwerder Hauptstraße 11, 21129 Hamburg', flag: '🇩🇪', type: 'Партнерський' },
+    { id: 'foshan', name: 'New FOSHAN', country: 'Китай', city: 'Foshan', address: 'м. Фошань (Foshan), No. 18 Logistics Park', flag: '🇨🇳', type: 'Власний (Difreight)' },
+    { id: 'shenzhen', name: 'Shenzhen Hub', country: 'Китай', city: 'Shenzhen', address: 'м. Шеньчжень (Shenzhen), Baoan Int. Logistics Center', flag: '🇨🇳', type: 'Партнерський' }
+  ];
+
+  function getStoredCustomWarehouses() {
+    try {
+      const raw = localStorage.getItem('erp_custom_warehouses');
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveCustomWarehouse(wh) {
+    try {
+      const list = getStoredCustomWarehouses();
+      list.push(wh);
+      localStorage.setItem('erp_custom_warehouses', JSON.stringify(list));
+    } catch (e) {
+      console.warn('Could not save custom warehouse', e);
+    }
+  }
+
+  function getAllReceivingWarehouses() {
+    const custom = getStoredCustomWarehouses();
+    const map = new Map();
+    DEFAULT_RECEIVING_WAREHOUSES.forEach(w => map.set(w.name, w));
+    custom.forEach(w => map.set(w.name, w));
+    return Array.from(map.values());
+  }
+
+  function updateWarehouseHintAndSync() {
+    const select = document.getElementById('new-sv-receiving-warehouse');
+    const hint = document.getElementById('new-sv-warehouse-hint');
+    const destCountrySelect = document.getElementById('new-sv-dest-country');
+    const unloadingInput = document.getElementById('new-sv-unloading-place');
+
+    if (!select) return;
+
+    const opt = select.selectedOptions ? select.selectedOptions[0] : null;
+    if (opt && opt.value) {
+      const country = opt.getAttribute('data-country');
+      const city = opt.getAttribute('data-city');
+      const address = opt.getAttribute('data-address');
+      const type = opt.getAttribute('data-type');
+
+      if (hint) {
+        hint.innerHTML = `<span class="text-slate-600 font-medium"><i class="fa-solid fa-location-dot text-brand-500 mr-1"></i>${country ? country + ', ' : ''}${city || ''}${address ? ' • ' + address : ''} <span class="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200 ml-1 font-normal">${type || 'Склад'}</span></span>`;
+      }
+
+      if (destCountrySelect && country) {
+        const hasOpt = Array.from(destCountrySelect.options).some(o => o.value === country);
+        if (hasOpt) destCountrySelect.value = country;
+      }
+
+      if (unloadingInput) {
+        if (!unloadingInput.value || unloadingInput.value.includes('(Термінал') || unloadingInput.value.includes('Склад') || unloadingInput.value.includes('Порт') || unloadingInput.value.includes('Гданськ')) {
+          unloadingInput.value = `${city || country}, ${opt.value}${address ? ' (' + address + ')' : ''}`;
+        }
+      }
+    } else {
+      if (hint) {
+        hint.textContent = '';
+      }
+    }
+  }
+
+  function populateReceivingWarehousesSelect(selectedName = null, filterCountry = null) {
+    const select = document.getElementById('new-sv-receiving-warehouse');
+    if (!select) return;
+
+    const warehouses = getAllReceivingWarehouses();
+    let html = '<option value="">-- Оберіть склад отримання --</option>';
+
+    warehouses.forEach(wh => {
+      const flag = wh.flag || (wh.country === 'Україна' ? '🇺🇦' : wh.country === 'Польща' ? '🇵🇱' : wh.country === 'Китай' ? '🇨🇳' : wh.country === 'Німеччина' ? '🇩🇪' : '🏢');
+      const isSel = selectedName ? (wh.name === selectedName) : (filterCountry && wh.country === filterCountry && !selectedName);
+      html += `<option value="${wh.name}" data-country="${wh.country}" data-city="${wh.city || ''}" data-address="${wh.address || ''}" data-type="${wh.type || ''}" ${isSel ? 'selected' : ''}>${flag} ${wh.name} (${wh.city || wh.country})</option>`;
+    });
+
+    select.innerHTML = html;
+
+    updateWarehouseHintAndSync();
+  }
+
   window.openCreateSubvoyageModal = function () {
     const modal = document.getElementById('modal-create-subvoyage');
     if (!modal) return;
@@ -1683,6 +1787,9 @@ function initSubvoyagesPlannerModule() {
     const allModeRadio = document.querySelector('input[name="new-sv-cargo-mode"][value="all"]');
     if (allModeRadio) allModeRadio.checked = true;
     document.querySelectorAll('input[name="new-sv-key-marker"]').forEach(cb => { cb.checked = false; });
+
+    const destCountry = document.getElementById('new-sv-dest-country')?.value || 'Польща';
+    populateReceivingWarehousesSelect(null, destCountry);
   };
 
   window.closeCreateSubvoyageModal = function () {
@@ -1744,9 +1851,11 @@ function initSubvoyagesPlannerModule() {
     const isMain = document.getElementById('new-sv-is-main')?.checked ?? true;
     const isTransit = document.getElementById('new-sv-is-transit')?.checked ?? true;
 
+    const receivingWarehouse = document.getElementById('new-sv-receiving-warehouse')?.value || '';
+
     const loadingPlace = document.getElementById('new-sv-loading-place')?.value.trim() || `${originCountry} (Термінал)`;
     const originPort = document.getElementById('new-sv-origin-port')?.value.trim() || `${originCountry}`;
-    const unloadingPlace = document.getElementById('new-sv-unloading-place')?.value.trim() || `${destCountry} (Термінал отримання)`;
+    const unloadingPlace = document.getElementById('new-sv-unloading-place')?.value.trim() || (receivingWarehouse ? `${destCountry} (${receivingWarehouse})` : `${destCountry} (Термінал отримання)`);
     const destPort = document.getElementById('new-sv-dest-port')?.value.trim() || `${destCountry}`;
 
     const dateLoad = document.getElementById('new-sv-date-load')?.value;
@@ -1764,6 +1873,13 @@ function initSubvoyagesPlannerModule() {
 
     if (!name) {
       alert('Будь ласка, введіть назву підрейсу!');
+      document.getElementById('new-sv-name')?.focus();
+      return;
+    }
+    // Склад отримання: обов'язково обирається один склад
+    if (!receivingWarehouse) {
+      alert('Будь ласка, оберіть склад отримання!');
+      document.getElementById('new-sv-receiving-warehouse')?.focus();
       return;
     }
     if (!eta) {
@@ -1781,8 +1897,10 @@ function initSubvoyagesPlannerModule() {
       loadingType: template.includes('LCL') ? 'LCL' : (template.includes('Air') ? 'Air Consolid' : 'LTL'),
       originCountry: originCountry,
       destinationCountry: destCountry, // Точка доставки ЦЬОГО підрейсу!
+      receivingWarehouse: receivingWarehouse,
+      destinationWarehouse: receivingWarehouse,
       routeStages: [originCountry, destCountry],
-      hub: `Транзитний хаб ${destCountry} (${unloadingPlace})`,
+      hub: receivingWarehouse,
       transitSegment: `${originCountry} ➔ ${destCountry}`,
       plannedDeparture: etd || dateLoad || '2026-11-05',
       plannedArrival: eta,
@@ -1812,7 +1930,7 @@ function initSubvoyagesPlannerModule() {
       originPort: originPort,
       unloadingPlace: unloadingPlace,
       destinationPort: destPort,
-      comment: comment || `Підрейс закриває транспортне плече ${originCountry} ➔ ${destCountry}. Точка отримання у цьому підрейсі: ${destCountry} (${unloadingPlace}).`
+      comment: comment || `Підрейс закриває транспортне плече ${originCountry} ➔ ${destCountry}. Склад отримання: ${receivingWarehouse} (${unloadingPlace}).`
     };
 
     subVoyagesData.unshift(newSubvoyage);
@@ -1822,11 +1940,33 @@ function initSubvoyagesPlannerModule() {
     expandedSubvoyageIds.add(newSubvoyage.id);
     leftTableSubvoyageMode = 'pool';
     updateActiveSubvoyageState();
+    setupSubvoyageDestinationHubOptions();
     renderAll();
-    showToast(`Підрейс «${newSubvoyage.name}» (${newSubvoyage.id}) успішно створено! Маршрут: ${newSubvoyage.originCountry} ➔ ${newSubvoyage.destinationCountry} (отримання: ${newSubvoyage.destinationCountry})`);
+    showToast(`Підрейс «${newSubvoyage.name}» (${newSubvoyage.id}) успішно створено! Склад отримання: ${newSubvoyage.receivingWarehouse} (${newSubvoyage.destinationCountry})`);
   };
 
   function setupSubvoyageFocusAndModalsActions() {
+    // Склад отримання у формі створення підрейсу (тільки один склад)
+    const receivingWhSelect = document.getElementById('new-sv-receiving-warehouse');
+    if (receivingWhSelect) {
+      receivingWhSelect.onchange = updateWarehouseHintAndSync;
+    }
+    const destCountrySelect = document.getElementById('new-sv-dest-country');
+    if (destCountrySelect) {
+      destCountrySelect.onchange = (e) => {
+        const c = e.target.value;
+        const whSelect = document.getElementById('new-sv-receiving-warehouse');
+        if (!whSelect) return;
+        const curOpt = whSelect.selectedOptions ? whSelect.selectedOptions[0] : null;
+        if (curOpt && curOpt.getAttribute('data-country') === c) return;
+        const matchOpt = Array.from(whSelect.options).find(o => o.getAttribute('data-country') === c);
+        if (matchOpt) {
+          whSelect.value = matchOpt.value;
+          updateWarehouseHintAndSync();
+        }
+      };
+    }
+
     // Кнопка "Створити підрейс" (відкриває форму створення нового підрейсу)
     const btnCreateDummy = document.getElementById('btn-create-subvoyage-dummy');
     if (btnCreateDummy) {
@@ -1932,18 +2072,19 @@ function initSubvoyagesPlannerModule() {
 
   function setupSubvoyageDestinationHubOptions() {
     if (!subvoyageDestinationHubFilter) return;
-    const hubs = Array.from(new Set(subVoyagesData.map(sv => sv.hub))).filter(Boolean);
+    const hubs = Array.from(new Set(subVoyagesData.map(sv => sv.receivingWarehouse || sv.hub))).filter(Boolean);
 
+    const prevVal = subvoyageDestinationHubFilter.value || selectedDestinationHub || 'all';
     subvoyageDestinationHubFilter.innerHTML = `
       <option value="all">Усі склади доставки</option>
-      ${hubs.map(h => `<option value="${h}">${h}</option>`).join('')}
+      ${hubs.map(h => `<option value="${h}" ${h === prevVal ? 'selected' : ''}>${h}</option>`).join('')}
     `;
 
-    subvoyageDestinationHubFilter.addEventListener('change', (e) => {
+    subvoyageDestinationHubFilter.onchange = (e) => {
       selectedDestinationHub = e.target.value;
       updateActiveSubvoyageState();
       renderAll();
-    });
+    };
   }
 
   // Налаштування multiselect фільтрів Дошки Підрейсів: Статуси та Логісти
@@ -2151,7 +2292,7 @@ function initSubvoyagesPlannerModule() {
 
   function getFilteredSubvoyagesList() {
     return getSortedSubvoyages().filter(sv => {
-      if (selectedDestinationHub !== 'all' && sv.hub !== selectedDestinationHub) return false;
+      if (selectedDestinationHub !== 'all' && sv.hub !== selectedDestinationHub && sv.receivingWarehouse !== selectedDestinationHub) return false;
       if (selectedSubvoyageUrgency !== 'all') {
         const u = getSubvoyageUrgencyInfo(sv);
         if (u.level !== selectedSubvoyageUrgency) return false;
@@ -2849,6 +2990,10 @@ function initSubvoyagesPlannerModule() {
               <span class="inline-flex items-center gap-1 bg-sky-50 text-sky-900 border border-sky-200 px-2 py-0.5 rounded-md font-bold text-[10px]" title="Маршрут підрейсу: ${sv.originCountry} ➔ ${sv.destinationCountry}">
                 <i class="fa-solid fa-arrows-left-right text-sky-600"></i>
                 <span>${sv.originCountry || 'Китай'} ➔ ${sv.destinationCountry || 'Польща'}</span>
+              </span>
+              <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-900 border border-amber-200 px-1.5 py-0.5 rounded font-bold text-[10px]" title="Склад отримання: ${sv.receivingWarehouse || sv.hub || '—'}">
+                <i class="fa-solid fa-warehouse text-amber-700"></i>
+                <span>${sv.receivingWarehouse || sv.hub || '—'}</span>
               </span>
               ${sv.cargoMode && sv.cargoMode !== 'all' ? `<span class="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-200 font-bold text-[10px]">${sv.cargoMode}</span>` : ''}
               ${Array.isArray(sv.keyMarkers) && sv.keyMarkers.length > 0 ? sv.keyMarkers.map(k => `<span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200 font-bold text-[10px]">${SUBVOYAGE_KEY_MARKER_LABELS[k] || k}</span>`).join('') : ''}
@@ -5433,7 +5578,9 @@ function initSubvoyagesPlannerModule() {
     setElHtml('sv-drawer-flags', flags.length > 0 ? flags.join(' ') : '<span class="text-slate-400 text-xs">Стандартний рейс</span>');
 
     setElText('sv-drawer-route', `${sv.originCountry || '—'} ➔ ${sv.destinationCountry || '—'}`);
-    setElHtml('sv-drawer-hub', `<i class="fa-solid fa-location-arrow text-amber-700"></i> <span>Точка отримання підрейсу: ${sv.destinationCountry} (${sv.unloadingPlace || sv.hub || '—'})</span>`);
+    const receivingWh = sv.receivingWarehouse || sv.destinationWarehouse || sv.hub || '—';
+    setElHtml('sv-drawer-hub', `<i class="fa-solid fa-warehouse text-amber-700"></i> <span>Склад отримання: ${receivingWh}</span>`);
+    setElText('sv-drawer-receiving-wh-name', receivingWh);
     setElText('sv-drawer-loading-place', `${sv.originCountry}: ${sv.loadingPlace || sv.originPort || '—'}`);
     setElText('sv-drawer-unloading-place', `${sv.destinationCountry}: ${sv.unloadingPlace || sv.destinationPort || '—'}`);
 

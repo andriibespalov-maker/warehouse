@@ -696,14 +696,21 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+          <div class="bg-white p-2 rounded-lg border border-slate-200">
+            <span class="text-slate-400 block text-[9px] uppercase font-bold">Склад отримання:</span>
+            <div class="text-slate-800 font-semibold flex items-center gap-1.5 truncate mt-0.5">
+              <i class="fa-solid fa-warehouse text-amber-600 text-xs shrink-0"></i>
+              <span id="sv-drawer-receiving-wh-name" class="truncate">--</span>
+            </div>
+          </div>
           <div class="bg-white p-2 rounded-lg border border-slate-200">
             <span class="text-slate-400 block text-[9px] uppercase font-bold">Місце завантаження:</span>
-            <span id="sv-drawer-loading-place" class="text-slate-800 font-semibold">--</span>
+            <span id="sv-drawer-loading-place" class="text-slate-800 font-semibold truncate block mt-0.5">--</span>
           </div>
           <div class="bg-white p-2 rounded-lg border border-slate-200">
             <span class="text-slate-400 block text-[9px] uppercase font-bold">Місце розвантаження:</span>
-            <span id="sv-drawer-unloading-place" class="text-slate-800 font-semibold">--</span>
+            <span id="sv-drawer-unloading-place" class="text-slate-800 font-semibold truncate block mt-0.5">--</span>
           </div>
         </div>
 
@@ -940,6 +947,19 @@
                 <option value="Туреччина">Туреччина</option>
               </select>
             </div>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Склад отримання <span class="text-rose-500">*</span></label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
+                <i class="fa-solid fa-warehouse text-xs"></i>
+              </div>
+              <select id="new-sv-receiving-warehouse" class="w-full rounded-lg border border-slate-300 pl-8 pr-2 py-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
+                <option value="">Оберіть склад отримання...</option>
+              </select>
+            </div>
+            <p id="new-sv-warehouse-hint" class="text-[10px] text-slate-500 mt-1 truncate"></p>
           </div>
 
           <div class="flex items-center gap-4 pt-1">
