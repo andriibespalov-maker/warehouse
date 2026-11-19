@@ -156,7 +156,7 @@ function updateDashboardStats(cargoes = [], subvoyages = []) {
   if (svShipments) {
     // 1. Завантажені на рейси (розподілені по контейнерах/підрейсах на оформленні або завантаженні)
     allocatedVolume = svShipments
-      .filter(s => s.subvoyageId && s.status !== 'В дорозі' && s.status !== 'Прибув на склад отримання')
+      .filter(s => s.subvoyageId && s.status !== 'В дорозі' && s.status !== 'Вивантажений' && s.status !== 'Прибув на склад отримання' && s.status !== 'Отримано на складі')
       .reduce((sum, s) => sum + (parseFloat(s.totalVolume ?? s.volume) || 0), 0);
 
     // Для нерозподілених позицій ділимо за категорією готовності (readinessCategory)
@@ -226,6 +226,10 @@ function updateDashboardStats(cargoes = [], subvoyages = []) {
   sevenDaysLater.setDate(baseDate.getDate() + 7);
   const sevenDaysStr = sevenDaysLater.toISOString().split('T')[0];
 
+  const fourteenDaysLater = new Date(realTodayStr + 'T00:00:00');
+  fourteenDaysLater.setDate(fourteenDaysLater.getDate() + 14);
+  const fourteenDaysStr = fourteenDaysLater.toISOString().split('T')[0];
+
   // 4. Отримано сьогодні (об'єм м³ та кількість підрейсів)
   const receivedTodayCargoes = cargoes.filter(c =>
     (c.receiveDate && c.receiveDate.startsWith(todayStr)) ||
@@ -236,7 +240,7 @@ function updateDashboardStats(cargoes = [], subvoyages = []) {
   let receivedTodaySvCount = receivedTodaySvSet.size || (receivedTodayCargoes.length > 0 ? 1 : 0);
 
   if (receivedTodayVolume === 0 && svShipments) {
-    const arrivedSvIds = new Set(svSubvoyages.filter(s => s.status === 'Прибув на склад отримання').map(s => s.id));
+    const arrivedSvIds = new Set(svSubvoyages.filter(s => s.status === 'Вивантажений' || s.status === 'Прибув на склад отримання').map(s => s.id));
     const arrivedShipments = svShipments.filter(s => (s.subvoyageId && arrivedSvIds.has(s.subvoyageId)) || s.acceptedToday);
     receivedTodayVolume = arrivedShipments.reduce((sum, s) => sum + (parseFloat(s.totalVolume ?? s.volume) || 0), 0);
     receivedTodaySvCount = arrivedSvIds.size || (arrivedShipments.length > 0 ? 1 : 0);
@@ -259,20 +263,25 @@ function updateDashboardStats(cargoes = [], subvoyages = []) {
     shippedTodaySvCount = loadedSvIds.size;
   }
 
-  // 6. Очікуємо (7 днів) — об'єм м³ та кількість підрейсів в дорозі
+  // 6. Очікуємо (14 днів) — об'єм м³ та кількість підрейсів в дорозі за плановою датою прибуття (незалежно від фактичної)
   const expectedArrivalCargoes = cargoes.filter(c => {
-    const arrDate = c.expectedArrivalDate || c.arrivalDate;
-    return (arrDate && arrDate >= todayStr && arrDate <= sevenDaysStr && c.statusCode === 'in_transit') || c.statusCode === 'in_transit';
+    const arrDate = (c.expectedArrivalDate || c.arrivalDate || '').slice(0, 10);
+    return (arrDate && arrDate <= fourteenDaysStr && c.statusCode === 'in_transit') || c.statusCode === 'in_transit';
   });
   let expectedArrival3DaysVolume = expectedArrivalCargoes.reduce((sum, c) => sum + (parseFloat(c.volume) || 0), 0);
+  const inTransitWithin14Days = svSubvoyages.filter(s => {
+    if (s.status !== 'В дорозі') return false;
+    const planArr = (s.plannedArrival || '').slice(0, 10);
+    return !planArr || planArr <= fourteenDaysStr;
+  });
   const expectedArrivalSvSet = new Set([
     ...expectedArrivalCargoes.map(c => c.subvoyage).filter(Boolean),
-    ...svSubvoyages.filter(s => s.status === 'В дорозі').map(s => s.id)
+    ...inTransitWithin14Days.map(s => s.id)
   ]);
   let expectedArrival3DaysSvCount = expectedArrivalSvSet.size;
 
   if (expectedArrival3DaysVolume === 0 && svShipments) {
-    const inTransitSvIds = new Set(svSubvoyages.filter(s => s.status === 'В дорозі').map(s => s.id));
+    const inTransitSvIds = new Set(inTransitWithin14Days.map(s => s.id));
     const inTransitVol = svShipments
       .filter(s => s.subvoyageId && inTransitSvIds.has(s.subvoyageId))
       .reduce((sum, s) => sum + (parseFloat(s.totalVolume ?? s.volume) || 0), 0);
@@ -1426,6 +1435,8 @@ const incomingVoyagesData = [
     vehicleNumber: '粤A-88421',
     etaDate: '2026-11-05 14:30',
     status: 'В дорозі',
+    template: 'Автоперевезення TIR',
+    customStatus: 'Розмитнений',
     expectedPlaces: 48,
     expectedWeight: 4850,
     expectedVolume: 26.4,
@@ -1442,6 +1453,8 @@ const incomingVoyagesData = [
     vehicleNumber: '粤B-30912',
     etaDate: '2026-11-06 10:00',
     status: 'В дорозі',
+    template: 'Автоперевезення TIR',
+    customStatus: 'Прямує на склад',
     expectedPlaces: 32,
     expectedWeight: 3200,
     expectedVolume: 18.5,
@@ -1454,10 +1467,47 @@ const incomingVoyagesData = [
 
 let currentAcceptVoyagePhotos = [];
 
+function isWithin14DaysPlannedArrival(plannedDateStr) {
+  if (!plannedDateStr) return true;
+  const planDay = String(plannedDateStr).slice(0, 10);
+  const limit = new Date();
+  limit.setDate(limit.getDate() + 14);
+  const limitStr = limit.toISOString().split('T')[0];
+  return planDay <= limitStr;
+}
+
 function getActiveIncomingVoyages() {
-  // Також враховуємо підрейси зі статусом "В дорозі" з планувальника, якщо користувач хоче прийняти їх
-  const activeList = incomingVoyagesData.filter(v => v.status === 'В дорозі');
-  return activeList;
+  // Показуємо усі підрейси на складі зі статусом «В дорозі» за 14 днів до планового прибуття (рахується від плану, незалежно від фактичної дати)
+  const svList = Array.isArray(window.svManagementSubvoyages) ? window.svManagementSubvoyages : [];
+  const trList = Array.isArray(window.svManagementShipments) ? window.svManagementShipments : [];
+
+  const plannerInTransit = svList
+    .filter(s => s.status === 'В дорозі' && isWithin14DaysPlannedArrival(s.plannedArrival))
+    .map(svObj => {
+      const assigned = trList.filter(t => t.subvoyageId === svObj.id);
+      const expPlaces = assigned.reduce((sum, t) => sum + (Number(t.places ?? t.totalPlaces) || 0), 0) || svObj.maxPlaces || 0;
+      const expWeight = assigned.reduce((sum, t) => sum + (Number(t.weight ?? t.totalWeight) || 0), 0) || 0;
+      const expVolume = assigned.reduce((sum, t) => sum + (Number(t.volume ?? t.totalVolume) || 0), 0) || 0;
+      return {
+        id: svObj.id,
+        name: svObj.name,
+        carrier: svObj.transportDetails?.shippingLine || svObj.transportDetails?.airline || svObj.transportDetails?.carrier || svObj.transport || 'Перевізник',
+        vehicleNumber: svObj.transportDetails?.containerNumber || svObj.transportDetails?.awbNumber || svObj.transportDetails?.vehicleDetails || svObj.id,
+        etaDate: svObj.plannedArrival || '—',
+        status: svObj.status,
+        expectedPlaces: expPlaces,
+        expectedWeight: expWeight,
+        expectedVolume: expVolume,
+        shipments: assigned
+      };
+    });
+
+  const plannerIds = new Set(plannerInTransit.map(v => v.id));
+  const standaloneInTransit = incomingVoyagesData
+    .filter(v => v.status === 'В дорозі' && !plannerIds.has(v.id) && isWithin14DaysPlannedArrival(v.etaDate));
+
+  return [...plannerInTransit, ...standaloneInTransit]
+    .sort((a, b) => String(a.etaDate || '9999-12-31').localeCompare(String(b.etaDate || '9999-12-31')));
 }
 
 function renderIncomingVoyages() {
@@ -1536,9 +1586,9 @@ function renderIncomingVoyages() {
 // 4) Ступінь пошкодження коробок по кожному перевезенню (зелений / жовтий / червоний)
 
 const ACCEPT_DAMAGE_LEVELS = {
-  green: { label: 'Зелений', short: 'Цілі', dot: 'bg-emerald-500', on: 'bg-emerald-500 text-white border-emerald-600', off: 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50', desc: 'Коробки максимально мають вигляд, як при відправці з Китаю' },
-  yellow: { label: 'Жовтий', short: 'Ремонт', dot: 'bg-amber-400', on: 'bg-amber-400 text-amber-950 border-amber-500', off: 'bg-white text-amber-700 border-amber-300 hover:bg-amber-50', desc: 'Коробки мають пошкодження, їх реально підремонтувати' },
-  red: { label: 'Червоний', short: 'Заміна', dot: 'bg-rose-500', on: 'bg-rose-500 text-white border-rose-600', off: 'bg-white text-rose-700 border-rose-300 hover:bg-rose-50', desc: 'Коробки критично пошкоджені, мокрі, потребують повну заміну пакування' }
+  green: { label: 'Гарний', short: 'Гарний', dot: 'bg-emerald-500', on: 'bg-emerald-500 text-white border-emerald-600', off: 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50', desc: 'Вантаж у гарному стані, без видимих пошкоджень' },
+  yellow: { label: 'Поганий', short: 'Поганий', dot: 'bg-amber-400', on: 'bg-amber-400 text-amber-950 border-amber-500', off: 'bg-white text-amber-700 border-amber-300 hover:bg-amber-50', desc: 'Вантаж або пакування мають пошкодження (стан «Поганий»)' },
+  red: { label: 'Критичний', short: 'Критичний', dot: 'bg-rose-500', on: 'bg-rose-500 text-white border-rose-600', off: 'bg-white text-rose-700 border-rose-300 hover:bg-rose-50', desc: 'Критичні пошкодження вантажу або пакування' }
 };
 window.ACCEPT_DAMAGE_LEVELS = ACCEPT_DAMAGE_LEVELS;
 
@@ -1581,6 +1631,7 @@ function openAcceptVoyageModal(voyageId, event = null) {
       vehicleNumber: vehicleNum,
       etaDate: svObj.plannedArrival || '2026-11-05',
       status: svObj.status,
+      customStatus: svObj.customStatus || '',
       expectedPlaces: expPlaces,
       expectedWeight: expWeight,
       expectedVolume: expVolume,
@@ -1594,7 +1645,8 @@ function openAcceptVoyageModal(voyageId, event = null) {
             places: Number(t.places ?? t.totalPlaces) || 10,
             weight: Number(t.weight ?? t.totalWeight) || 1000,
             volume: Number(t.volume ?? t.totalVolume) || 5.0,
-            cargoName: t.cargoes?.[0]?.titleUa || t.cargoes?.[0]?.name || `${t.cargoType || 'Карго'} (${t.packagingType || 'Палети'})`
+            cargoName: t.cargoes?.[0]?.titleUa || t.cargoes?.[0]?.name || `${t.cargoType || 'Карго'} (${t.packagingType || 'Палети'})`,
+            acceptance: t.acceptance
           }))
         : [
             { id: `DF-${svObj.id}-01`, rawId: `DF-${svObj.id}-01`, client: 'ТОВ ТехноІмпорт (Маніфест)', manager: ACCEPT_FALLBACK_MANAGERS[0], places: expPlaces, weight: expWeight, volume: expVolume, cargoName: 'Консолідований вантаж за маніфестом підрейсу' }
@@ -1612,25 +1664,43 @@ function openAcceptVoyageModal(voyageId, event = null) {
   currentAcceptVoyage = voyage;
   acceptShipmentState = {};
   voyage.shipments.forEach(sh => {
-    acceptShipmentState[sh.id] = { shortage: false, shortagePlaces: 0, damage: null };
+    const prevAcc = sh.acceptance || {};
+    acceptShipmentState[sh.id] = {
+      shortage: Boolean(prevAcc.shortage),
+      shortagePlaces: Number(prevAcc.shortagePlaces) || 0,
+      damage: prevAcc.damageLevel || null,
+      damageComment: prevAcc.damageComment || '',
+      damagePhotos: Array.isArray(prevAcc.damagePhotos) ? [...prevAcc.damagePhotos] : []
+    };
   });
 
   // 1. Інформація про підрейс
   document.getElementById('accept-voyage-target-id').value = voyage.id;
   document.getElementById('accept-voyage-id-badge').innerText = voyage.id;
   document.getElementById('accept-voyage-route-info').innerText = voyage.name;
-  document.getElementById('accept-voyage-meta-info').innerText = `${voyage.carrier} • Борт / Контейнер: ${voyage.vehicleNumber} • ETA: ${voyage.etaDate} • Перевезень: ${voyage.shipments.length}`;
+  document.getElementById('accept-voyage-meta-info').innerText = `${voyage.carrier} • Борт / Контейнер: ${voyage.vehicleNumber} • Планова дата прибуття (ETA): ${voyage.etaDate} • Перевезень: ${voyage.shipments.length}`;
+  const customStBadge = document.getElementById('accept-voyage-custom-status-badge');
+  if (customStBadge) {
+    if (voyage.customStatus) {
+      customStBadge.innerText = voyage.customStatus;
+      customStBadge.classList.remove('hidden');
+    } else {
+      customStBadge.classList.add('hidden');
+    }
+  }
   const dateEl = document.getElementById('accept-voyage-receive-date');
   if (dateEl) dateEl.innerText = toLocalDateTimeText();
 
-  // 2. Очікувані параметри (факт логіст вводить вручну — поля порожні)
+  // 2. Параметри підрейсу: Вага та Об'єм підтягуються автоматично, Кількість місць логіст вводить вручну
   document.getElementById('accept-voyage-expected-places').innerText = voyage.expectedPlaces;
   document.getElementById('accept-voyage-expected-weight').innerText = Math.round(voyage.expectedWeight);
   document.getElementById('accept-voyage-expected-volume').innerText = Number(voyage.expectedVolume).toFixed(2);
-  ['places', 'weight', 'volume'].forEach(k => {
-    const el = document.getElementById(`accept-voyage-actual-${k}`);
-    if (el) el.value = '';
-  });
+  const placesInput = document.getElementById('accept-voyage-actual-places');
+  const weightInput = document.getElementById('accept-voyage-actual-weight');
+  const volumeInput = document.getElementById('accept-voyage-actual-volume');
+  if (placesInput) placesInput.value = '';
+  if (weightInput) weightInput.value = Math.round(Number(voyage.expectedWeight) || 0);
+  if (volumeInput) volumeInput.value = Number(voyage.expectedVolume || 0).toFixed(2);
 
   // 3. Фото — порожньо, масове завантаження
   currentAcceptVoyagePhotos.forEach(p => { if (p.url) URL.revokeObjectURL(p.url); });
@@ -1720,6 +1790,59 @@ function renderAcceptShipmentsList() {
       </button>
     `).join('');
 
+    const isDamaged = st.damage === 'yellow' || st.damage === 'red';
+    const damagePhotos = Array.isArray(st.damagePhotos) ? st.damagePhotos : [];
+    const safeComment = String(st.damageComment || '')
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    const detailBorderCls = st.damage === 'red' ? 'bg-rose-50/70 border-rose-200' : 'bg-amber-50/70 border-amber-200';
+    const detailBadgeText = st.damage === 'red' ? 'Стан «Критичний»' : 'Стан «Поганий»';
+    const detailBadgeCls = st.damage === 'red' ? 'text-rose-800' : 'text-amber-900';
+
+    const damageExtraHtml = isDamaged ? `
+      <div class="mt-2 p-2 rounded-lg border ${detailBorderCls} space-y-1.5 min-w-[240px]"
+           ondragover="event.preventDefault(); this.classList.add('ring-2','ring-indigo-400')"
+           ondragleave="this.classList.remove('ring-2','ring-indigo-400')"
+           ondrop="event.preventDefault(); this.classList.remove('ring-2','ring-indigo-400'); DashboardModule.handleShipmentDamagePhotoFiles('${sh.id}', event.dataTransfer.files)">
+        <div class="flex items-center justify-between gap-1.5 flex-wrap">
+          <span class="text-[10px] font-bold ${detailBadgeCls} flex items-center gap-1">
+            <i class="fa-solid fa-triangle-exclamation text-[9px]"></i>
+            <span>${detailBadgeText}: фото та коментар <span class="font-normal text-slate-500">(необов'язково)</span></span>
+          </span>
+          <label class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold cursor-pointer transition shadow-2xs" title="Перетягніть фото сюди або оберіть кілька файлів (необов'язково)">
+            <input type="file" multiple accept="image/*" class="hidden" onchange="DashboardModule.handleShipmentDamagePhotoUpload('${sh.id}', this)">
+            <i class="fa-solid fa-camera text-[9px]"></i>
+            <span>+ Фото (${damagePhotos.length})</span>
+          </label>
+        </div>
+        <div class="text-[9px] text-amber-800 flex items-center justify-between gap-2 flex-wrap">
+          <span><i class="fa-solid fa-bell mr-0.5"></i>Менеджер <strong>${sh.manager}</strong> отримає сповіщення</span>
+          <span class="text-slate-400">Можна перетягнути кілька фото сюди</span>
+        </div>
+        ${damagePhotos.length > 0 ? `
+          <div class="flex items-center gap-1.5 flex-wrap pt-0.5">
+            ${damagePhotos.map((p, idx) => `
+              <div class="relative group w-10 h-10 rounded-md overflow-hidden border border-slate-300 bg-white shrink-0" title="${p.name} (${p.size})">
+                ${p.url
+                  ? `<img src="${p.url}" alt="${p.name}" class="w-full h-full object-cover">`
+                  : `<div class="w-full h-full flex items-center justify-center text-slate-400"><i class="fa-regular fa-image text-xs"></i></div>`}
+                <button type="button" onclick="DashboardModule.removeShipmentDamagePhoto('${sh.id}', ${idx})"
+                  class="absolute top-0 right-0 w-4 h-4 bg-slate-900/75 hover:bg-rose-600 text-white text-[10px] leading-none flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition" title="Видалити фото">&times;</button>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+        <div>
+          <input type="text" value="${safeComment}"
+            placeholder="Коментар щодо пошкоджень вантажу (необов'язково)..."
+            oninput="DashboardModule.setAcceptDamageComment('${sh.id}', this.value)"
+            class="w-full bg-white border border-slate-300 rounded px-2 py-1 text-[11px] text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+      </div>
+    ` : '';
+
     return `
       <tr class="${st.shortage ? 'bg-rose-50/60' : 'bg-white'} align-top">
         <td class="p-2">
@@ -1751,6 +1874,7 @@ function renderAcceptShipmentsList() {
         </td>
         <td class="p-2">
           <div class="flex items-center gap-1 flex-wrap">${damageBtns}</div>
+          ${damageExtraHtml}
         </td>
       </tr>
     `;
@@ -1811,6 +1935,46 @@ function setAllAcceptDamage(level) {
   renderAcceptShipmentsList();
 }
 
+function setAcceptDamageComment(shipmentId, value) {
+  const st = acceptShipmentState[shipmentId];
+  if (!st) return;
+  st.damageComment = value || '';
+}
+
+function handleShipmentDamagePhotoFiles(shipmentId, fileList) {
+  const st = acceptShipmentState[shipmentId];
+  if (!st) return;
+  if (!Array.isArray(st.damagePhotos)) st.damagePhotos = [];
+  const files = Array.from(fileList || []).filter(f => !f.type || f.type.startsWith('image/'));
+  files.forEach(f => {
+    const sizeKb = Math.max(1, Math.round((f.size || 0) / 1024));
+    let url = '';
+    try { url = URL.createObjectURL(f); } catch (e) { url = ''; }
+    st.damagePhotos.push({
+      name: f.name,
+      size: sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`,
+      url
+    });
+  });
+  renderAcceptShipmentsList();
+  if (files.length > 0 && typeof showToast === 'function') {
+    showToast(`Додано ${files.length} фото до перевезення ${shipmentId}`);
+  }
+}
+
+function handleShipmentDamagePhotoUpload(shipmentId, input) {
+  handleShipmentDamagePhotoFiles(shipmentId, input?.files);
+  if (input) input.value = '';
+}
+
+function removeShipmentDamagePhoto(shipmentId, idx) {
+  const st = acceptShipmentState[shipmentId];
+  if (!st || !Array.isArray(st.damagePhotos)) return;
+  const [removed] = st.damagePhotos.splice(idx, 1);
+  if (removed?.url) URL.revokeObjectURL(removed.url);
+  renderAcceptShipmentsList();
+}
+
 // --- Масове завантаження фото ---
 function renderAcceptVoyagePhotos() {
   const listElem = document.getElementById('accept-voyage-photos-list');
@@ -1820,7 +1984,7 @@ function renderAcceptVoyagePhotos() {
   if (countElem) {
     countElem.innerText = `Додано: ${n} фото`;
     countElem.className = n > 0
-      ? 'text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded'
+      ? 'text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-semibold'
       : 'text-[10px] font-mono text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded font-bold';
   }
   if (clearBtn) clearBtn.classList.toggle('hidden', n === 0);
@@ -1873,21 +2037,47 @@ function clearAcceptPhotos() {
   renderAcceptVoyagePhotos();
 }
 
-// --- Сповіщення відповідальному менеджеру про недостачу ---
-function notifyManagerAboutShortage({ manager, shipmentId, subvoyageId, subvoyageName, shortagePlaces, expectedPlaces, damageLevel, receiveDate, notes }) {
+// --- Сповіщення відповідальному менеджеру про недостачу та/або пошкодження вантажу («Поганий» / «Критичний») ---
+function notifyManagerAboutAcceptanceIssue({ manager, shipmentId, subvoyageId, subvoyageName, shortage, shortagePlaces, expectedPlaces, damageLevel, damageComment, damagePhotosCount, receiveDate, notes }) {
+  const isDamaged = damageLevel === 'yellow' || damageLevel === 'red';
+  const dmgLabel = damageLevel ? (ACCEPT_DAMAGE_LEVELS[damageLevel]?.label || damageLevel) : '';
+  const type = shortage && isDamaged ? 'shortage_and_damage' : (shortage ? 'shortage' : 'damage');
+
+  const titleParts = [];
+  if (shortage) titleParts.push(`Недостача ${shortagePlaces || '?'} з ${expectedPlaces} місць`);
+  if (isDamaged) titleParts.push(`Стан вантажу «${dmgLabel}»`);
+
+  const msgParts = [
+    `Підрейс ${subvoyageId}${subvoyageName ? ` (${subvoyageName})` : ''} отримано на складі ${receiveDate}.`
+  ];
+  if (shortage) {
+    msgParts.push(`У перевезенні ${shipmentId} не вистачає ${shortagePlaces || 'невизначену кількість'} з ${expectedPlaces} місць.`);
+  }
+  if (isDamaged) {
+    msgParts.push(`Зафіксовано стан вантажу «${dmgLabel}» у перевезенні ${shipmentId}.`);
+  }
+  msgParts.push('Попередьте клієнта та за потреби запустіть компенсацію.');
+  if (damageComment) msgParts.push(`Коментар логіста: ${damageComment}.`);
+  if (damagePhotosCount) msgParts.push(`Додано фото пошкоджень: ${damagePhotosCount} шт.`);
+  if (notes) msgParts.push(`Загальна примітка: ${notes}`);
+
   const notification = {
     id: `NTF-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    type: 'shortage',
+    type,
     recipient: manager,
     shipmentId,
     subvoyageId,
-    title: `Недостача ${shortagePlaces || '?'} з ${expectedPlaces} місць у перевезенні ${shipmentId}`,
-    message: `Підрейс ${subvoyageId}${subvoyageName ? ` (${subvoyageName})` : ''} отримано на складі ${receiveDate}. У перевезенні ${shipmentId} не вистачає ${shortagePlaces || 'невизначену кількість'} місць. Запустіть компенсацію / комунікацію з клієнтом.${damageLevel ? ` Стан коробок: ${ACCEPT_DAMAGE_LEVELS[damageLevel]?.label}.` : ''}${notes ? ` Примітка логіста: ${notes}` : ''}`,
+    title: `${titleParts.join(' • ')} у перевезенні ${shipmentId}`,
+    message: msgParts.join(' '),
     createdAt: new Date().toISOString(),
     read: false
   };
   window.managerNotifications.unshift(notification);
   return notification;
+}
+
+function notifyManagerAboutShortage(params) {
+  return notifyManagerAboutAcceptanceIssue({ ...params, shortage: true });
 }
 
 function submitAcceptVoyageReport() {
@@ -1897,7 +2087,11 @@ function submitAcceptVoyageReport() {
   const voyage = currentAcceptVoyage && currentAcceptVoyage.id === voyageId ? currentAcceptVoyage : incomingVoyagesData.find(v => v.id === voyageId);
   if (!svObj && !voyage) return;
 
-  const receiveDate = (document.getElementById('accept-voyage-receive-date')?.innerText || '').trim() || toLocalDateTimeText();
+  // Фактична дата/час отримання = поточний момент кліку підтвердження
+  const receiveDate = toLocalDateTimeText(new Date());
+  const dateEl = document.getElementById('accept-voyage-receive-date');
+  if (dateEl) dateEl.innerText = receiveDate;
+
   const { places: actualPlaces, weight: actualWeight, volume: actualVolume } = getAcceptActualParams();
   const notes = (document.getElementById('accept-voyage-notes')?.value || '').trim();
 
@@ -1911,17 +2105,25 @@ function submitAcceptVoyageReport() {
     }
   };
 
-  if (!receiveDate) {
-    showError('Вкажіть дату отримання підрейсу на складі.');
+  if (isNaN(actualPlaces) || actualPlaces < 0) {
+    showError('Введіть фактичну кількість місць після вивантаження.');
+    document.getElementById('accept-voyage-actual-places')?.focus();
     return;
   }
-  if (isNaN(actualPlaces) || actualPlaces < 0 || isNaN(actualWeight) || actualWeight <= 0 || isNaN(actualVolume) || actualVolume <= 0) {
-    showError('Вкажіть фактичні параметри після вивантаження: кількість місць, об\'єм та вагу.');
+  if (isNaN(actualVolume) || actualVolume <= 0) {
+    showError('Поле «Об\'єм (м³)» є обов\'язковим і має бути більшим за 0.');
+    document.getElementById('accept-voyage-actual-volume')?.focus();
+    return;
+  }
+  if (isNaN(actualWeight) || actualWeight <= 0) {
+    showError('Поле «Вага (кг)» є обов\'язковим і має бути більшим за 0.');
+    document.getElementById('accept-voyage-actual-weight')?.focus();
     return;
   }
 
   const shipmentsReport = voyage.shipments.map(sh => {
     const st = acceptShipmentState[sh.id] || {};
+    const isDamaged = st.damage === 'yellow' || st.damage === 'red';
     return {
       id: sh.id,
       rawId: sh.rawId || sh.id,
@@ -1929,7 +2131,11 @@ function submitAcceptVoyageReport() {
       expectedPlaces: sh.places,
       shortage: !!st.shortage,
       shortagePlaces: st.shortage ? (Number(st.shortagePlaces) || 0) : 0,
-      damageLevel: st.damage || null
+      damageLevel: st.damage || null,
+      damageComment: isDamaged ? (st.damageComment || '').trim() : '',
+      damagePhotos: isDamaged && Array.isArray(st.damagePhotos)
+        ? st.damagePhotos.map(p => ({ name: p.name, size: p.size, url: p.url }))
+        : []
     };
   });
 
@@ -1946,7 +2152,7 @@ function submitAcceptVoyageReport() {
   }
   const noDamage = shipmentsReport.filter(s => !s.damageLevel);
   if (noDamage.length > 0) {
-    showError(`Проставте ступінь пошкодження коробок для всіх перевезень (не вказано: ${noDamage.map(s => s.id).join(', ')}).`);
+    showError(`Проставте стан вантажу («Гарний» / «Поганий» / «Критичний») для всіх перевезень (не вказано: ${noDamage.map(s => s.id).join(', ')}).`);
     return;
   }
   if (currentAcceptVoyagePhotos.length === 0) {
@@ -1954,15 +2160,19 @@ function submitAcceptVoyageReport() {
     return;
   }
 
-  // Сповіщення менеджерам про недостачу (процес роботи з вантажем не зупиняється)
-  const notifications = shortageItems.map(s => notifyManagerAboutShortage({
+  // Сповіщення менеджерам при недостачі місць або пошкодженні вантажу («Поганий» / «Критичний»)
+  const issueItems = shipmentsReport.filter(s => s.shortage || s.damageLevel === 'yellow' || s.damageLevel === 'red');
+  const notifications = issueItems.map(s => notifyManagerAboutAcceptanceIssue({
     manager: s.manager,
     shipmentId: s.id,
     subvoyageId: voyage.id,
     subvoyageName: voyage.name,
+    shortage: s.shortage,
     shortagePlaces: s.shortagePlaces,
     expectedPlaces: s.expectedPlaces,
     damageLevel: s.damageLevel,
+    damageComment: s.damageComment,
+    damagePhotosCount: Array.isArray(s.damagePhotos) ? s.damagePhotos.length : 0,
     receiveDate,
     notes
   }));
@@ -1981,8 +2191,8 @@ function submitAcceptVoyageReport() {
     notes,
     photos: currentAcceptVoyagePhotos.map(p => ({ name: p.name, size: p.size, url: p.url })),
     // Сумісність зі старим форматом звіту
-    isAllGood: shortageItems.length === 0 && shipmentsReport.every(s => s.damageLevel === 'green'),
-    selectedProblemShipments: shortageItems.map(s => s.id)
+    isAllGood: issueItems.length === 0,
+    selectedProblemShipments: issueItems.map(s => s.id)
   };
 
   // Підрейс із Дошки Підрейсів — обробник планувальника
@@ -1993,14 +2203,32 @@ function submitAcceptVoyageReport() {
     return;
   }
 
-  // Автономний вхідний рейс (incomingVoyagesData)
-  voyage.status = 'Прибув на склад отримання';
+  // Автономний вхідний рейс (incomingVoyagesData): стан «Вивантажений», фіксація дати, перевезення «Отримано на складі»
+  voyage.status = 'Вивантажений';
+  voyage.customStatus = 'Вивантажено на складі';
+  voyage.actualArrival = receiveDate;
   voyage.acceptedAt = receiveDate;
   voyage.acceptanceReport = reportData;
 
   if (Array.isArray(window.svManagementShipments)) {
     voyage.shipments.forEach((sh, index) => {
       const rep = shipmentsReport.find(r => r.id === sh.id) || {};
+      const isDamaged = rep.damageLevel === 'yellow' || rep.damageLevel === 'red';
+      const hasIssue = rep.shortage || isDamaged;
+      const dmgLabel = ACCEPT_DAMAGE_LEVELS[rep.damageLevel]?.label || '';
+      const issueTitleParts = [];
+      if (rep.shortage) issueTitleParts.push(`Недостача ${rep.shortagePlaces} з ${sh.places} місць`);
+      if (isDamaged) issueTitleParts.push(`Стан вантажу «${dmgLabel}»`);
+
+      const issueTask = hasIssue ? {
+        id: `TSK-ACC-${Date.now()}-${index}`,
+        title: `${issueTitleParts.join(' • ')} при отриманні ${voyage.id} — попередити клієнта`,
+        assignee: sh.manager,
+        dueDate: receiveDate.split(' ')[0],
+        status: 'open',
+        type: rep.shortage ? 'shortage' : 'damage'
+      } : null;
+
       const exists = window.svManagementShipments.some(existing => existing.id === sh.id);
       if (!exists) {
         window.svManagementShipments.unshift({
@@ -2012,7 +2240,7 @@ function submitAcceptVoyageReport() {
           originWarehouse: 'Гуанчжоу (Транзит)',
           destinationHub: 'Китай ➔ Україна (Київ)',
           routeCountry: 'Україна',
-          status: 'Прибув на склад отримання',
+          status: 'Отримано на складі',
           readinessCategory: 'ready',
           cargoType: index % 2 === 0 ? 'Карго' : 'Фрахт',
           deliveryType: 'Море',
@@ -2038,18 +2266,15 @@ function submitAcceptVoyageReport() {
             subvoyageId: voyage.id,
             receiveDate,
             damageLevel: rep.damageLevel,
+            damageComment: rep.damageComment || '',
+            damagePhotos: Array.isArray(rep.damagePhotos) ? rep.damagePhotos : [],
             shortage: !!rep.shortage,
             shortagePlaces: rep.shortagePlaces || 0,
-            receivedPlaces: sh.places - (rep.shortagePlaces || 0)
+            expectedPlaces: sh.places,
+            receivedPlaces: sh.places - (rep.shortagePlaces || 0),
+            managerNotified: hasIssue
           },
-          tasks: rep.shortage ? [{
-            id: `TSK-SH-${Date.now()}-${index}`,
-            title: `Недостача ${rep.shortagePlaces} з ${sh.places} місць при отриманні ${voyage.id} — запустити компенсацію`,
-            assignee: sh.manager,
-            dueDate: receiveDate.split(' ')[0],
-            status: 'open',
-            type: 'shortage'
-          }] : [],
+          tasks: issueTask ? [issueTask] : [],
           cargoes: [
             {
               id: `${sh.id}/1`,
@@ -2062,6 +2287,29 @@ function submitAcceptVoyageReport() {
             }
           ]
         });
+      } else {
+        const existing = window.svManagementShipments.find(e => e.id === sh.id);
+        if (existing) {
+          existing.status = 'Отримано на складі';
+          existing.readinessCategory = 'ready';
+          existing.acceptedToday = true;
+          existing.acceptance = {
+            subvoyageId: voyage.id,
+            receiveDate,
+            damageLevel: rep.damageLevel,
+            damageComment: rep.damageComment || '',
+            damagePhotos: Array.isArray(rep.damagePhotos) ? rep.damagePhotos : [],
+            shortage: !!rep.shortage,
+            shortagePlaces: rep.shortagePlaces || 0,
+            expectedPlaces: sh.places,
+            receivedPlaces: sh.places - (rep.shortagePlaces || 0),
+            managerNotified: hasIssue
+          };
+          if (issueTask) {
+            if (!Array.isArray(existing.tasks)) existing.tasks = [];
+            existing.tasks.unshift(issueTask);
+          }
+        }
       }
     });
   }
@@ -2077,8 +2325,8 @@ function submitAcceptVoyageReport() {
   }
 
   if (typeof showToast === 'function') {
-    const ntf = notifications.length ? ` Сповіщено менеджерів про недостачу: ${notifications.length}.` : '';
-    showToast(`Рейс ${voyage.id} прийнято на баланс складу (${voyage.shipments.length} перевезень).${ntf}`);
+    const ntf = notifications.length ? ` Надіслано сповіщень менеджерам: ${notifications.length}.` : '';
+    showToast(`Рейс ${voyage.id} переведено у стан «Вивантажений» (${voyage.shipments.length} перевезень — «Отримано на складі»).${ntf}`);
   }
 }
 
@@ -2197,6 +2445,9 @@ if (document.readyState === 'loading') {
   initWarehouseDataSync();
 }
 
+window.openAcceptVoyageModal = openAcceptVoyageModal;
+window.closeAcceptVoyageModal = closeAcceptVoyageModal;
+
 // Глобальний експорт
 window.DashboardModule = {
   data: warehouseInfoData,
@@ -2222,6 +2473,10 @@ window.DashboardModule = {
   setAcceptShortagePlaces: setAcceptShortagePlaces,
   setAcceptDamage: setAcceptDamage,
   setAllAcceptDamage: setAllAcceptDamage,
+  setAcceptDamageComment: setAcceptDamageComment,
+  handleShipmentDamagePhotoFiles: handleShipmentDamagePhotoFiles,
+  handleShipmentDamagePhotoUpload: handleShipmentDamagePhotoUpload,
+  removeShipmentDamagePhoto: removeShipmentDamagePhoto,
   submitAcceptVoyageReport: submitAcceptVoyageReport,
   openInfoModal: openWarehouseInfoModal,
   closeInfoModal: closeWarehouseInfoModal,

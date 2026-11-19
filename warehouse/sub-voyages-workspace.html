@@ -256,13 +256,26 @@
           </div>
         </div>
 
-        <!-- Фільтрація по Складу доставки -->
-        <div class="flex items-center gap-1">
-          <span class="text-[10px] text-slate-400">Хаб:</span>
-          <select id="subvoyage-destination-hub-filter"
-            class="bg-slate-900 border border-slate-700 text-amber-300 font-mono text-[10px] rounded px-2 py-0.5 focus:ring-1 focus:ring-amber-400 cursor-pointer">
-            <option value="all">Усі склади доставки</option>
-          </select>
+        <!-- Фільтрація по Складу доставки та Сортування -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <div class="flex items-center gap-1">
+            <span class="text-[10px] text-slate-400">Хаб:</span>
+            <select id="subvoyage-destination-hub-filter"
+              class="bg-slate-900 border border-slate-700 text-amber-300 font-mono text-[10px] rounded px-2 py-0.5 focus:ring-1 focus:ring-amber-400 cursor-pointer">
+              <option value="all">Усі склади доставки</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-1">
+            <span class="text-[10px] text-slate-400">Сорт:</span>
+            <select id="sv-sort-select"
+              class="bg-slate-900 border border-slate-700 text-sky-300 font-mono text-[10px] rounded px-2 py-0.5 focus:ring-1 focus:ring-sky-400 cursor-pointer"
+              title="Сортування списку підрейсів">
+              <option value="plannedArrival_asc" selected>Прибуття: найближчі ↑</option>
+              <option value="plannedArrival_desc">Прибуття: пізніші ↓</option>
+              <option value="plannedDeparture_asc">Відправлення: найближчі ↑</option>
+              <option value="status_priority">За станом та відпр.</option>
+            </select>
+          </div>
         </div>
       </div>
 

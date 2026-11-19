@@ -32,6 +32,7 @@
         "ports": "Port of Nansha ➔ Odesa Seaport"
       },
       "template": "Морський (LCL/FCL)",
+      "customStatus": "Консолідація на складі",
       "isMain": true,
       "isTransit": true,
       "loadingPlace": "Фошань (Китай)",
@@ -71,6 +72,7 @@
         "ports": "Port of Nansha ➔ Port of Gdańsk (PL)"
       },
       "template": "Морський (Мультимодальне плече)",
+      "customStatus": "Збір на складі відправки",
       "isMain": true,
       "isTransit": true,
       "loadingPlace": "Фошань (Китай)",
@@ -107,6 +109,7 @@
         "airports": "SZX ➔ WAW ➔ LWO"
       },
       "template": "Авіа Експрес",
+      "customStatus": "Розмитнений",
       "isMain": true,
       "isTransit": true,
       "loadingPlace": "Шеньчжень (Китай)",
@@ -118,7 +121,7 @@
       "id": "SV-4410",
       "name": "Авто Рейс CAN-ODE",
       "parentVoyage": "VOY-2026-15",
-      "status": "Прибув на склад отримання",
+      "status": "Вивантажений",
       "logist": "М. Петренко",
       "loadingType": "LTL",
       "originCountry": "Китай",
@@ -142,6 +145,7 @@
         "vehicleDetails": "Volvo FH16 (AA 1234 KB / AA 5678 XT)"
       },
       "template": "Автоперевезення TIR",
+      "customStatus": "Вивантажено на складі",
       "isMain": true,
       "isTransit": false,
       "loadingPlace": "Гуанчжоу (Китай)",
@@ -176,6 +180,7 @@
         "loadingDate": "2026-10-29"
       },
       "template": "Залізничний (FCL/LCL)",
+      "customStatus": "Завантажено у вагон/контейнер",
       "isMain": false,
       "isTransit": true,
       "loadingPlace": "Фошань (Китай)",
@@ -210,6 +215,7 @@
         "airports": "SZX ➔ WAW ➔ LWO"
       },
       "template": "Авіа Експрес",
+      "customStatus": "Комплектація авіапартії",
       "isMain": true,
       "isTransit": true,
       "loadingPlace": "Шеньчжень (Китай)",
@@ -244,6 +250,7 @@
         "vehicleDetails": "MAN TGX (AA 7788 KB)"
       },
       "template": "Автоперевезення TIR",
+      "customStatus": "Формування автопартії",
       "isMain": true,
       "isTransit": false,
       "loadingPlace": "Гуанчжоу (Китай)",

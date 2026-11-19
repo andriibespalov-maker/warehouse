@@ -134,6 +134,151 @@ function initSubvoyagesPlannerModule() {
   let sortField = 'dateReady';
   let sortDirection = 'asc';
 
+  // Сортування списку підрейсів: за замовчуванням — за плановою датою прибуття (від найближчих зверху до пізніших знизу)
+  let subvoyageSortMode = 'plannedArrival_asc';
+
+  // Довідник шаблонів підрейсів із кастомними статусами, прив'язаними до 8 системних станів (Блок 4.5)
+  const SUBVOYAGE_TEMPLATES_CATALOG = {
+    'Морський (LCL/FCL)': [
+      { name: 'Формування партії', state: 'Формування' },
+      { name: 'Консолідація на складі', state: 'Формування' },
+      { name: 'Завантажений у контейнер', state: 'Завантажений' },
+      { name: 'Пломбування контейнера', state: 'Завантажений' },
+      { name: 'Експортне замитнення (Китай)', state: 'На митниці на експорт' },
+      { name: 'В дорозі до порту', state: 'В дорозі' },
+      { name: 'На морі (у транзиті)', state: 'В дорозі' },
+      { name: 'Прибув у порт', state: 'В дорозі' },
+      { name: 'Розмитнений', state: 'В дорозі' },
+      { name: 'Прямує на склад', state: 'В дорозі' },
+      { name: 'На розвантаженні', state: 'В дорозі' },
+      { name: 'Імпортне розмитнення', state: 'На митниці на імпорт' },
+      { name: 'Вивантажено на складі', state: 'Вивантажений' },
+      { name: 'Прийнято на баланс складу', state: 'Вивантажений' },
+      { name: 'Рейс закрито', state: 'Завершений' },
+      { name: 'Видано клієнтам', state: 'Вантаж видано отримувачам' }
+    ],
+    'Морський (Мультимодальне плече)': [
+      { name: 'Збір на складі відправки', state: 'Формування' },
+      { name: 'Бронювання місця в контейнері', state: 'Формування' },
+      { name: 'Контейнер сформовано', state: 'Завантажений' },
+      { name: 'Експортна декларація EX-1', state: 'На митниці на експорт' },
+      { name: 'У морі (плече CN ➔ EU)', state: 'В дорозі' },
+      { name: 'Судно в порту Гданськ', state: 'В дорозі' },
+      { name: 'Розмитнений', state: 'В дорозі' },
+      { name: 'Прямує на транзитний склад', state: 'В дорозі' },
+      { name: 'На розвантаженні', state: 'В дорозі' },
+      { name: 'Транзитне оформлення EU (T1)', state: 'На митниці на імпорт' },
+      { name: 'Вивантажено на складі', state: 'Вивантажений' },
+      { name: 'Плече завершено', state: 'Завершений' },
+      { name: 'Передано на наступне плече', state: 'Вантаж видано отримувачам' }
+    ],
+    'Авіа Експрес': [
+      { name: 'Комплектація авіапартії', state: 'Формування' },
+      { name: 'Передано в аеропорт (AWB)', state: 'Завантажений' },
+      { name: 'Авіаекспортне оформлення', state: 'На митниці на експорт' },
+      { name: 'Вилетів за розкладом', state: 'В дорозі' },
+      { name: 'Транзит у хабі (Варшава)', state: 'В дорозі' },
+      { name: 'Прибув у термінал', state: 'В дорозі' },
+      { name: 'Розмитнений', state: 'В дорозі' },
+      { name: 'На розвантаженні', state: 'В дорозі' },
+      { name: 'Імпортний митний контроль', state: 'На митниці на імпорт' },
+      { name: 'Вивантажено на складі', state: 'Вивантажений' },
+      { name: 'Авіарейс завершено', state: 'Завершений' },
+      { name: 'Видано отримувачам', state: 'Вантаж видано отримувачам' }
+    ],
+    'Автоперевезення TIR': [
+      { name: 'Формування автопартії', state: 'Формування' },
+      { name: 'Авто завантажено (CMR/TIR)', state: 'Завантажений' },
+      { name: 'Оформлення експорту', state: 'На митниці на експорт' },
+      { name: 'В дорозі до кордону', state: 'В дорозі' },
+      { name: 'На переході кордону', state: 'В дорозі' },
+      { name: 'Розмитнений', state: 'В дорозі' },
+      { name: 'Прямує на склад', state: 'В дорозі' },
+      { name: 'На розвантаженні', state: 'В дорозі' },
+      { name: 'Митне очищення імпорту', state: 'На митниці на імпорт' },
+      { name: 'Вивантажено на складі', state: 'Вивантажений' },
+      { name: 'Авторейс завершено', state: 'Завершений' },
+      { name: 'Видано отримувачам', state: 'Вантаж видано отримувачам' }
+    ],
+    'Автотранспорт (LTL)': [
+      { name: 'Формування LTL партії', state: 'Формування' },
+      { name: 'Авто завантажено', state: 'Завантажений' },
+      { name: 'Експортна митниця', state: 'На митниці на експорт' },
+      { name: 'У дорозі', state: 'В дорозі' },
+      { name: 'Розмитнений', state: 'В дорозі' },
+      { name: 'Прямує на склад', state: 'В дорозі' },
+      { name: 'На розвантаженні', state: 'В дорозі' },
+      { name: 'Імпортна митниця', state: 'На митниці на імпорт' },
+      { name: 'Вивантажено на складі', state: 'Вивантажений' },
+      { name: 'Рейс завершено', state: 'Завершений' },
+      { name: 'Видано отримувачам', state: 'Вантаж видано отримувачам' }
+    ],
+    'Залізничний (FCL/LCL)': [
+      { name: 'Формування ж/д партії', state: 'Формування' },
+      { name: 'Завантажено у вагон/контейнер', state: 'Завантажений' },
+      { name: 'Експортна митниця (ж/д)', state: 'На митниці на експорт' },
+      { name: 'Потяг в дорозі', state: 'В дорозі' },
+      { name: 'Перевантаження на кордоні', state: 'В дорозі' },
+      { name: 'Розмитнений', state: 'В дорозі' },
+      { name: 'На розвантаженні', state: 'В дорозі' },
+      { name: 'Імпортна митниця', state: 'На митниці на імпорт' },
+      { name: 'Вивантажено на складі', state: 'Вивантажений' },
+      { name: 'Ж/Д рейс завершено', state: 'Завершений' },
+      { name: 'Видано отримувачам', state: 'Вантаж видано отримувачам' }
+    ]
+  };
+  window.SUBVOYAGE_TEMPLATES_CATALOG = SUBVOYAGE_TEMPLATES_CATALOG;
+
+  function getTemplateCustomStatuses(templateName, systemState = null) {
+    const list = SUBVOYAGE_TEMPLATES_CATALOG[templateName] || SUBVOYAGE_TEMPLATES_CATALOG['Морський (LCL/FCL)'];
+    if (!systemState) return list;
+    const matched = list.filter(item => item.state === systemState);
+    return matched.length > 0 ? matched : list;
+  }
+
+  function getDefaultCustomStatus(templateName, systemState) {
+    const matched = getTemplateCustomStatuses(templateName, systemState);
+    return matched[0]?.name || systemState || 'Формування';
+  }
+
+  function renderCustomStatusBadge(customStatus) {
+    if (!customStatus) return '';
+    return `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold border bg-indigo-50 text-indigo-800 border-indigo-200 inline-flex items-center gap-1" title="Кастомний статус підрейсу (з шаблону)"><i class="fa-solid fa-tag text-[8px] text-indigo-500"></i>${customStatus}</span>`;
+  }
+
+  // Ручне редагування кастомного статусу підрейсу БЕЗ зміни системного стану (напр. «Розмитнений» -> «На розвантаженні» при стані «В дорозі»)
+  window.updateSubvoyageCustomStatus = function (svId, newCustomStatus, event = null) {
+    if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
+    const sv = subVoyagesData.find(s => s.id === svId);
+    if (!sv || !newCustomStatus) return;
+    sv.customStatus = newCustomStatus;
+    const badgeEl = document.getElementById('sv-drawer-custom-status-badge');
+    const drawerTitle = document.getElementById('sv-drawer-title');
+    if (badgeEl && drawerTitle && drawerTitle.textContent.includes(`(${sv.id})`)) {
+      badgeEl.innerHTML = renderCustomStatusBadge(sv.customStatus);
+    }
+    const drawerSelect = document.getElementById('sv-drawer-custom-status-select');
+    if (drawerSelect && drawerTitle && drawerTitle.textContent.includes(`(${sv.id})`)) {
+      drawerSelect.value = sv.customStatus;
+    }
+    renderSubvoyagesTimeline();
+    showToast(`Кастомний статус підрейсу ${sv.id} змінено на «${newCustomStatus}» (системний стан «${sv.status}» без змін)`);
+  };
+
+  window.syncCreateSvCustomStatuses = function () {
+    const tpl = document.getElementById('new-sv-template')?.value || 'Морський (Мультимодальне плече)';
+    const sel = document.getElementById('new-sv-custom-status');
+    if (!sel) return;
+    const options = getTemplateCustomStatuses(tpl);
+    const prevVal = sel.value;
+    sel.innerHTML = options.map(o => `<option value="${o.name}" data-state="${o.state}">${o.name}</option>`).join('');
+    if (options.some(o => o.name === prevVal)) {
+      sel.value = prevVal;
+    } else if (options.length > 0) {
+      sel.value = options[0].name;
+    }
+  };
+
   // Пагінація таблиці перевезень
   let shipmentsCurrentPage = 1;
   let shipmentsItemsPerPage = Number(shipmentsItemsPerPageSelect?.value) || 20;
@@ -443,14 +588,32 @@ function initSubvoyagesPlannerModule() {
     if (status === 'Завантажений' || status === 'Спаковано' || status === 'packed') return 2;
     // 3. В дорозі / митниці / вивантажений (in_transit, at_export_customs, at_import_customs, despatched)
     if (status === 'В дорозі' || status === 'На митниці на експорт' || status === 'На митниці на імпорт' || status === 'Вивантажений' ||
-        status === 'На митниці відправки' || status === 'На митниці призначення' || status === 'Відправлено' ||
-        status === 'in_transit' || status === 'at_export_customs' || status === 'at_import_customs' || status === 'despatched') return 3;
+      status === 'На митниці відправки' || status === 'На митниці призначення' || status === 'Відправлено' ||
+      status === 'in_transit' || status === 'at_export_customs' || status === 'at_import_customs' || status === 'despatched') return 3;
     // 4. Завершений / прибув на склад / вантаж видано отримувачам (completed, cargo_released_to_recipient)
     return 4;
   }
 
   function getSortedSubvoyages() {
     return [...subVoyagesData].sort((a, b) => {
+      if (subvoyageSortMode === 'plannedArrival_asc') {
+        const arrA = a.plannedArrival || '9999-12-31';
+        const arrB = b.plannedArrival || '9999-12-31';
+        if (arrA !== arrB) return arrA.localeCompare(arrB);
+        return (a.plannedDeparture || '9999-12-31').localeCompare(b.plannedDeparture || '9999-12-31');
+      }
+      if (subvoyageSortMode === 'plannedArrival_desc') {
+        const arrA = a.plannedArrival || '0000-01-01';
+        const arrB = b.plannedArrival || '0000-01-01';
+        if (arrA !== arrB) return arrB.localeCompare(arrA);
+        return (a.plannedDeparture || '9999-12-31').localeCompare(b.plannedDeparture || '9999-12-31');
+      }
+      if (subvoyageSortMode === 'plannedDeparture_asc') {
+        const depA = a.plannedDeparture || '9999-12-31';
+        const depB = b.plannedDeparture || '9999-12-31';
+        if (depA !== depB) return depA.localeCompare(depB);
+        return (a.plannedArrival || '9999-12-31').localeCompare(b.plannedArrival || '9999-12-31');
+      }
       const pA = getSubvoyageStatusPriority(a.status);
       const pB = getSubvoyageStatusPriority(b.status);
       if (pA !== pB) return pA - pB;
@@ -465,6 +628,9 @@ function initSubvoyagesPlannerModule() {
     subVoyagesData.forEach(sv => {
       if (sv.status === 'Відкритий') sv.status = 'В дорозі';
       if (sv.status === 'Заплановано' || sv.status === 'Формується') sv.status = 'Формування';
+      if (!sv.customStatus) {
+        sv.customStatus = getDefaultCustomStatus(sv.template, sv.status);
+      }
       if (!sv.receivingWarehouse) {
         if (sv.destinationCountry === 'Польща') sv.receivingWarehouse = 'Склад Варшава';
         else if (sv.destinationCountry === 'Україна') {
@@ -486,7 +652,9 @@ function initSubvoyagesPlannerModule() {
       if (tr.subvoyageId) {
         const sv = subVoyagesData.find(s => s.id === tr.subvoyageId);
         if (sv) {
-          if (tr.readinessCategory === 'ready' || !tr.readinessCategory) {
+          if (sv.status === 'Вивантажений' || (tr.acceptance && tr.acceptance.subvoyageId === sv.id)) {
+            tr.status = 'Отримано на складі';
+          } else if (tr.readinessCategory === 'ready' || !tr.readinessCategory) {
             tr.status = sv.status;
           } else if (tr.readinessCategory === 'not_ready') {
             tr.status = resolveNotReadyStatus(tr);
@@ -1431,9 +1599,9 @@ function initSubvoyagesPlannerModule() {
       }
     }
 
-    // Блок 3.2: Якщо користувач у випадаючому списку обирає «Прибув на склад отримання» для підрейсу, що їде («В дорозі»),
-    // відкриваємо обов'язкове модальне вікно звіту приймання («Захист від дурня») — без звіту вантаж не переходить на баланс складу!
-    if (newStatus === 'Прибув на склад отримання' && sv.status === 'В дорозі') {
+    // Блок 3.2: Якщо користувач обирає «Вивантажений» / «Прибув на склад отримання» для підрейсу, що їде («В дорозі»),
+    // відкриваємо обов'язкове модальне вікно звіту приймання — без звіту вантаж не переходить на баланс складу!
+    if ((newStatus === 'Вивантажений' || newStatus === 'Прибув на склад отримання') && sv.status === 'В дорозі') {
       if (selectElement) selectElement.value = sv.status;
       if (currentSubvoyageStatusSelect && activeSubvoyageId === sv.id) {
         currentSubvoyageStatusSelect.value = sv.status;
@@ -1445,31 +1613,60 @@ function initSubvoyagesPlannerModule() {
     }
 
     sv.status = newStatus;
+    sv.customStatus = getDefaultCustomStatus(sv.template, newStatus);
     selectedSubvoyageStatuses.add(newStatus);
     let updatedCount = 0;
     transportsData.forEach(tr => {
       if (tr.subvoyageId === sv.id) {
-        tr.status = newStatus;
+        tr.status = newStatus === 'Вивантажений' ? 'Отримано на складі' : newStatus;
         updatedCount++;
       }
     });
 
     syncSubvoyageAndShipmentsStatuses();
-    showToast(`Статус підрейсу ${sv.id} та ${updatedCount} перевезень змінено на «${newStatus}»`);
+    showToast(`Стан підрейсу ${sv.id} та ${updatedCount} перевезень змінено на «${newStatus}»`);
     renderAll();
   };
 
-  // Блок 3.2: Приймання підрейсу зі статусом «В дорозі» на баланс складу після заповнення звіту приймання
+  // Блок 3.2 / 8: Приймання підрейсу зі стану «В дорозі» на баланс складу після підтвердження форми приймання
+  // 1) Системний стан підрейсу -> «Вивантажений» (зникає зі списку активних рейсів «В дорозі»)
+  // 2) У картку підрейсу записується фактична дата/час отримання (поточна дата/час кліку)
+  // 3) Усі перевезення переходять у статус «Отримано на складі»
+  // 4) При недостачі місць або стані вантажу «Поганий» / «Критичний» — сповіщення та задача відповідальному менеджеру
   window.acceptSubvoyageToWarehouse = function (svId, reportData = {}) {
     const sv = subVoyagesData.find(s => s.id === svId);
     if (!sv) return;
 
-    const receiveDate = reportData.receiveDate || new Date().toISOString().slice(0, 16).replace('T', ' ');
-    sv.status = 'Прибув на склад отримання';
-    sv.actualArrival = receiveDate.split(' ')[0];
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const fallbackNow = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    const receiveDate = reportData.receiveDate || fallbackNow;
+
+    // 1. Зміна системного стану підрейсу на «Вивантажений» (не додаємо примусово у фільтр, щоб зник зі списку «В дорозі»)
+    sv.status = 'Вивантажений';
+    sv.customStatus = getDefaultCustomStatus(sv.template, 'Вивантажений') || 'Вивантажено на складі';
+    // 2. Фіксація фактичної дати/часу отримання
+    sv.actualArrival = receiveDate;
     sv.receivedAt = receiveDate;
     sv.acceptanceReport = reportData;
-    selectedSubvoyageStatuses.add('Прибув на склад отримання');
+
+    // Оновлюємо список чекбоксів станів у фільтрі (щоб «Вивантажений» був доступний для перегляду), але зберігаємо поточний вибір фільтра
+    const statusContainer = document.getElementById('sv-status-checkboxes-container');
+    if (statusContainer && !statusContainer.querySelector('input[value="Вивантажений"]')) {
+      const lbl = document.createElement('label');
+      lbl.className = 'flex items-center gap-2 text-xs text-slate-700 hover:bg-slate-50 p-1 rounded cursor-pointer select-none';
+      lbl.innerHTML = `<input type="checkbox" value="Вивантажений" ${selectedSubvoyageStatuses.has('Вивантажений') ? 'checked' : ''} class="sv-status-cb rounded text-brand-600 focus:ring-brand-500 cursor-pointer"><span class="truncate">Вивантажений</span>`;
+      const cb = lbl.querySelector('input');
+      cb.addEventListener('change', () => {
+        if (cb.checked) selectedSubvoyageStatuses.add(cb.value);
+        else selectedSubvoyageStatuses.delete(cb.value);
+        const total = statusContainer.querySelectorAll('.sv-status-cb').length;
+        updateSubvoyageStatusFilterLabel(total);
+        updateActiveSubvoyageState();
+        renderAll();
+      });
+      statusContainer.appendChild(lbl);
+    }
 
     const reportByShipment = new Map();
     (reportData.shipmentsReport || []).forEach(r => {
@@ -1477,13 +1674,17 @@ function initSubvoyagesPlannerModule() {
       reportByShipment.set(r.id, r);
     });
     let acceptedCount = 0;
-    let shortageCount = 0;
+    let notifiedCount = 0;
 
+    // 3. Оновлення перевезень + 4. Сповіщення/задачі менеджерам при недостачі або пошкодженні («Поганий» / «Критичний»)
     transportsData.forEach(tr => {
       if (tr.subvoyageId === sv.id) {
         const rep = reportByShipment.get(tr.id) || reportByShipment.get(tr.dfShipment) || {};
-        // Недостача або пошкодження НЕ зупиняють роботу з вантажем — перевезення стає на баланс складу
-        tr.status = 'Прибув на склад отримання';
+        const isDamaged = rep.damageLevel === 'yellow' || rep.damageLevel === 'red';
+        const hasIssue = !!rep.shortage || isDamaged;
+
+        // Перевезення переходить у статус отриманих на складі
+        tr.status = 'Отримано на складі';
         tr.readinessCategory = 'ready';
         tr.acceptedToday = true;
         if (rep.manager && !tr.manager) tr.manager = rep.manager;
@@ -1491,22 +1692,29 @@ function initSubvoyagesPlannerModule() {
           subvoyageId: sv.id,
           receiveDate,
           damageLevel: rep.damageLevel || null,
+          damageComment: rep.damageComment || '',
+          damagePhotos: Array.isArray(rep.damagePhotos) ? rep.damagePhotos : [],
           shortage: !!rep.shortage,
           shortagePlaces: rep.shortagePlaces || 0,
           expectedPlaces: rep.expectedPlaces ?? tr.places,
           receivedPlaces: (rep.expectedPlaces ?? tr.places ?? 0) - (rep.shortagePlaces || 0),
+          managerNotified: hasIssue,
           notes: reportData.notes || ''
         };
-        if (rep.shortage) {
-          shortageCount++;
+        if (hasIssue) {
+          notifiedCount++;
+          const dmgLabel = ACCEPTANCE_DAMAGE_UI[rep.damageLevel]?.short || rep.damageLevel || '';
+          const parts = [];
+          if (rep.shortage) parts.push(`Недостача ${rep.shortagePlaces} з ${tr.acceptance.expectedPlaces} місць`);
+          if (isDamaged) parts.push(`Стан вантажу «${dmgLabel}»`);
           if (!Array.isArray(tr.tasks)) tr.tasks = [];
           tr.tasks.unshift({
-            id: `TSK-SH-${sv.id}-${tr.id}`,
-            title: `Недостача ${rep.shortagePlaces} з ${tr.acceptance.expectedPlaces} місць при отриманні ${sv.id} — запустити компенсацію`,
+            id: `TSK-ACC-${sv.id}-${tr.id}`,
+            title: `${parts.join(' • ')} при отриманні ${sv.id} — попередити клієнта`,
             assignee: rep.manager || tr.manager || 'Відповідальний менеджер',
             dueDate: receiveDate.split(' ')[0],
             status: 'open',
-            type: 'shortage'
+            type: rep.shortage ? 'shortage' : 'damage'
           });
         }
         acceptedCount++;
@@ -1517,16 +1725,16 @@ function initSubvoyagesPlannerModule() {
     renderAll();
 
     if (typeof showToast === 'function') {
-      const ntf = shortageCount > 0 ? ` Недостача у ${shortageCount} перевез. — менеджерам надіслано сповіщення.` : '';
-      showToast(`Підрейс ${sv.id} прийнято на склад (${acceptedCount} перевезень на балансі).${ntf}`, shortageCount > 0);
+      const ntf = notifiedCount > 0 ? ` Менеджерам надіслано сповіщення (${notifiedCount} перевез.).` : '';
+      showToast(`Підрейс ${sv.id} переведено у стан «Вивантажений» (${acceptedCount} перевезень — «Отримано на складі»).${ntf}`, notifiedCount > 0);
     }
   };
 
-  // Бейджі результату отримання на складі: ступінь пошкодження коробок + недостача (видно логістам і менеджерам)
+  // Бейджі результату отримання на складі: 3-рівневий стан вантажу («Гарний» / «Поганий» / «Критичний») + недостача
   const ACCEPTANCE_DAMAGE_UI = {
-    green: { label: 'Коробки: зелений', cls: 'bg-emerald-50 text-emerald-800 border-emerald-300', dot: 'bg-emerald-500', desc: 'Коробки максимально мають вигляд, як при відправці з Китаю' },
-    yellow: { label: 'Коробки: жовтий', cls: 'bg-amber-50 text-amber-900 border-amber-300', dot: 'bg-amber-400', desc: 'Коробки мають пошкодження, їх реально підремонтувати' },
-    red: { label: 'Коробки: червоний', cls: 'bg-rose-50 text-rose-800 border-rose-300', dot: 'bg-rose-500', desc: 'Коробки критично пошкоджені, мокрі, потребують повну заміну пакування' }
+    green: { label: 'Стан: Гарний', short: 'Гарний', cls: 'bg-emerald-50 text-emerald-800 border-emerald-300', dot: 'bg-emerald-500', desc: 'Вантаж у гарному стані, без видимих пошкоджень' },
+    yellow: { label: 'Стан: Поганий', short: 'Поганий', cls: 'bg-amber-50 text-amber-900 border-amber-300', dot: 'bg-amber-400', desc: 'Вантаж або пакування мають пошкодження (стан «Поганий»)' },
+    red: { label: 'Стан: Критичний', short: 'Критичний', cls: 'bg-rose-50 text-rose-800 border-rose-300', dot: 'bg-rose-500', desc: 'Критичні пошкодження вантажу або пакування' }
   };
   function renderBlockingDepartureBadge(tr) {
     if (!tr || !tr.readinessCategory || tr.readinessCategory === 'ready') return '';
@@ -1544,9 +1752,12 @@ function initSubvoyagesPlannerModule() {
     const acc = tr && tr.acceptance;
     if (!acc) return '';
     const dmg = ACCEPTANCE_DAMAGE_UI[acc.damageLevel];
+    const photosCount = Array.isArray(acc.damagePhotos) ? acc.damagePhotos.length : 0;
+    const commentTip = acc.damageComment ? ` | Коментар: ${acc.damageComment}` : '';
+    const photosTip = photosCount > 0 ? ` | Фото: ${photosCount} шт.` : '';
     const dmgHtml = dmg ? `
-      <span class="px-1.5 py-0.2 rounded border ${dmg.cls} text-[9px] font-bold inline-flex items-center gap-1 whitespace-nowrap" title="${dmg.label} — ${dmg.desc} (отримано ${acc.receiveDate || ''})">
-        <span class="w-1.5 h-1.5 rounded-full ${dmg.dot}"></span>${dmg.label.replace('Коробки: ', '')}
+      <span class="px-1.5 py-0.2 rounded border ${dmg.cls} text-[9px] font-bold inline-flex items-center gap-1 whitespace-nowrap" title="${dmg.label} — ${dmg.desc}${commentTip}${photosTip} (отримано ${acc.receiveDate || ''})">
+        <span class="w-1.5 h-1.5 rounded-full ${dmg.dot}"></span>${dmg.short || dmg.label.replace('Стан: ', '')}${photosCount > 0 ? `<i class="fa-solid fa-camera text-[8px] opacity-80 ml-0.5"></i>` : ''}${acc.damageComment ? `<i class="fa-regular fa-comment-dots text-[8px] opacity-80 ml-0.5"></i>` : ''}
       </span>` : '';
     const shortHtml = acc.shortage ? `
       <span class="px-1.5 py-0.2 rounded border bg-rose-100 text-rose-800 border-rose-300 text-[9px] font-bold inline-flex items-center gap-1 whitespace-nowrap" title="Недостача при отриманні ${acc.subvoyageId || ''}: не вистачає ${acc.shortagePlaces} з ${acc.expectedPlaces} місць. Менеджеру надіслано сповіщення.">
@@ -1572,6 +1783,7 @@ function initSubvoyagesPlannerModule() {
       return;
     }
     const dmg = ACCEPTANCE_DAMAGE_UI[acc.damageLevel];
+    const dmgPhotos = Array.isArray(acc.damagePhotos) ? acc.damagePhotos : [];
     block.className = `p-3 rounded-xl border space-y-1.5 ${acc.shortage || acc.damageLevel === 'red' ? 'bg-rose-50/60 border-rose-200' : acc.damageLevel === 'yellow' ? 'bg-amber-50/60 border-amber-200' : 'bg-emerald-50/50 border-emerald-200'}`;
     block.innerHTML = `
       <div class="flex items-center justify-between gap-2 flex-wrap">
@@ -1579,11 +1791,27 @@ function initSubvoyagesPlannerModule() {
         <span class="text-[10px] font-mono text-slate-500">${acc.receiveDate || ''}</span>
       </div>
       ${dmg ? `<div class="text-[11px] flex items-start gap-1.5"><span class="mt-1 w-2 h-2 rounded-full ${dmg.dot} shrink-0"></span><span><strong>${dmg.label}</strong> — ${dmg.desc}</span></div>` : ''}
+      ${acc.damageComment ? `<div class="text-[11px] text-slate-700 bg-white/80 border border-slate-200/80 rounded-lg px-2.5 py-1.5"><i class="fa-regular fa-comment-dots text-indigo-500 mr-1"></i><strong>Коментар щодо пошкоджень:</strong> ${acc.damageComment}</div>` : ''}
+      ${dmgPhotos.length > 0 ? `
+        <div class="space-y-1">
+          <div class="text-[10px] font-semibold text-slate-600"><i class="fa-solid fa-camera text-indigo-500 mr-1"></i>Фото пошкоджень вантажу (${dmgPhotos.length}):</div>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            ${dmgPhotos.map(p => `
+              <div class="w-12 h-12 rounded-lg overflow-hidden border border-slate-200 bg-white shrink-0" title="${p.name || 'Фото'} (${p.size || ''})">
+                ${p.url
+        ? `<img src="${p.url}" alt="${p.name || 'Фото'}" class="w-full h-full object-cover">`
+        : `<div class="w-full h-full flex items-center justify-center text-slate-400"><i class="fa-regular fa-image text-sm"></i></div>`}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
       <div class="text-[11px] ${acc.shortage ? 'text-rose-800 font-bold' : 'text-slate-600'}">
         ${acc.shortage
-          ? `<i class="fa-solid fa-box-open mr-1"></i>Недостача: не вистачає ${acc.shortagePlaces} з ${acc.expectedPlaces} місць (отримано ${acc.receivedPlaces}). Менеджеру ${tr.manager ? `<strong>${tr.manager}</strong> ` : ''}надіслано сповіщення.`
-          : `<i class="fa-solid fa-check mr-1 text-emerald-600"></i>Недостачі не виявлено (${acc.expectedPlaces} місць)`}
+        ? `<i class="fa-solid fa-box-open mr-1"></i>Недостача: не вистачає ${acc.shortagePlaces} з ${acc.expectedPlaces} місць (отримано ${acc.receivedPlaces}). Менеджеру ${tr.manager ? `<strong>${tr.manager}</strong> ` : ''}надіслано сповіщення.`
+        : `<i class="fa-solid fa-check mr-1 text-emerald-600"></i>Недостачі не виявлено (${acc.expectedPlaces} місць)`}
       </div>
+      ${(!acc.shortage && (acc.damageLevel === 'yellow' || acc.damageLevel === 'red')) ? `<div class="text-[11px] text-amber-900 font-semibold"><i class="fa-solid fa-bell mr-1 text-amber-600"></i>Менеджеру ${tr.manager ? `<strong>${tr.manager}</strong> ` : ''}надіслано сповіщення про стан вантажу «${dmg?.short || acc.damageLevel}».</div>` : ''}
       ${acc.notes ? `<div class="text-[10px] text-slate-500 italic">Примітка логіста: ${acc.notes}</div>` : ''}
     `;
   }
@@ -1790,6 +2018,9 @@ function initSubvoyagesPlannerModule() {
 
     const destCountry = document.getElementById('new-sv-dest-country')?.value || 'Польща';
     populateReceivingWarehousesSelect(null, destCountry);
+    if (typeof window.syncCreateSvCustomStatuses === 'function') {
+      window.syncCreateSvCustomStatuses();
+    }
   };
 
   window.closeCreateSubvoyageModal = function () {
@@ -1843,7 +2074,10 @@ function initSubvoyagesPlannerModule() {
   window.submitCreateSubvoyageModal = function () {
     const parentVoyage = document.getElementById('new-sv-parent-voyage')?.value || 'VOY-2026-09';
     const template = document.getElementById('new-sv-template')?.value || 'Морський (Мультимодальне плече)';
-    const status = document.getElementById('new-sv-status')?.value || 'Формування';
+    const statusSelect = document.getElementById('new-sv-custom-status');
+    const selectedOpt = statusSelect?.options?.[statusSelect.selectedIndex];
+    const customStatus = statusSelect?.value || getDefaultCustomStatus(template, 'Формування');
+    const status = selectedOpt?.dataset?.state || 'Формування';
     const name = document.getElementById('new-sv-name')?.value.trim();
     const logist = document.getElementById('new-sv-logist')?.value || 'І. Сидоренко';
     const originCountry = document.getElementById('new-sv-origin-country')?.value || 'Китай';
@@ -1924,6 +2158,7 @@ function initSubvoyagesPlannerModule() {
         ports: `${originPort} ➔ ${destPort}`
       },
       template: template,
+      customStatus: customStatus,
       isMain: isMain,
       isTransit: isTransit,
       loadingPlace: loadingPlace,
@@ -2092,9 +2327,9 @@ function initSubvoyagesPlannerModule() {
     const allStatuses = Array.from(new Set(subVoyagesData.map(s => s.status))).filter(Boolean);
     const allLogists = Array.from(new Set(subVoyagesData.map(s => s.logist))).filter(Boolean);
 
-    // По дефолту на Дошці Підрейсів відображаємо тільки підрейси зі статусом "Формування" (вимога п.4)
-    const defaultFormationStatuses = allStatuses.filter(st => st === 'Формування');
-    selectedSubvoyageStatuses = new Set(defaultFormationStatuses.length > 0 ? defaultFormationStatuses : allStatuses);
+    // По дефолту на Дошці Підрейсів відображаємо підрейси зі статусом «Формування» та «В дорозі» (у межах 14 днів до планового прибуття)
+    const defaultBoardStatuses = allStatuses.filter(st => st === 'Формування' || st === 'В дорозі');
+    selectedSubvoyageStatuses = new Set(defaultBoardStatuses.length > 0 ? defaultBoardStatuses : allStatuses);
     selectedSubvoyageLogists = new Set(allLogists);
 
     // 1. Статуси
@@ -2221,6 +2456,16 @@ function initSubvoyagesPlannerModule() {
       if (statusMenu) statusMenu.classList.add('hidden');
       if (logistMenu) logistMenu.classList.add('hidden');
     });
+
+    // 3. Сортування підрейсів (за плановою датою прибуття тощо)
+    const svSortSelect = document.getElementById('sv-sort-select');
+    if (svSortSelect) {
+      svSortSelect.value = subvoyageSortMode;
+      svSortSelect.addEventListener('change', (e) => {
+        subvoyageSortMode = e.target.value || 'plannedArrival_asc';
+        renderSubvoyagesTimeline();
+      });
+    }
   }
 
   function updateSubvoyageStatusFilterLabel(totalCount) {
@@ -2290,6 +2535,17 @@ function initSubvoyagesPlannerModule() {
     }
   }
 
+  function isInTransitWithin14DaysPlan(sv) {
+    if (!sv || sv.status !== 'В дорозі') return true;
+    const planDate = (sv.plannedArrival || '').slice(0, 10);
+    if (!planDate) return true;
+    const limit = new Date();
+    limit.setDate(limit.getDate() + 14);
+    const limitStr = limit.toISOString().split('T')[0];
+    // Рахується виключно від планової дати прибуття (незалежно від фактичної дати)
+    return planDate <= limitStr;
+  }
+
   function getFilteredSubvoyagesList() {
     return getSortedSubvoyages().filter(sv => {
       if (selectedDestinationHub !== 'all' && sv.hub !== selectedDestinationHub && sv.receivingWarehouse !== selectedDestinationHub) return false;
@@ -2298,6 +2554,9 @@ function initSubvoyagesPlannerModule() {
         if (u.level !== selectedSubvoyageUrgency) return false;
       }
       if (selectedSubvoyageStatuses.size > 0 && !selectedSubvoyageStatuses.has(sv.status)) {
+        return false;
+      }
+      if (sv.status === 'В дорозі' && !isInTransitWithin14DaysPlan(sv)) {
         return false;
       }
       if (selectedSubvoyageLogists.size > 0 && !selectedSubvoyageLogists.has(sv.logist)) {
@@ -2938,7 +3197,7 @@ function initSubvoyagesPlannerModule() {
           : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/80'
         }">
           
-          <!-- Рядок 1: Назва, ID, Статус + Кількість перевезень (кнопка розгортання акордеона) та Інфо -->
+          <!-- Рядок 1: Назва, ID, Системний стан + Кількість перевезень та Інфо -->
           <div class="flex justify-between items-start gap-2">
             <div class="flex items-center gap-1.5 flex-wrap min-w-0">
               <span class="font-bold text-xs text-slate-900 truncate">${sv.name}</span>
@@ -2999,10 +3258,13 @@ function initSubvoyagesPlannerModule() {
               ${Array.isArray(sv.keyMarkers) && sv.keyMarkers.length > 0 ? sv.keyMarkers.map(k => `<span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200 font-bold text-[10px]">${SUBVOYAGE_KEY_MARKER_LABELS[k] || k}</span>`).join('') : ''}
               ${specialAttributesHtml}
             </div>
-            <span class="bg-brand-50 text-brand-900 border border-brand-200 px-2 py-0.5 rounded font-mono font-bold text-[10px] inline-flex items-center gap-1">
-              <i class="fa-regular fa-calendar-check text-brand-600"></i>
-              <span>Відпр: ${sv.plannedDeparture || '—'}</span>
-            </span>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="bg-brand-50 text-brand-900 border border-brand-200 px-2 py-0.5 rounded font-mono font-bold text-[10px] inline-flex items-center gap-1" title="Планова дата відправлення (ETD)">
+                <i class="fa-regular fa-calendar-check text-brand-600"></i>
+                <span>Відпр: ${sv.plannedDeparture || '—'}</span>
+              </span>
+              ${sv.receivedAt ? `<span class="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded font-mono font-bold text-[10px] inline-flex items-center gap-1" title="Фактична дата отримання на складі"><i class="fa-solid fa-check-double text-emerald-600"></i><span>Отримано: ${sv.receivedAt}</span></span>` : ''}
+            </div>
           </div>
 
           <!-- Рядок 3: Поділ на Фактичні куби та Планові куби + комбінований прогрес-бар (Блок 4.3) -->
@@ -5563,9 +5825,27 @@ function initSubvoyagesPlannerModule() {
 
     setElText('sv-drawer-title', `${sv.name} (${sv.id})`);
     setElHtml('sv-drawer-status-badge', renderStatusBadge(sv.status));
+    const currentCustomStatus = sv.customStatus || getDefaultCustomStatus(sv.template, sv.status);
+    setElHtml('sv-drawer-custom-status-badge', renderCustomStatusBadge(currentCustomStatus));
     setElHtml('sv-drawer-tasks-badge', renderSubvoyageTasksBadge(sv));
     setElHtml('sv-drawer-urgency-badge', renderUrgencyBadge(svUrgency));
     setElText('sv-drawer-subtitle', `Зовнішній рейс: ${sv.parentVoyage || '—'} | Шаблон: ${sv.template || 'Стандартний'}`);
+
+    // Блок «Інформація» в підрейсі: кастомний статус (редагований, з шаблону) та планова дата прибуття
+    setElText('sv-drawer-template-pill', `Шаблон: ${sv.template || 'Стандартний'}`);
+    setElText('sv-drawer-info-plan-arr', sv.plannedArrival || '—');
+    const customStatusSelectEl = document.getElementById('sv-drawer-custom-status-select');
+    if (customStatusSelectEl) {
+      const customOpts = getTemplateCustomStatuses(sv.template, sv.status);
+      const hasCurrent = customOpts.some(o => o.name === currentCustomStatus);
+      customStatusSelectEl.innerHTML = [
+        ...(!hasCurrent && currentCustomStatus ? [`<option value="${currentCustomStatus}" selected>${currentCustomStatus}</option>`] : []),
+        ...customOpts.map(o => `<option value="${o.name}" ${o.name === currentCustomStatus ? 'selected' : ''}>${o.name}</option>`)
+      ].join('');
+      customStatusSelectEl.onchange = (e) => {
+        window.updateSubvoyageCustomStatus(sv.id, e.target.value);
+      };
+    }
 
     setElText('sv-drawer-logist', sv.logist || '—');
     setElHtml('sv-drawer-transport', renderTransportBadge(sv.transport, 'bg-slate-100 border border-slate-200 px-2 py-0.5 rounded text-xs font-bold'));
@@ -5587,39 +5867,62 @@ function initSubvoyagesPlannerModule() {
     setElText('sv-drawer-plan-dep', sv.plannedDeparture || '—');
     setElText('sv-drawer-plan-arr', sv.plannedArrival || '—');
     setElText('sv-drawer-act-dep', sv.actualDeparture || 'Ще не відправлено');
-    setElText('sv-drawer-act-arr', sv.actualArrival || 'В очікуванні');
+    setElText('sv-drawer-act-arr', sv.receivedAt || sv.actualArrival || 'В очікуванні');
 
-    // Специфіка транспорту (Морський / Авіа / Авто / Залізниця)
+    // Специфіка транспорту (Морський / Авіа / Авто / Залізниця) — 3 рівноправні картки
+    const renderSpecCard = (iconCls, label, value, subValue = '') => `
+      <div class="bg-white p-2.5 rounded-lg border border-slate-200 flex flex-col justify-between gap-0.5">
+        <span class="text-[9px] uppercase font-bold text-slate-400 flex items-center gap-1">
+          <i class="${iconCls} text-brand-600"></i>${label}
+        </span>
+        <strong class="text-slate-900 text-xs font-bold break-words">${value || '—'}</strong>
+        ${subValue ? `<span class="text-[10px] font-mono text-slate-500">${subValue}</span>` : ''}
+      </div>
+    `;
+
     let specificsHtml = '';
     if (sv.transport === 'Морський' && sv.transportDetails) {
-      specificsHtml = `
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <div><span class="text-[10px] text-slate-400 block">Судноплавна лінія:</span><strong class="text-slate-900">${sv.transportDetails.shippingLine || '—'}</strong></div>
-          <div><span class="text-[10px] text-slate-400 block">Номер букінгу:</span><strong class="text-slate-900">${sv.transportDetails.bookingNumber || '—'}</strong></div>
-          <div><span class="text-[10px] text-slate-400 block">Порти (POL ➔ POD):</span><strong class="text-slate-900">${sv.transportDetails.ports || '—'}</strong></div>
-        </div>
-      `;
+      specificsHtml = [
+        renderSpecCard('fa-solid fa-ship', 'Судноплавна лінія', sv.transportDetails.shippingLine),
+        renderSpecCard('fa-solid fa-file-invoice', 'Букінг / Контейнер', sv.transportDetails.bookingNumber, sv.transportDetails.containerNumber ? `Конт: ${sv.transportDetails.containerNumber}` : ''),
+        renderSpecCard('fa-solid fa-anchor', 'Порти (POL ➔ POD)', sv.transportDetails.ports)
+      ].join('');
     } else if (sv.transport === 'Авіа' && sv.transportDetails) {
-      specificsHtml = `
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <div><span class="text-[10px] text-slate-400 block">Авіалінія:</span><strong class="text-slate-900">${sv.transportDetails.airline || '—'}</strong></div>
-          <div><span class="text-[10px] text-slate-400 block">Номер AWB:</span><strong class="text-slate-900">${sv.transportDetails.awbNumber || '—'}</strong></div>
-          <div><span class="text-[10px] text-slate-400 block">Аеропорти:</span><strong class="text-slate-900">${sv.transportDetails.airports || '—'}</strong></div>
-        </div>
-      `;
+      specificsHtml = [
+        renderSpecCard('fa-solid fa-plane', 'Авіалінія', sv.transportDetails.airline),
+        renderSpecCard('fa-solid fa-barcode', 'Номер AWB', sv.transportDetails.awbNumber),
+        renderSpecCard('fa-solid fa-plane-arrival', 'Аеропорти', sv.transportDetails.airports)
+      ].join('');
     } else if (sv.transportDetails) {
-      specificsHtml = `
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <div><span class="text-[10px] text-slate-400 block">Перехід кордону:</span><strong class="text-slate-900">${sv.transportDetails.borderCrossing || '—'}</strong></div>
-          <div><span class="text-[10px] text-slate-400 block">Митний термінал:</span><strong class="text-slate-900">${sv.transportDetails.customsClearancePlaces || 'Київ / Львів'}</strong></div>
-          <div><span class="text-[10px] text-slate-400 block">ТЗ / Потяг:</span><strong class="text-slate-900">${sv.transportDetails.vehicleDetails || sv.transportDetails.trainNumber || '—'}</strong></div>
-        </div>
-      `;
+      specificsHtml = [
+        renderSpecCard('fa-solid fa-road', 'Перехід кордону', sv.transportDetails.borderCrossing),
+        renderSpecCard('fa-solid fa-building-shield', 'Митний термінал', sv.transportDetails.customsClearancePlaces || 'Не вказано'),
+        renderSpecCard('fa-solid fa-truck', 'ТЗ / Потяг', sv.transportDetails.vehicleDetails || sv.transportDetails.trainNumber)
+      ].join('');
     } else {
-      specificsHtml = '<span class="text-slate-400">Додаткові транспортні реквізити не вказані</span>';
+      specificsHtml = '<div class="sm:col-span-3 text-slate-400 text-xs italic bg-white p-2.5 rounded-lg border border-slate-200">Додаткові транспортні реквізити не вказані</div>';
     }
     setElHtml('sv-drawer-transport-specifics', specificsHtml);
-    setElHtml('sv-drawer-special-badges', renderSubvoyageSpecialAttributesBadges(sv.id));
+
+    // Допуски підрейсу + агреговані маркери перевезень
+    const toleranceBadges = [];
+    toleranceBadges.push(sv.adrPermitted
+      ? '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1"><i class="fa-solid fa-shield-halved text-emerald-600"></i>ADR дозволено</span>'
+      : '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200 inline-flex items-center gap-1"><i class="fa-solid fa-ban text-slate-400"></i>Без ADR</span>'
+    );
+    if (sv.temperatureSupported) {
+      toleranceBadges.push(`<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-cyan-50 text-cyan-800 border border-cyan-200 inline-flex items-center gap-1"><i class="fa-solid fa-snowflake text-cyan-600"></i>Темп. режим${sv.tempRange ? `: ${sv.tempRange}` : ''}</span>`);
+    }
+    if (sv.cargoMode && sv.cargoMode !== 'all') {
+      toleranceBadges.push(`<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200 inline-flex items-center gap-1"><i class="fa-solid fa-file-shield text-indigo-600"></i>${sv.cargoMode}</span>`);
+    }
+    if (Array.isArray(sv.keyMarkers)) {
+      sv.keyMarkers.forEach(k => {
+        toleranceBadges.push(`<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-200">${SUBVOYAGE_KEY_MARKER_LABELS[k] || k}</span>`);
+      });
+    }
+    const aggregatedBadges = renderSubvoyageSpecialAttributesBadges(sv.id);
+    setElHtml('sv-drawer-special-badges', toleranceBadges.join('') + (aggregatedBadges ? `<span class="text-slate-300 mx-0.5">|</span>${aggregatedBadges}` : ''));
 
     const capBadgeEl = document.getElementById('sv-drawer-cap-badge');
     if (capBadgeEl) {
@@ -5800,9 +6103,8 @@ function initSubvoyagesPlannerModule() {
                   </div>
                   <button type="button" onclick="toggleAttentionConflictConfirm('${item.uid}')"
                     class="px-3 py-1.5 rounded-lg text-[11px] font-bold border transition shrink-0 cursor-pointer ${item.confirmed
-                      ? 'bg-emerald-600 text-white border-emerald-700'
-                      : 'bg-white hover:bg-amber-100 text-amber-900 border-amber-400'}">
-                    ${item.confirmed ? '<i class="fa-solid fa-check mr-1"></i>Підтверджено' : 'Підтверджую'}
+            ? 'bg-emerald-600 text-white border-emerald-700'
+            : 'bg-white hover:bg-amber-100 text-amber-900 border-amber-400'}">                    ${item.confirmed ? '<i class="fa-solid fa-check mr-1"></i>Підтверджено' : 'Підтверджую'}
                   </button>
                 </div>
               `).join('')}

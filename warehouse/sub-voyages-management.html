@@ -353,13 +353,26 @@
             </div>
           </div>
 
-          <!-- Фільтрація по Складу доставки -->
-          <div class="flex items-center gap-1">
-            <span class="text-[10px] text-slate-400">Хаб:</span>
-            <select id="subvoyage-destination-hub-filter"
-              class="bg-slate-900 border border-slate-700 text-amber-300 font-mono text-[10px] rounded px-2 py-0.5 focus:ring-1 focus:ring-amber-400 cursor-pointer">
-              <option value="all">Усі склади доставки</option>
-            </select>
+          <!-- Фільтрація по Складу доставки та Сортування -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <div class="flex items-center gap-1">
+              <span class="text-[10px] text-slate-400">Хаб:</span>
+              <select id="subvoyage-destination-hub-filter"
+                class="bg-slate-900 border border-slate-700 text-amber-300 font-mono text-[10px] rounded px-2 py-0.5 focus:ring-1 focus:ring-amber-400 cursor-pointer">
+                <option value="all">Усі склади доставки</option>
+              </select>
+            </div>
+            <div class="flex items-center gap-1">
+              <span class="text-[10px] text-slate-400">Сорт:</span>
+              <select id="sv-sort-select"
+                class="bg-slate-900 border border-slate-700 text-sky-300 font-mono text-[10px] rounded px-2 py-0.5 focus:ring-1 focus:ring-sky-400 cursor-pointer"
+                title="Сортування списку підрейсів">
+                <option value="plannedArrival_asc" selected>Прибуття: найближчі ↑</option>
+                <option value="plannedArrival_desc">Прибуття: пізніші ↓</option>
+                <option value="plannedDeparture_asc">Відправлення: найближчі ↑</option>
+                <option value="status_priority">За станом та відпр.</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -647,6 +660,7 @@
           <div class="flex items-center gap-2 flex-wrap">
             <h3 class="font-bold text-sm" id="sv-drawer-title">Рейс FOS-KYI-1 (SV-4401)</h3>
             <span id="sv-drawer-status-badge"></span>
+            <span id="sv-drawer-custom-status-badge"></span>
             <span id="sv-drawer-tasks-badge"></span>
           </div>
           <p class="text-[11px] text-slate-400" id="sv-drawer-subtitle">Зовнішній рейс: -- | Шаблон: --</p>
@@ -659,6 +673,33 @@
     </div>
 
     <div class="p-4 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs">
+
+      <!-- 0. Блок «Інформація»: Кастомний статус (з шаблону) та Планова дата прибуття -->
+      <div class="bg-indigo-50/70 p-3 rounded-xl border border-indigo-200 space-y-2">
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <span class="text-indigo-900 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-info text-indigo-600"></i> Інформація про етап підрейсу
+          </span>
+          <span id="sv-drawer-template-pill" class="text-[10px] font-mono bg-white text-indigo-800 border border-indigo-200 px-2 py-0.5 rounded font-semibold">Шаблон: --</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 items-end">
+          <div class="sm:col-span-2">
+            <label for="sv-drawer-custom-status-select" class="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+              Кастомний статус (з шаблону) <span class="font-normal normal-case text-slate-400">— редагується без зміни системного стану</span>
+            </label>
+            <select id="sv-drawer-custom-status-select"
+              class="w-full bg-white border border-indigo-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-indigo-950 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+            </select>
+          </div>
+          <div class="bg-white p-2 rounded-lg border border-indigo-200/80">
+            <span class="text-slate-400 block text-[9px] uppercase font-bold">Планова дата прибуття (ETA):</span>
+            <div class="font-mono font-extrabold text-indigo-950 text-xs mt-0.5 flex items-center gap-1.5">
+              <i class="fa-regular fa-calendar-check text-indigo-600"></i>
+              <span id="sv-drawer-info-plan-arr">--</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- 1. Базова ідентифікація та відповідальні -->
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
@@ -888,25 +929,19 @@
 
           <div>
             <label class="block font-semibold text-slate-700 mb-1">Шаблон <span class="text-rose-500">*</span></label>
-            <select id="new-sv-template" class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
+            <select id="new-sv-template" onchange="window.syncCreateSvCustomStatuses && window.syncCreateSvCustomStatuses()" class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
               <option value="Морський (LCL/FCL)">Морський (LCL/FCL)</option>
               <option value="Морський (Мультимодальне плече)" selected>Морський (Мультимодальне плече)</option>
+              <option value="Автоперевезення TIR">Автоперевезення TIR</option>
               <option value="Автотранспорт (LTL)">Автотранспорт (LTL)</option>
               <option value="Авіа Експрес">Авіа Експрес</option>
+              <option value="Залізничний (FCL/LCL)">Залізничний (FCL/LCL)</option>
             </select>
           </div>
 
           <div>
             <label class="block font-semibold text-slate-700 mb-1">Статус <span class="text-rose-500">*</span></label>
-            <select id="new-sv-status" class="w-full rounded-lg border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
-              <option value="Формування" selected>Формування (formation)</option>
-              <option value="Завантажений">Завантажений (packed)</option>
-              <option value="В дорозі">В дорозі (in_transit)</option>
-              <option value="На митниці на експорт">На митниці на експорт (at_export_customs)</option>
-              <option value="На митниці на імпорт">На митниці на імпорт (at_import_customs)</option>
-              <option value="Вивантажений">Вивантажений (despatched)</option>
-              <option value="Завершений">Завершений (completed)</option>
-              <option value="Вантаж видано отримувачам">Вантаж видано отримувачам (cargo_released_to_recipient)</option>
+            <select id="new-sv-custom-status" class="w-full rounded-lg border border-indigo-300 p-2 text-xs font-semibold text-indigo-950 focus:ring-2 focus:ring-indigo-500 bg-indigo-50/40">
             </select>
           </div>
 

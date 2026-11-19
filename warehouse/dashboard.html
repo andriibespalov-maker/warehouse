@@ -339,7 +339,7 @@
                   </div>
                 </div>
 
-                <!-- Очікуємо (7 днів) -->
+                <!-- Очікуємо (14 днів) -->
                 <div class="bg-slate-50 border border-slate-200/70 rounded-xl p-2.5 flex flex-col justify-between">
                   <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
                     <span>Очікуємо</span>
@@ -349,7 +349,7 @@
                     0.0 <span class="text-xs font-normal text-slate-500">м³</span>
                   </div>
                   <div class="text-[9px] text-slate-500 font-semibold mt-1 flex items-center justify-between">
-                    <span>План (7 днів)</span>
+                    <span>План (14 днів)</span>
                     <span id="stat-expected-arrival-3days-sv" class="font-mono text-indigo-600 font-bold">0 підрейсів</span>
                   </div>
                 </div>
@@ -611,7 +611,7 @@
               <h3 class="font-bold text-base">Отримання підрейсу на баланс складу</h3>
               <span id="accept-voyage-id-badge" class="px-2.5 py-0.5 rounded-md bg-indigo-500/30 border border-indigo-400/40 text-indigo-200 font-mono text-xs font-bold">SV-2026-101</span>
             </div>
-            <p class="text-[11px] text-slate-400 mt-0.5">Фактичні параметри вводяться вручну після вивантаження. Недостача не зупиняє роботу з вантажем — відповідальний менеджер отримує сповіщення.</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">Вага та об'єм підтягуються автоматично з підрейсу. Введіть фактичну кількість місць та зафіксуйте стан вантажу.</p>
           </div>
         </div>
         <button type="button" onclick="DashboardModule.closeAcceptVoyageModal()" class="w-8 h-8 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer text-xl leading-none">&times;</button>
@@ -629,7 +629,10 @@
           </h4>
           <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
             <div class="md:col-span-2 space-y-1">
-              <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Назва підрейсу</div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Назва підрейсу</div>
+                <span id="accept-voyage-custom-status-badge" class="hidden px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">—</span>
+              </div>
               <div id="accept-voyage-route-info" class="font-bold text-slate-900 text-sm">—</div>
               <div id="accept-voyage-meta-info" class="text-[11px] text-slate-500 font-mono">—</div>
             </div>
@@ -657,23 +660,29 @@
               </div>
               <div id="accept-voyage-diff-places" class="mt-1 text-[10px] font-bold"></div>
             </div>
-            <div class="bg-white border border-slate-200 rounded-xl p-3">
-              <label for="accept-voyage-actual-volume" class="block text-[10px] font-bold text-slate-500 uppercase">Об'єм (м³) <span class="text-rose-500">*</span></label>
+            <div class="bg-slate-50/70 border border-slate-200 rounded-xl p-3">
+              <label for="accept-voyage-actual-volume" class="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase">
+                <span>Об'єм (м³) <span class="text-rose-500">*</span></span>
+                <span class="text-[9px] font-semibold normal-case text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.2 rounded">авто з підрейсу</span>
+              </label>
               <div class="flex items-center gap-2 mt-1">
-                <input type="number" id="accept-voyage-actual-volume" min="0" step="0.01" placeholder="Факт"
+                <input type="number" id="accept-voyage-actual-volume" min="0.01" step="0.01" required placeholder="Авто"
                   oninput="DashboardModule.updateAcceptParamsDiff()"
-                  class="w-24 bg-slate-50 border border-slate-300 rounded px-2 py-1 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                <span class="text-[10px] text-slate-400 font-mono">Очікувалось: <strong id="accept-voyage-expected-volume">0.0</strong></span>
+                  class="w-24 bg-white border border-slate-300 rounded px-2 py-1 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <span class="text-[10px] text-slate-400 font-mono">З підрейсу: <strong id="accept-voyage-expected-volume">0.0</strong></span>
               </div>
               <div id="accept-voyage-diff-volume" class="mt-1 text-[10px] font-bold"></div>
             </div>
-            <div class="bg-white border border-slate-200 rounded-xl p-3">
-              <label for="accept-voyage-actual-weight" class="block text-[10px] font-bold text-slate-500 uppercase">Вага (кг) <span class="text-rose-500">*</span></label>
+            <div class="bg-slate-50/70 border border-slate-200 rounded-xl p-3">
+              <label for="accept-voyage-actual-weight" class="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase">
+                <span>Вага (кг) <span class="text-rose-500">*</span></span>
+                <span class="text-[9px] font-semibold normal-case text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.2 rounded">авто з підрейсу</span>
+              </label>
               <div class="flex items-center gap-2 mt-1">
-                <input type="number" id="accept-voyage-actual-weight" min="0" step="0.1" placeholder="Факт"
+                <input type="number" id="accept-voyage-actual-weight" min="0.1" step="0.1" required placeholder="Авто"
                   oninput="DashboardModule.updateAcceptParamsDiff()"
-                  class="w-24 bg-slate-50 border border-slate-300 rounded px-2 py-1 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                <span class="text-[10px] text-slate-400 font-mono">Очікувалось: <strong id="accept-voyage-expected-weight">0</strong> кг</span>
+                  class="w-24 bg-white border border-slate-300 rounded px-2 py-1 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <span class="text-[10px] text-slate-400 font-mono">З підрейсу: <strong id="accept-voyage-expected-weight">0</strong> кг</span>
               </div>
               <div id="accept-voyage-diff-weight" class="mt-1 text-[10px] font-bold"></div>
             </div>
@@ -685,18 +694,18 @@
           </div>
         </section>
 
-        <!-- 3. Перевезення підрейсу: недостача та стан коробок -->
+        <!-- 3. Перевезення підрейсу: недостача та стан вантажу -->
         <section class="space-y-2">
           <div class="flex items-center justify-between flex-wrap gap-2">
             <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
               <span class="w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] flex items-center justify-center">3</span>
-              Перевезення підрейсу: недостача та стан коробок
+              Перевезення підрейсу: недостача та стан вантажу
             </h4>
             <div class="flex items-center gap-1.5 flex-wrap">
               <span class="text-[10px] text-slate-500">Проставити всім:</span>
-              <button type="button" onclick="DashboardModule.setAllAcceptDamage('green')" title="Зелений: Коробки максимально мають вигляд, як при відправці з Китаю" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 cursor-pointer inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Цілі</button>
-              <button type="button" onclick="DashboardModule.setAllAcceptDamage('yellow')" title="Жовтий: Коробки мають пошкодження, їх реально підремонтувати" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 cursor-pointer inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span>Ремонт</button>
-              <button type="button" onclick="DashboardModule.setAllAcceptDamage('red')" title="Червоний: Коробки критично пошкоджені, мокрі, потребують повну заміну пакування" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 cursor-pointer inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span>Заміна</button>
+              <button type="button" onclick="DashboardModule.setAllAcceptDamage('green')" title="Гарний (зелений): вантаж у гарному стані, без пошкоджень" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 cursor-pointer inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Гарний</button>
+              <button type="button" onclick="DashboardModule.setAllAcceptDamage('yellow')" title="Поганий (жовтий): вантаж або пакування мають пошкодження — менеджеру надійде сповіщення" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 cursor-pointer inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span>Поганий</button>
+              <button type="button" onclick="DashboardModule.setAllAcceptDamage('red')" title="Критичний (червоний): критичні пошкодження вантажу або пакування — менеджеру надійде сповіщення" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 cursor-pointer inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span>Критичний</button>
             </div>
           </div>
 
@@ -709,7 +718,7 @@
                     <th class="p-2">Менеджер</th>
                     <th class="p-2 whitespace-nowrap">Очікувалось</th>
                     <th class="p-2 whitespace-nowrap">Недостача місць</th>
-                    <th class="p-2 whitespace-nowrap">Стан коробок <span class="text-rose-500">*</span></th>
+                    <th class="p-2 whitespace-nowrap">Стан вантажу <span class="text-rose-500">*</span></th>
                   </tr>
                 </thead>
                 <tbody id="accept-voyage-shipments-checklist" class="divide-y divide-slate-100">
@@ -771,7 +780,7 @@
       <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex items-center justify-between flex-wrap gap-3 shrink-0">
         <div class="text-[11px] text-slate-500 flex items-center gap-1.5">
           <i class="fa-solid fa-bell text-amber-500"></i>
-          <span id="accept-voyage-footer-hint">Перевезення переходять на баланс складу. При недостачі менеджеру надійде сповіщення.</span>
+          <span id="accept-voyage-footer-hint">Підрейс перейде у «Вивантажений», перевезення — в «Отримано на складі». При недостачі або стані «Поганий»/«Критичний» менеджеру надійде сповіщення.</span>
         </div>
         <div class="flex items-center gap-2.5">
           <button type="button" onclick="DashboardModule.closeAcceptVoyageModal()"
