@@ -8,11 +8,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const tabButtons = document.querySelectorAll('.tab-btn');
   const tableSearchInput = document.getElementById('table-search');
   const clearSearchBtn = document.getElementById('clear-search');
-  const selectAllCheckbox = document.getElementById('select-all');
-  const bulkActionsBar = document.getElementById('bulk-actions-bar');
-  const bulkArchiveBtn = document.getElementById('bulk-archive-btn');
-  const selectedCountSpan = document.getElementById('selected-count');
-  const cancelSelectionBtn = document.getElementById('cancel-selection');
   const visibleCountSpan = document.getElementById('visible-count');
   const totalWarehousesSpan = document.getElementById('total-warehouses-count');
   const emptyState = document.getElementById('empty-state');
@@ -33,8 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const cardsViewContainer = document.getElementById('cards-view-container');
   const viewButtons = document.querySelectorAll('.view-btn');
 
-  // Action Menu Dropdown & Modals
-  const actionsDropdown = document.getElementById('actions-dropdown');
+  // Modals
   const archiveWarehouseNameSpan = document.getElementById('archive-warehouse-name');
   const confirmArchiveBtn = document.getElementById('confirm-archive-btn');
 
@@ -44,8 +38,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const modalWarehouseTitle = document.getElementById('modal-warehouse-title');
   const inputWarehouseName = document.getElementById('input-warehouse-name');
   const selectWarehouseCountry = document.getElementById('select-warehouse-country');
+  const inputWarehousePostalCode = document.getElementById('input-warehouse-postal-code');
+  const inputWarehouseRegion = document.getElementById('input-warehouse-region');
   const inputWarehouseCity = document.getElementById('input-warehouse-city');
-  const inputWarehouseAddress = document.getElementById('input-warehouse-address');
+  const inputWarehouseStreet = document.getElementById('input-warehouse-street');
+  const inputWarehouseAddressLine2 = document.getElementById('input-warehouse-address-line2');
+  const inputWarehouseDeliveryInstructions = document.getElementById('input-warehouse-delivery-instructions');
+  const postalCodeHintEl = document.getElementById('postal-code-hint');
+  const regionRequiredStarEl = document.getElementById('region-required-star');
   const selectWarehouseType = document.getElementById('select-warehouse-type');
   const selectWarehouseStatus = document.getElementById('select-warehouse-status');
   const formBtnArchive = document.getElementById('form-btn-archive');
@@ -292,12 +292,155 @@ document.addEventListener('DOMContentLoaded', async () => {
   let currentPage = 1;
   let itemsPerPage = parseInt(itemsPerPageSelect?.value || '20', 10);
 
-  const countryFlags = {
-    'Китай': '🇨🇳',
-    'Україна': '🇺🇦',
-    'Польща': '🇵🇱',
-    'Німеччина': '🇩🇪'
+  const ISO_COUNTRIES = {
+    UA: { iso: 'UA', nameUa: 'Україна', nameEn: 'Ukraine', flag: '🇺🇦', postalRegex: /^\d{5}$/, postalExample: '03115', regionRequired: false },
+    PL: { iso: 'PL', nameUa: 'Польща', nameEn: 'Poland', flag: '🇵🇱', postalRegex: /^\d{2}-\d{3}$/, postalExample: '00-001', regionRequired: false },
+    CN: { iso: 'CN', nameUa: 'Китай', nameEn: 'China', flag: '🇨🇳', postalRegex: /^\d{6}$/, postalExample: '510000', regionRequired: false },
+    DE: { iso: 'DE', nameUa: 'Німеччина', nameEn: 'Germany', flag: '🇩🇪', postalRegex: /^\d{5}$/, postalExample: '20095', regionRequired: false },
+    US: { iso: 'US', nameUa: 'США', nameEn: 'United States', flag: '🇺🇸', postalRegex: /^\d{5}(-\d{4})?$/, postalExample: '10001', regionRequired: true },
+    CA: { iso: 'CA', nameUa: 'Канада', nameEn: 'Canada', flag: '🇨🇦', postalRegex: /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/, postalExample: 'M5V 2T6', regionRequired: true },
+    AU: { iso: 'AU', nameUa: 'Австралія', nameEn: 'Australia', flag: '🇦🇺', postalRegex: /^\d{4}$/, postalExample: '2000', regionRequired: true },
+    GB: { iso: 'GB', nameUa: 'Велика Британія', nameEn: 'United Kingdom', flag: '🇬🇧', postalRegex: /^[A-Za-z]{1,2}\d[A-Za-z\d]?\s?\d[A-Za-z]{2}$/, postalExample: 'SW1A 1AA', regionRequired: false },
+    NL: { iso: 'NL', nameUa: 'Нідерланди', nameEn: 'Netherlands', flag: '🇳🇱', postalRegex: /^\d{4}\s?[A-Za-z]{2}$/, postalExample: '1012 AB', regionRequired: false },
+    TR: { iso: 'TR', nameUa: 'Туреччина', nameEn: 'Turkey', flag: '🇹🇷', postalRegex: /^\d{5}$/, postalExample: '34000', regionRequired: false }
   };
+
+  const countryFlags = {
+    'Китай': '🇨🇳', 'CN': '🇨🇳',
+    'Україна': '🇺🇦', 'UA': '🇺🇦',
+    'Польща': '🇵🇱', 'PL': '🇵🇱',
+    'Німеччина': '🇩🇪', 'DE': '🇩🇪',
+    'США': '🇺🇸', 'US': '🇺🇸',
+    'Канада': '🇨🇦', 'CA': '🇨🇦',
+    'Австралія': '🇦🇺', 'AU': '🇦🇺',
+    'Велика Британія': '🇬🇧', 'GB': '🇬🇧',
+    'Нідерланди': '🇳🇱', 'NL': '🇳🇱',
+    'Туреччина': '🇹🇷', 'TR': '🇹🇷'
+  };
+
+  function resolveCountryMeta(val) {
+    if (!val) return null;
+    const upper = String(val).trim().toUpperCase();
+    if (ISO_COUNTRIES[upper]) return ISO_COUNTRIES[upper];
+    return Object.values(ISO_COUNTRIES).find(c =>
+      c.nameUa.toLowerCase() === String(val).trim().toLowerCase() ||
+      c.nameEn.toLowerCase() === String(val).trim().toLowerCase()
+    ) || null;
+  }
+
+  function updateAddressCountryRules() {
+    const meta = resolveCountryMeta(selectWarehouseCountry?.value);
+    if (inputWarehouseRegion) {
+      const isReq = !!meta?.regionRequired;
+      inputWarehouseRegion.required = isReq;
+      regionRequiredStarEl?.classList.toggle('hidden', !isReq);
+    }
+    if (postalCodeHintEl) {
+      if (meta) {
+        postalCodeHintEl.textContent = `Очікуваний формат (${meta.iso}): напр. ${meta.postalExample}`;
+        postalCodeHintEl.className = 'text-[10px] text-slate-400 mt-1';
+      } else {
+        postalCodeHintEl.textContent = 'Формат індексу перевіряється під обрану країну';
+        postalCodeHintEl.className = 'text-[10px] text-slate-400 mt-1';
+      }
+    }
+    validatePostalCodeField();
+  }
+
+  function validatePostalCodeField() {
+    if (!inputWarehousePostalCode) return true;
+    const val = inputWarehousePostalCode.value.trim();
+    const meta = resolveCountryMeta(selectWarehouseCountry?.value);
+    if (!val) {
+      inputWarehousePostalCode.setCustomValidity('');
+      return false;
+    }
+    if (meta && meta.postalRegex && !meta.postalRegex.test(val)) {
+      const msg = `Некоректний поштовий індекс для ${meta.iso} (приклад: ${meta.postalExample})`;
+      inputWarehousePostalCode.setCustomValidity(msg);
+      if (postalCodeHintEl) {
+        postalCodeHintEl.textContent = msg;
+        postalCodeHintEl.className = 'text-[10px] text-rose-600 font-semibold mt-1';
+      }
+      return false;
+    }
+    inputWarehousePostalCode.setCustomValidity('');
+    if (postalCodeHintEl && meta) {
+      postalCodeHintEl.textContent = `✓ Коректний формат (${meta.iso})`;
+      postalCodeHintEl.className = 'text-[10px] text-emerald-600 font-medium mt-1';
+    }
+    return true;
+  }
+
+  selectWarehouseCountry?.addEventListener('change', updateAddressCountryRules);
+  inputWarehousePostalCode?.addEventListener('input', validatePostalCodeField);
+
+  function getStructuredAddressFromForm() {
+    const meta = resolveCountryMeta(selectWarehouseCountry?.value);
+    const countryIso = meta ? meta.iso : (selectWarehouseCountry?.value || '');
+    const countryLabel = meta ? `${meta.iso} (${meta.nameUa} / ${meta.nameEn})` : countryIso;
+    return {
+      countryIso,
+      countryName: meta ? meta.nameUa : countryIso,
+      countryDisplay: countryLabel,
+      postalCode: inputWarehousePostalCode?.value.trim() || '',
+      region: inputWarehouseRegion?.value.trim() || '',
+      city: inputWarehouseCity?.value.trim() || '',
+      street: inputWarehouseStreet?.value.trim() || '',
+      addressLine2: inputWarehouseAddressLine2?.value.trim() || '',
+      deliveryInstructions: inputWarehouseDeliveryInstructions?.value.trim() || '',
+      labeledFields: [
+        { label: 'Країна / Country', value: countryLabel },
+        { label: 'Поштовий індекс / Postal / ZIP Code', value: inputWarehousePostalCode?.value.trim() || '' },
+        { label: 'Область / Штат / Регіон / State / Province / Region', value: inputWarehouseRegion?.value.trim() || '' },
+        { label: 'Місто / Населений пункт / City / Locality', value: inputWarehouseCity?.value.trim() || '' },
+        { label: 'Вулиця / Street Name / Address Line 1', value: inputWarehouseStreet?.value.trim() || '' },
+        { label: 'Квартира / Офіс / Корпус / Apt / Suite / Unit / Address Line 2', value: inputWarehouseAddressLine2?.value.trim() || '' },
+        { label: 'Коментар / Delivery Instructions', value: inputWarehouseDeliveryInstructions?.value.trim() || '' }
+      ]
+    };
+  }
+
+  function formatAddressWithBilingualLabels(addr) {
+    if (!addr || !Array.isArray(addr.labeledFields)) return '';
+    return addr.labeledFields
+      .filter(f => f.value)
+      .map(f => `${f.label}: ${f.value}`)
+      .join('\n');
+  }
+
+  function buildReadableAddress(addr) {
+    return [addr.postalCode, addr.countryName || addr.countryIso, addr.region, addr.city, addr.street, addr.addressLine2]
+      .filter(Boolean)
+      .join(', ');
+  }
+
+  function resetAddressForm() {
+    if (selectWarehouseCountry) selectWarehouseCountry.value = '';
+    if (inputWarehousePostalCode) {
+      inputWarehousePostalCode.value = '';
+      inputWarehousePostalCode.setCustomValidity('');
+    }
+    if (inputWarehouseRegion) inputWarehouseRegion.value = '';
+    if (inputWarehouseCity) inputWarehouseCity.value = '';
+    if (inputWarehouseStreet) inputWarehouseStreet.value = '';
+    if (inputWarehouseAddressLine2) inputWarehouseAddressLine2.value = '';
+    if (inputWarehouseDeliveryInstructions) inputWarehouseDeliveryInstructions.value = '';
+    updateAddressCountryRules();
+  }
+
+  function populateAddressForm(item) {
+    const af = item.addressFields || {};
+    const meta = resolveCountryMeta(af.countryIso || item.countryIso || item.country);
+    if (selectWarehouseCountry) selectWarehouseCountry.value = meta ? meta.iso : '';
+    if (inputWarehousePostalCode) inputWarehousePostalCode.value = af.postalCode || item.postalCode || '';
+    if (inputWarehouseRegion) inputWarehouseRegion.value = af.region || item.region || '';
+    if (inputWarehouseCity) inputWarehouseCity.value = af.city || item.city || '';
+    if (inputWarehouseStreet) inputWarehouseStreet.value = af.street || item.street || item.address || '';
+    if (inputWarehouseAddressLine2) inputWarehouseAddressLine2.value = af.addressLine2 || '';
+    if (inputWarehouseDeliveryInstructions) inputWarehouseDeliveryInstructions.value = af.deliveryInstructions || '';
+    updateAddressCountryRules();
+  }
 
   // --- 5 Макро-категорій послуг та мапінг старих назв ---
   const SERVICE_MACRO_CATEGORIES = {
@@ -458,6 +601,155 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
       `;
     }).join('');
+  }
+
+  function formatVolumeNumber(val) {
+    const num = Number(val);
+    if (!Number.isFinite(num)) return '0';
+    return String(parseFloat(num.toFixed(2)));
+  }
+
+  function renderMacroServicesIconsOnly(wh) {
+    const rawServices = Array.isArray(wh.services) ? wh.services : [];
+    const normalized = Array.from(new Set(rawServices.map(normalizeServiceMacro)));
+    if (normalized.length === 0) {
+      return '<span class="text-slate-400 text-xs">-</span>';
+    }
+
+    const selectedSubs = Array.isArray(wh.selectedSubServices) ? new Set(wh.selectedSubServices) : null;
+
+    return normalized.map(catName => {
+      const meta = SERVICE_MACRO_CATEGORIES[catName] || {
+        icon: 'fa-check',
+        badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
+        tooltip: catName,
+        subServices: []
+      };
+
+      const customSubs = (wh.customSubServices && Array.isArray(wh.customSubServices[catName]))
+        ? wh.customSubServices[catName]
+        : [];
+      const allCategorySubs = Array.from(new Set([...(meta.subServices || []), ...customSubs]));
+
+      const activeCount = selectedSubs
+        ? allCategorySubs.filter(sub => selectedSubs.has(sub)).length
+        : allCategorySubs.length;
+
+      const subListHtml = allCategorySubs.map(sub => {
+        const isActive = !selectedSubs || selectedSubs.has(sub);
+        if (isActive) {
+          return `
+            <li class="flex items-start gap-1.5 text-[10px] text-slate-200 leading-snug">
+              <i class="fa-solid fa-check text-[9px] text-emerald-400 mt-0.5 shrink-0"></i>
+              <span>${sub}</span>
+            </li>
+          `;
+        } else {
+          return `
+            <li class="flex items-start gap-1.5 text-[10px] text-slate-400 leading-snug opacity-75">
+              <i class="fa-solid fa-xmark text-[9px] text-rose-400 mt-0.5 shrink-0"></i>
+              <span class="line-through">${sub}</span>
+            </li>
+          `;
+        }
+      }).join('');
+
+      return `
+        <div class="relative group/macro inline-flex">
+          <span class="inline-flex items-center justify-center w-7 h-7 rounded-md border cursor-help ${meta.badgeClass} ${selectedSubs && activeCount === 0 ? 'opacity-60 grayscale' : ''}" title="${catName}">
+            <i class="fa-solid ${meta.icon} text-[11px] opacity-90"></i>
+          </span>
+          ${subListHtml ? `
+            <div class="hidden group-hover/macro:block absolute left-0 bottom-full mb-1.5 w-72 p-2.5 bg-slate-900 text-white rounded-xl shadow-xl z-40 pointer-events-none border border-slate-700 text-left">
+              <div class="font-bold text-[11px] text-white border-b border-slate-700/80 pb-1 mb-1.5 flex items-center justify-between">
+                <span class="flex items-center gap-1.5"><i class="fa-solid ${meta.icon} text-[10px] text-brand-400"></i> ${catName}</span>
+                <span class="text-[9px] font-normal text-slate-400">${activeCount} з ${allCategorySubs.length} активні</span>
+              </div>
+              <ul class="space-y-1">
+                ${subListHtml}
+              </ul>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  function getWarehouseTariffAttention(wh) {
+    const docs = Array.isArray(wh.tariffDocuments) ? wh.tariffDocuments : [];
+    const activeDocs = docs.filter(d => d.isActive !== false);
+    const hasActiveDocs = activeDocs.length > 0;
+    const hasText = !!(wh.tariffText && wh.tariffText.trim());
+    const legacyTariffs = Array.isArray(wh.tariffs) ? wh.tariffs : [];
+    const hasLegacy = legacyTariffs.length > 0;
+
+    const evaluateDateWarning = (dateStr, mode) => {
+      if (!dateStr) return null;
+      const evalRes = evaluateValidity(dateStr);
+      if (evalRes.status === 'expired') {
+        return {
+          type: 'expired',
+          mode,
+          label: 'Тариф закінчився',
+          tooltip: `${evalRes.text} — натисніть, щоб оновити тариф`,
+          badgeClass: 'bg-rose-100 text-rose-800 border-rose-300 hover:bg-rose-200/70',
+          icon: 'fa-solid fa-triangle-exclamation text-rose-600'
+        };
+      }
+      if (evalRes.diffDays !== null && evalRes.diffDays <= 14) {
+        const dayText = evalRes.diffDays === 0 ? 'сьогодні' : `через ${evalRes.diffDays} дн.`;
+        return {
+          type: 'expiring',
+          mode,
+          label: 'Тариф закінчується',
+          tooltip: `Термін дії тарифу закінчується ${dayText} (${dateStr}) — натисніть, щоб оновити`,
+          badgeClass: 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100',
+          icon: 'fa-solid fa-clock text-amber-600'
+        };
+      }
+      return null;
+    };
+
+    // Якщо текстовий тариф є активним
+    if (wh.tariffType === 'text' || (!hasActiveDocs && hasText)) {
+      if (!hasText) {
+        return {
+          type: 'missing',
+          mode: 'text',
+          label: 'Немає тарифу',
+          tooltip: 'Активний тариф / прайс-лист відсутній — натисніть, щоб додати',
+          badgeClass: 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100',
+          icon: 'fa-solid fa-file-circle-xmark text-rose-500'
+        };
+      }
+      return evaluateDateWarning(wh.tariffTextValidUntil, 'text');
+    }
+
+    // Якщо активні документи відсутні і немає текстового/legacy тарифу
+    if (!hasActiveDocs && !hasLegacy) {
+      return {
+        type: 'missing',
+        mode: 'document',
+        label: 'Немає тарифу',
+        tooltip: 'Активний тариф / прайс-лист відсутній — натисніть, щоб додати',
+        badgeClass: 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100',
+        icon: 'fa-solid fa-file-circle-xmark text-rose-500'
+      };
+    }
+
+    if (hasActiveDocs) {
+      const primaryDoc = activeDocs[0];
+      return evaluateDateWarning(primaryDoc.validUntil, 'document');
+    }
+
+    if (hasLegacy) {
+      const dates = legacyTariffs.map(t => t.dateTo).filter(Boolean).sort();
+      if (dates.length > 0) {
+        return evaluateDateWarning(dates[dates.length - 1], 'document');
+      }
+    }
+
+    return null;
   }
 
   // Оновлення стану картки сверхпослуги (підрахунок обраних послуг, стилі та стан головного чекбокса)
@@ -1185,7 +1477,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       const totalLoad = occupied + expected;
       const free = Math.max(0, limit - totalLoad);
       const isOverloaded = totalLoad > limit;
-      const overflowVolume = isOverloaded ? Math.round((totalLoad - limit) * 10) / 10 : 0;
+      const overflowVolume = isOverloaded ? formatVolumeNumber(totalLoad - limit) : 0;
+
+      const limitFmt = formatVolumeNumber(limit);
+      const occupiedFmt = formatVolumeNumber(occupied);
+      const expectedFmt = formatVolumeNumber(expected);
+      const freeFmt = formatVolumeNumber(free);
 
       // Відсотки від загального ліміту:
       const totalPct = Math.round((totalLoad / limit) * 100);
@@ -1217,34 +1514,34 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       // Тултіп для смуги
-      const tooltipText = `Факт: ${occupied} м³ (${Math.round(factPct)}%), Очікується (7 днів): ${expected} м³ (${Math.round((expected / limit) * 100)}%), Вільне: ${free} м³`;
+      const tooltipText = `На складі: ${occupiedFmt} м³ (${Math.round(factPct)}%), Їде (7 днів): ${expectedFmt} м³ (${Math.round((expected / limit) * 100)}%), Вільно: ${freeFmt} м³, Загалом: ${limitFmt} м³`;
 
       return `
         <div class="space-y-1.5 min-w-[200px]">
-          <!-- Числовий формат: Факт / Очікується / Загальний ліміт -->
+          <!-- Числовий формат зверху: На складі / Їде / Вільно -->
           <div class="flex items-center justify-between gap-1 text-xs">
-            <div class="flex items-center gap-1 font-bold text-slate-800" title="Факт: ${occupied} м³ / Очікується: ${expected} м³ / Ліміт: ${limit} м³">
-              <span class="text-emerald-700" title="Фактично на складі">${occupied}</span>
+            <div class="flex items-center gap-1 font-bold text-slate-800" title="На складі: ${occupiedFmt} м³ / Їде: ${expectedFmt} м³ / Вільно: ${freeFmt} м³">
+              <span class="text-emerald-700" title="На складі">${occupiedFmt}</span>
               <span class="text-slate-300">/</span>
-              <span class="${isCritical ? 'text-rose-600 font-bold' : (isWarning ? 'text-amber-700 font-semibold' : 'text-amber-600')}" title="Очікується в дорозі (7 днів)">${expected}</span>
+              <span class="${isCritical ? 'text-rose-600 font-bold' : (isWarning ? 'text-amber-700 font-semibold' : 'text-amber-600')}" title="Їде (7 днів)">${expectedFmt}</span>
               <span class="text-slate-300">/</span>
-              <span class="text-slate-500 font-semibold" title="Загальний ліміт">${limit} м³</span>
+              <span class="${isCritical ? 'text-rose-600 font-bold' : (isWarning ? 'text-amber-800 font-semibold' : 'text-slate-700')}" title="Вільно">${freeFmt} м³</span>
             </div>
             <span class="text-[10px] px-1.5 py-0.2 rounded border ${badgeColor}" title="Загальне навантаження: ${totalPct}%">
               ${dotIcon} ${totalPct}%
             </span>
           </div>
 
-          <!-- 3-зонний прогрес-бар (Факт: зелений, Очікується: жовтий/червоний, Вільний об'єм: сірий фон) -->
+          <!-- 3-зонний прогрес-бар (На складі: зелений, Їде: жовтий/червоний, Вільний об'єм: сірий фон) -->
           <div class="w-full h-2.5 rounded-full overflow-hidden border ${barBorderClass} flex transition-all duration-300 relative" title="${tooltipText}">
-            <div class="h-full bg-emerald-500 transition-all duration-300" style="width: ${factPct}%" title="Фактично на складі: ${occupied} м³"></div>
-            <div class="h-full ${expectedBarColor} transition-all duration-300" style="width: ${expectedPct}%" title="Очікується вантажів (7 днів): ${expected} м³"></div>
+            <div class="h-full bg-emerald-500 transition-all duration-300" style="width: ${factPct}%" title="На складі: ${occupiedFmt} м³"></div>
+            <div class="h-full ${expectedBarColor} transition-all duration-300" style="width: ${expectedPct}%" title="Їде (7 днів): ${expectedFmt} м³"></div>
           </div>
 
-          <!-- Нижній рядок: Вільне місце та статус -->
+          <!-- Нижній рядок: Загальний об'єм складу та статус -->
           <div class="flex items-center justify-between text-[11px] leading-tight font-medium">
             <span class="text-slate-500">
-              Вільно: <strong class="${isCritical ? 'text-rose-600 font-bold' : (isWarning ? 'text-amber-800 font-semibold' : 'text-slate-700')}">${free} м³</strong>
+              Загалом: <strong class="text-slate-700 font-semibold">${limitFmt} м³</strong>
             </span>
             ${isCritical ? `
               <span class="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 bg-rose-50 px-1 py-0.2 rounded border border-rose-200" title="Сумарне навантаження перевищує 90%">
@@ -1266,13 +1563,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Сценарій Б: Ліміт НЕ задано, але вантажі є (volume == null, occupied > 0 або expected > 0)
     if (occupied > 0 || expected > 0) {
+      const occupiedFmt = formatVolumeNumber(occupied);
+      const expectedFmt = formatVolumeNumber(expected);
       return `
         <div class="space-y-1 min-w-[200px]">
           <div class="flex items-center justify-between gap-1">
             <div class="flex items-center gap-1 text-xs font-bold text-slate-800">
-              <span class="text-emerald-700" title="Фактично на складі">${occupied}</span>
+              <span class="text-emerald-700" title="На складі">${occupiedFmt}</span>
               <span class="text-slate-300">/</span>
-              <span class="text-amber-600" title="Очікується в дорозі">${expected} м³</span>
+              <span class="text-amber-600" title="Їде">${expectedFmt} м³</span>
             </div>
             <span class="px-1.5 py-0.2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-[10px] font-semibold">Безліміт</span>
           </div>
@@ -1437,64 +1736,75 @@ document.addEventListener('DOMContentLoaded', async () => {
            </span>`
         : '';
 
-      // 1. Назва + Ознаки (name, type, isConsolidation)
+      // 1. Назва, Країна, Прапорець та Ознаки
+      const tariffAttention = getWarehouseTariffAttention(wh);
+      const tariffAttentionBadge = tariffAttention
+        ? `<button type="button" class="quick-open-tariffs-btn inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border transition cursor-pointer shrink-0 ${tariffAttention.badgeClass}" data-id="${wh.id}" data-mode="${tariffAttention.mode}" title="${tariffAttention.tooltip}">
+             <i class="${tariffAttention.icon} text-[9px]"></i> ${tariffAttention.label}
+           </button>`
+        : '';
+
       const nameLinkHTML = wh.link
-        ? `<a href="${wh.link}" id="link-${wh.id}" class="inline-flex items-center gap-1.5 font-bold text-slate-900 hover:text-brand-600 transition group/link text-sm">
-             <i class="fa-solid fa-warehouse text-slate-400 group-hover/link:text-brand-600 transition text-xs"></i>
-             <span class="hover:underline">${wh.name}</span>
+        ? `<a href="${wh.link}" id="link-${wh.id}" class="inline-flex items-center gap-1.5 font-bold text-slate-900 hover:text-brand-600 transition group/link text-sm min-w-0">
+             <i class="fa-solid fa-warehouse text-slate-400 group-hover/link:text-brand-600 transition text-xs shrink-0"></i>
+             <span class="hover:underline truncate">${wh.name}</span>
            </a>`
-        : `<button type="button" class="quick-edit-name-btn inline-flex items-center gap-1.5 font-bold text-slate-900 hover:text-brand-600 transition text-left text-sm cursor-pointer" data-id="${wh.id}">
-             <i class="fa-solid fa-warehouse text-slate-400 text-xs"></i>
-             <span class="hover:underline">${wh.name}</span>
+        : `<button type="button" class="quick-edit-name-btn inline-flex items-center gap-1.5 font-bold text-slate-900 hover:text-brand-600 transition text-left text-sm cursor-pointer min-w-0" data-id="${wh.id}">
+             <i class="fa-solid fa-warehouse text-slate-400 text-xs shrink-0"></i>
+             <span class="hover:underline truncate">${wh.name}</span>
            </button>`;
 
       const col1NameAndBadges = `
         <div class="space-y-1.5">
-          <div>${nameLinkHTML}</div>
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 shrink-0" title="${wh.country || ''}">
+              <span class="text-sm leading-none">${flag}</span>
+              <span>${wh.country || '-'}</span>
+            </span>
+            <span class="text-slate-300 shrink-0">·</span>
+            ${nameLinkHTML}
+          </div>
           <div class="flex flex-wrap items-center gap-1">
             <span class="px-1.5 py-0.5 ${typeBadgeClass} rounded text-[10px] font-semibold border">${typeLabel}</span>
             ${consolidationBadge}
+            ${tariffAttentionBadge}
           </div>
         </div>
       `;
 
-      // 2. Країна та Адреса (country, address)
-      const col2LocationAndAddress = `
-        <div class="space-y-1">
-          <div class="flex items-center gap-1.5">
-            <span class="text-base leading-none" title="${wh.country || ''}">${flag}</span>
-            <strong class="font-bold text-slate-900 text-xs">${wh.country || '-'}</strong>
-          </div>
-          <div>
-            <span class="text-[11px] text-slate-600 font-medium leading-snug line-clamp-2 break-words" title="${(wh.address || '').replace(/"/g, '&quot;')}">${wh.address || '-'}</span>
-          </div>
-        </div>
-      `;
-
-      // 3. Завантаженість та Об'єм
+      // 2. Завантаженість та Об'єм
       const col3Volume = renderVolumeCell(wh);
 
-      // 4. Послуги (5 макро-категорій)
-      const col5Services = `<div class="flex flex-wrap gap-1">${renderMacroServicesBadges(wh)}</div>`;
+      // 3. Послуги (5 макро-категорій — тільки іконки без тексту)
+      const col5Services = `<div class="flex flex-wrap gap-1">${renderMacroServicesIconsOnly(wh)}</div>`;
 
-      // 5. Правила та Обмеження (workRules, specialNotes)
+      // 4. Правила та Обмеження (workRules, specialNotes)
       const col7Rules = renderRulesAndRestrictionsCell(wh);
+
+      const editActionBtn = `<button type="button" class="quick-edit-btn p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-md transition cursor-pointer" data-id="${wh.id}" title="Редагувати">
+             <i class="fa-solid fa-pen text-xs"></i>
+           </button>`;
+
+      const archiveActionBtn = wh.status !== 'archived'
+        ? `<button type="button" class="quick-archive-btn p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition cursor-pointer" data-id="${wh.id}" title="Архівувати склад">
+             <i class="fa-regular fa-trash-can text-sm"></i>
+           </button>`
+        : `<button type="button" class="quick-unarchive-btn p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition cursor-pointer" data-id="${wh.id}" title="Відновити з архіву">
+             <i class="fa-solid fa-rotate-left text-xs"></i>
+           </button>`;
 
       return `
       <tr id="row-${wh.id}" data-id="${wh.id}" data-status="${wh.status}" data-country="${wh.country}" data-type="${wh.type}" data-name="${wh.name}" data-address="${wh.address}" class="warehouse-row warehouse-item hover:bg-slate-50/80 transition group align-top">
-        <td class="p-3 text-center align-middle">
-          <input type="checkbox" class="row-checkbox w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer" data-id="${wh.id}">
-        </td>
         <td class="p-3">${col1NameAndBadges}</td>
-        <td class="p-3">${col2LocationAndAddress}</td>
         <td class="p-3">${col3Volume}</td>
-        <td class="p-3">${col5Services}</td>
+        <td class="p-3 align-middle">${col5Services}</td>
         <td class="p-3 max-w-[220px]">${col7Rules}</td>
         <td class="p-3 archived-date-cell archived-only-col hidden text-slate-500 text-xs align-middle">${wh.archivedDate || '-'}</td>
         <td class="p-3 text-center align-middle">
-          <button class="action-menu-btn p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition cursor-pointer" data-id="${wh.id}">
-            <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
-          </button>
+          <div class="inline-flex items-center justify-center gap-1">
+            ${editActionBtn}
+            ${archiveActionBtn}
+          </div>
         </td>
       </tr>
     `;
@@ -1524,10 +1834,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       return `
         <div id="card-${wh.id}" data-id="${wh.id}" data-status="${wh.status}" data-country="${wh.country}" data-type="${wh.type}" data-name="${wh.name}" data-city="${wh.city}" data-address="${wh.address}" class="warehouse-card warehouse-item bg-white border border-slate-200 rounded-lg p-3 shadow-2xs hover:border-slate-300 transition flex flex-col justify-between gap-2.5 relative">
           <div class="flex items-start justify-between gap-2">
-            <div class="flex items-center gap-2">
-              <input type="checkbox" class="row-checkbox w-3.5 h-3.5 rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer" data-id="${wh.id}">
-              <div>
-                ${wh.link
+            <div>
+              ${wh.link
           ? `<a href="${wh.link}" class="font-bold text-slate-900 hover:text-brand-600 transition text-xs flex items-center gap-1.5">
                        <i class="fa-solid fa-warehouse text-slate-400 text-[11px]"></i> ${wh.name}
                      </a>`
@@ -1535,12 +1843,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                        <i class="fa-solid fa-warehouse text-slate-400 text-[11px]"></i> ${wh.name}
                      </h4>`
         }
-                <p class="text-[11px] text-slate-500 mt-0.5">${flag} ${wh.country}, ${wh.city}</p>
-              </div>
+              <p class="text-[11px] text-slate-500 mt-0.5">${flag} ${wh.country}, ${wh.city}</p>
             </div>
-            <button class="action-menu-btn p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition" data-id="${wh.id}">
-              <i class="fa-solid fa-ellipsis-vertical text-xs"></i>
-            </button>
+            <div class="flex items-center gap-1">
+              <button type="button" class="quick-edit-btn p-1 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded transition cursor-pointer" data-id="${wh.id}" title="Редагувати"><i class="fa-solid fa-pen text-xs"></i></button>
+              ${wh.status !== 'archived'
+          ? `<button type="button" class="quick-archive-btn p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer" data-id="${wh.id}" title="Архівувати склад"><i class="fa-regular fa-trash-can text-xs"></i></button>`
+          : `<button type="button" class="quick-unarchive-btn p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition cursor-pointer" data-id="${wh.id}" title="Відновити з архіву"><i class="fa-solid fa-rotate-left text-xs"></i></button>`}
+            </div>
           </div>
 
           <div class="space-y-1.5 text-[11px] text-slate-600 border-t border-b border-slate-100 py-2">
@@ -1708,8 +2018,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         item.classList.remove('hidden');
       } else {
         item.classList.add('hidden');
-        const cb = item.querySelector('.row-checkbox');
-        if (cb) cb.checked = false;
       }
     });
 
@@ -1718,7 +2026,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     columnManager.toggleArchivedColumns(currentTab === 'archived');
     updateCounts(totalMatching);
     renderPagination(totalMatching);
-    updateBulkBar();
 
     if (emptyState) {
       if (totalMatching === 0) {
@@ -1906,11 +2213,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    // Додавання соцмережі до конкретного телефону
-    const addSocialBtn = e.target.closest('.btn-add-phone-social');
-    if (addSocialBtn) {
-      const phoneId = addSocialBtn.getAttribute('data-phone-id');
-      if (phoneId) addSocialToPhone(phoneId);
+    // Додавання соцмережі без телефону (за ніком / ID)
+    const addStandaloneSocialBtn = e.target.closest('.btn-add-standalone-social');
+    if (addStandaloneSocialBtn) {
+      const contactId = addStandaloneSocialBtn.getAttribute('data-contact-id');
+      if (contactId) addStandaloneSocialRow(contactId);
       return;
     }
 
@@ -1953,23 +2260,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.querySelectorAll('.custom-select-menu').forEach(m => m.classList.add('hidden'));
       document.querySelectorAll('.custom-select-arrow').forEach(a => a.classList.remove('rotate-180'));
     }
-  });
-
-  actionsDropdown?.querySelectorAll('[data-action]').forEach(item => {
-    item.addEventListener('click', () => {
-      const action = item.getAttribute('data-action');
-      actionsDropdown.classList.add('hidden');
-
-      if (!activeTargetWarehouseId) return;
-
-      if (action === 'edit') {
-        openEditWarehouseForm(activeTargetWarehouseId);
-      } else if (action === 'open-archive') {
-        openArchiveModal(activeTargetWarehouseId);
-      } else if (action === 'unarchive') {
-        updateWarehouseStatus(activeTargetWarehouseId, 'active');
-      }
-    });
   });
 
   function getWarehouseProp(id, prop) {
@@ -2146,6 +2436,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateFormMdStatusPreview(todayIso);
 
     if (selectWarehouseStatus) selectWarehouseStatus.value = 'active';
+    resetAddressForm();
 
     const contactsContainer = document.getElementById('contacts-repeater-container');
     if (contactsContainer) {
@@ -2228,15 +2519,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (selectWarehouseStatus) selectWarehouseStatus.value = item.status || 'active';
 
-    // 3. Заповнюємо адресу
-    const countrySelect = document.getElementById('select-warehouse-country');
-    if (countrySelect) countrySelect.value = item.country || '';
-
-    const cityInput = document.getElementById('input-warehouse-city');
-    if (cityInput) cityInput.value = item.city || '';
-
-    const addressInput = document.getElementById('input-warehouse-address');
-    if (addressInput) addressInput.value = item.address || '';
+    // 3. Заповнюємо структуровану адресу
+    populateAddressForm(item);
 
     // 4. Правила прийому та примітки
     const rulesInput = document.getElementById('input-warehouse-rules');
@@ -2325,11 +2609,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   formCreateWarehouse?.addEventListener('submit', (e) => {
     e.preventDefault();
 
+    if (!validatePostalCodeField()) {
+      inputWarehousePostalCode?.reportValidity();
+      return;
+    }
+
     const id = formWarehouseId?.value;
     const newName = inputWarehouseName?.value.trim();
     const newContractor = document.getElementById('input-contractor-search')?.value.trim() || '';
-    const newCountry = selectWarehouseCountry?.value;
-    const newAddress = inputWarehouseAddress?.value.trim();
+    const structuredAddress = getStructuredAddressFromForm();
+    const countryMeta = resolveCountryMeta(structuredAddress.countryIso);
+    const newCountry = countryMeta ? countryMeta.nameUa : structuredAddress.countryIso;
+    const newCity = structuredAddress.city;
+    const newAddress = buildReadableAddress(structuredAddress);
     const rawType = selectWarehouseType?.value;
     const newType = (rawType === 'Власні' || rawType === 'Difreight') ? 'Difreight' : 'Партнерський';
     const rawVol = document.getElementById('input-warehouse-volume')?.value;
@@ -2371,34 +2663,42 @@ document.addEventListener('DOMContentLoaded', async () => {
       schedule[day] = isOff ? 'Вихідний' : time;
     });
 
-    // Збір контактів (Блок 2.1: вибір головного менеджера через чекбокс)
+    // Збір контактів (телефони з WhatsApp/Viber + окремий блок соцмереж без телефону)
     const contacts = Array.from(document.querySelectorAll('.contact-card')).map(card => {
       const isPrimary = !!card.querySelector('.contact-is-primary-checkbox')?.checked;
       const phones = Array.from(card.querySelectorAll('.phone-item')).map(pItem => {
         const number = pItem.querySelector('.phone-number')?.value.trim() || '';
-        const socials = Array.from(pItem.querySelectorAll('.social-item')).map(s => ({
-          type: s.querySelector('.social-type')?.value,
-          value: s.querySelector('.social-value')?.value.trim()
-        })).filter(s => s.value);
+        const phoneMessengers = Array.from(pItem.querySelectorAll('.phone-messenger-cb:checked')).map(cb => ({
+          type: cb.value,
+          value: number
+        }));
 
         return {
           number: number,
-          socials: socials
+          socials: phoneMessengers
         };
-      }).filter(p => p.number || p.socials.length > 0);
+      }).filter(p => p.number);
+
+      const standaloneSocials = Array.from(card.querySelectorAll('.standalone-social-item')).map(s => ({
+        type: s.querySelector('.standalone-social-type')?.value || 'Telegram',
+        value: s.querySelector('.standalone-social-value')?.value.trim() || ''
+      })).filter(s => s.value);
 
       const firstPhone = phones[0]?.number || '';
+      const telegramEntry = standaloneSocials.find(s => s.type === 'Telegram');
 
       return {
         fullName: card.querySelector('.contact-fullname')?.value.trim(),
         position: card.querySelector('.contact-position')?.value.trim(),
         email: card.querySelector('.contact-email')?.value.trim(),
+        telegram: telegramEntry?.value || '',
+        standaloneSocials: standaloneSocials,
         comment: card.querySelector('.contact-comment')?.value.trim(),
         phone: firstPhone,
         phones: phones,
         isPrimary: isPrimary
       };
-    }).filter(c => c.fullName || c.position || c.email || c.comment || c.phones.length > 0);
+    }).filter(c => c.fullName || c.position || c.email || c.standaloneSocials.length > 0 || c.comment || c.phones.length > 0);
 
     // Якщо є хоча б один контакт, гарантуємо наявність одного головного менеджера
     if (contacts.length > 0 && !contacts.some(c => c.isPrimary)) {
@@ -2433,8 +2733,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           name: newName || warehousesData[index].name,
           contractor: newContractor || warehousesData[index].contractor,
           country: newCountry || warehousesData[index].country,
-          flag: countryFlags[newCountry] || warehousesData[index].flag || '🌐',
+          countryIso: structuredAddress.countryIso || warehousesData[index].countryIso || '',
+          city: newCity || warehousesData[index].city || '',
+          flag: countryMeta?.flag || countryFlags[newCountry] || warehousesData[index].flag || '🌐',
           address: newAddress || warehousesData[index].address,
+          addressFields: structuredAddress,
           type: newType,
           isConsolidation: isConsolidation,
           volume: newVolume,
@@ -2462,8 +2765,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         name: newName,
         contractor: newContractor,
         country: newCountry,
-        flag: countryFlags[newCountry] || '🌐',
+        countryIso: structuredAddress.countryIso || '',
+        city: newCity || '',
+        flag: countryMeta?.flag || countryFlags[newCountry] || '🌐',
         address: newAddress,
+        addressFields: structuredAddress,
         type: newType,
         isConsolidation: isConsolidation,
         volume: newVolume,
@@ -2533,104 +2839,77 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // --- 10. Selection & Bulk Bar Logic ---
-  function updateBulkBar() {
-    const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
-    const checkedCount = new Set(Array.from(checkedBoxes).map(cb => cb.getAttribute('data-id'))).size;
+  // Соцмережі, які НЕ вимагають номер телефону для зв'язку (контакт за ніком / ID / посиланням)
+  const PHONE_REQUIRED_MESSENGERS = new Set(['WhatsApp', 'Viber']);
 
-    if (selectedCountSpan) selectedCountSpan.textContent = checkedCount;
-
-    if (checkedCount > 0) bulkActionsBar?.classList.remove('translate-y-24', 'opacity-0', 'pointer-events-none');
-    else bulkActionsBar?.classList.add('translate-y-24', 'opacity-0', 'pointer-events-none');
-  }
-
-  if (selectAllCheckbox) {
-    selectAllCheckbox.addEventListener('change', (e) => {
-      const isChecked = e.target.checked;
-      document.querySelectorAll('.row-checkbox').forEach(cb => {
-        const parentItem = cb.closest('.warehouse-item');
-        if (parentItem && !parentItem.classList.contains('hidden')) cb.checked = isChecked;
-      });
-      updateBulkBar();
-    });
-  }
-
-  // Допоміжна функція: Додавання соцмережі до конкретного телефону
-  function addSocialToPhone(phoneId, type = 'Telegram', value = '') {
-    const container = document.getElementById(`phone-socials-container-${phoneId}`);
+  function addStandaloneSocialRow(contactId, type = 'Telegram', value = '') {
+    const container = document.getElementById(`standalone-socials-container-${contactId}`);
     if (!container) return;
 
-    const socialId = `social-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
-    const socialHtml = `
-    <div id="${socialId}" class="social-item flex items-center gap-1.5">
-      <select class="social-type bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-700 w-28 shrink-0 font-medium focus:border-brand-500 focus:outline-none">
+    const socialId = `standalone-social-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
+    const html = `
+    <div id="${socialId}" class="standalone-social-item flex items-center gap-1.5">
+      <select class="standalone-social-type bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-700 w-32 shrink-0 font-medium focus:border-brand-500 focus:outline-none">
         <option value="Telegram" ${type === 'Telegram' ? 'selected' : ''}>Telegram</option>
-        <option value="Viber" ${type === 'Viber' ? 'selected' : ''}>Viber</option>
-        <option value="WhatsApp" ${type === 'WhatsApp' ? 'selected' : ''}>WhatsApp</option>
         <option value="WeChat" ${type === 'WeChat' ? 'selected' : ''}>WeChat</option>
+        <option value="Signal" ${type === 'Signal' ? 'selected' : ''}>Signal</option>
         <option value="LinkedIn" ${type === 'LinkedIn' ? 'selected' : ''}>LinkedIn</option>
-        <option value="Інше" ${type === 'Інше' ? 'selected' : ''}>Інше</option>
       </select>
-      <input type="text" placeholder="@username або номер/посилання" value="${(value || '').replace(/"/g, '&quot;')}" class="social-value flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-800 focus:border-brand-500 focus:outline-none">
-      <button type="button" onclick="document.getElementById('${socialId}').remove()" class="text-slate-300 hover:text-rose-500 p-1 transition cursor-pointer" title="Видалити соцмережу">
+      <input type="text" placeholder="@username, WeChat ID або посилання на профіль" value="${(value || '').replace(/"/g, '&quot;')}" class="standalone-social-value flex-1 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:border-brand-500 focus:outline-none">
+      <button type="button" onclick="document.getElementById('${socialId}').remove()" class="text-slate-300 hover:text-rose-500 p-1 transition cursor-pointer" title="Видалити">
         <i class="fa-solid fa-trash-can text-xs"></i>
       </button>
     </div>
-  `;
-    container.insertAdjacentHTML('beforeend', socialHtml);
+    `;
+    container.insertAdjacentHTML('beforeend', html);
   }
 
-  // Допоміжна функція: Додавання блоку телефону до картки особи
+  // Допоміжна функція: Додавання блоку телефону (месенджери, для яких телефон обов'язковий: WhatsApp, Viber)
   function addPhoneBlock(contactId, phoneData = {}) {
     const container = document.getElementById(`phones-container-${contactId}`);
     if (!container) return;
 
     const phoneId = `phone-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     const phoneNumber = phoneData.number || (typeof phoneData === 'string' ? phoneData : '') || '';
+    const existingTypes = new Set(
+      (Array.isArray(phoneData.socials) ? phoneData.socials : []).map(s => s.type)
+    );
+    const hasWhatsApp = existingTypes.has('WhatsApp');
+    const hasViber = existingTypes.has('Viber');
 
     const html = `
-    <div id="${phoneId}" class="phone-item bg-slate-50/90 p-2.5 rounded-lg border border-slate-200 space-y-2 relative shadow-2xs">
+    <div id="${phoneId}" class="phone-item bg-white p-2.5 rounded-lg border border-slate-200 space-y-2 relative shadow-2xs">
       <div class="flex items-center justify-between gap-2">
         <div class="flex-1">
           <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-            <i class="fa-solid fa-phone text-brand-500 mr-1"></i> Номер телефону
+            <i class="fa-solid fa-phone text-brand-500 mr-1"></i> Номер телефону <span class="text-slate-400 font-normal normal-case">(необов'язково)</span>
           </label>
-          <input type="tel" placeholder="+380..." value="${phoneNumber.replace(/"/g, '&quot;')}" class="phone-number w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:border-brand-500 focus:outline-none transition">
+          <input type="tel" placeholder="+380..." value="${phoneNumber.replace(/"/g, '&quot;')}" class="phone-number w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:bg-white focus:border-brand-500 focus:outline-none transition">
         </div>
         <button type="button" onclick="document.getElementById('${phoneId}').remove()" class="text-slate-300 hover:text-rose-500 p-1.5 transition cursor-pointer mt-4" title="Видалити телефон">
           <i class="fa-solid fa-trash-can text-xs"></i>
         </button>
       </div>
 
-      <!-- Прив'язані соцмережі саме до цього номера -->
-      <div class="pt-1.5 border-t border-slate-200/70 space-y-1.5">
-        <div class="flex items-center justify-between">
-          <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-            <i class="fa-solid fa-share-nodes text-[10px] text-slate-400"></i> Соцмережі до цього телефону
-          </span>
-          <button type="button" data-phone-id="${phoneId}" class="btn-add-phone-social text-[11px] text-brand-600 hover:underline font-semibold flex items-center gap-1 cursor-pointer">
-            <i class="fa-solid fa-plus text-[9px]"></i> Додати соцмережу
-          </button>
-        </div>
-        <div id="phone-socials-container-${phoneId}" class="space-y-1.5">
-          <!-- Соцмережі до цього телефону -->
-        </div>
+      <!-- Месенджери, прив'язані до номера телефону (телефон обов'язковий) -->
+      <div class="flex flex-wrap items-center gap-3 pt-1 border-t border-slate-100">
+        <span class="text-[10px] font-semibold text-slate-400">Месенджери за цим номером:</span>
+        <label class="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-700 cursor-pointer select-none">
+          <input type="checkbox" value="WhatsApp" class="phone-messenger-cb rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer" ${hasWhatsApp ? 'checked' : ''}>
+          <i class="fa-brands fa-whatsapp text-emerald-600 text-xs"></i> WhatsApp
+        </label>
+        <label class="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-700 cursor-pointer select-none">
+          <input type="checkbox" value="Viber" class="phone-messenger-cb rounded border-slate-300 text-purple-600 focus:ring-purple-500 cursor-pointer" ${hasViber ? 'checked' : ''}>
+          <i class="fa-brands fa-viber text-purple-600 text-xs"></i> Viber
+        </label>
       </div>
     </div>
     `;
 
     container.insertAdjacentHTML('beforeend', html);
-
-    // Додаємо соцмережі телефону
-    const socials = Array.isArray(phoneData.socials) ? phoneData.socials : [];
-    if (socials.length > 0) {
-      socials.forEach(s => addSocialToPhone(phoneId, s.type, s.value));
-    } else {
-      addSocialToPhone(phoneId);
-    }
   }
 
-  // 1. Динамічне додавання контактних осіб (Блок 2.1: вибір головного менеджера через чекбокс)
+  // 1. Динамічне додавання контактних осіб (Посада + Email обов'язкові; телефони + окремі соцмережі без телефону)
   function createContactRow(contact = {}) {
     const container = document.getElementById('contacts-repeater-container');
     if (!container) return;
@@ -2665,36 +2944,47 @@ document.addEventListener('DOMContentLoaded', async () => {
           <i class="fa-solid fa-arrow-right text-xs text-brand-500"></i>
         </div>
         <div class="sm:col-span-5">
-          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Посада</label>
-          <input type="text" list="contact-positions-list" placeholder="Оберіть або введіть посаду (напр. Комірник)" value="${(contact.position || '').replace(/"/g, '&quot;')}" class="contact-position w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white focus:border-brand-500 focus:outline-none transition">
+          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Посада <span class="text-rose-500">*</span></label>
+          <input type="text" required list="contact-positions-list" placeholder="Оберіть або введіть посаду (напр. Комірник)" value="${(contact.position || '').replace(/"/g, '&quot;')}" class="contact-position w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white focus:border-brand-500 focus:outline-none transition">
         </div>
       </div>
 
-      <!-- Рядок 2: Електронна пошта та Коментар -->
+      <!-- Рядок 2: Електронна пошта (обов'язково) та Коментар -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         <div>
-          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Електронна пошта</label>
-          <input type="email" placeholder="example@mail.com" value="${(contact.email || '').replace(/"/g, '&quot;')}" class="contact-email w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white focus:border-brand-500 focus:outline-none transition">
+          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Електронна пошта <span class="text-rose-500">*</span></label>
+          <input type="email" required placeholder="example@mail.com" value="${(contact.email || '').replace(/"/g, '&quot;')}" class="contact-email w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white focus:border-brand-500 focus:outline-none transition">
         </div>
         <div>
-          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Коментар (зона відповідальності, питання, зміни)</label>
-          <input type="text" placeholder="Відповідає за негабарит, фотозвіти тощо..." value="${(contact.comment || '').replace(/"/g, '&quot;')}" class="contact-comment w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white focus:border-brand-500 focus:outline-none transition">
+          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Коментар (зона відповідальності)</label>
+          <input type="text" placeholder="Відповідає за негабарит, фотозвіти..." value="${(contact.comment || '').replace(/"/g, '&quot;')}" class="contact-comment w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white focus:border-brand-500 focus:outline-none transition">
         </div>
       </div>
 
-      <!-- Блок Телефонів з прив'язаними соцмережами до кожного телефону -->
-      <div class="bg-slate-50/60 p-2.5 rounded-lg border border-slate-200/80 space-y-2">
+      <!-- Блок А: Телефони (необов'язково) та месенджери, де телефон обов'язковий (WhatsApp, Viber) -->
+      <div class="bg-slate-50/70 p-2.5 rounded-lg border border-slate-200/80 space-y-2">
         <div class="flex items-center justify-between">
           <span class="text-[11px] font-semibold text-slate-700 flex items-center gap-1.5">
-            <i class="fa-solid fa-phone-volume text-brand-600 text-xs"></i> Телефони та соцмережі
+            <i class="fa-solid fa-phone-volume text-brand-600 text-xs"></i> Телефони та месенджери за номером <span class="text-[10px] font-normal text-slate-400">(WhatsApp, Viber)</span>
           </span>
           <button type="button" data-contact-id="${contactId}" class="btn-add-phone-row text-[11px] text-brand-600 hover:underline font-semibold flex items-center gap-1 cursor-pointer">
             <i class="fa-solid fa-plus text-[9px]"></i> Додати телефон
           </button>
         </div>
-        <div id="phones-container-${contactId}" class="space-y-2">
-          <!-- Блоки телефонів будуть додаватися сюди -->
+        <div id="phones-container-${contactId}" class="space-y-2"></div>
+      </div>
+
+      <!-- Блок Б: Соцмережі та месенджери БЕЗ телефону (за ніком / ID) -->
+      <div class="bg-sky-50/50 p-2.5 rounded-lg border border-sky-200/70 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold text-slate-700 flex items-center gap-1.5">
+            <i class="fa-solid fa-at text-sky-600 text-xs"></i> Месенджери та соцмережі без телефону <span class="text-[10px] font-normal text-slate-500">(Telegram, WeChat, Signal, LinkedIn)</span>
+          </span>
+          <button type="button" data-contact-id="${contactId}" class="btn-add-standalone-social text-[11px] text-sky-700 hover:underline font-semibold flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-plus text-[9px]"></i> Додати за ніком
+          </button>
         </div>
+        <div id="standalone-socials-container-${contactId}" class="space-y-1.5"></div>
       </div>
     </div>
   `;
@@ -2723,23 +3013,47 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
-    // Нормалізуємо телефони (підтримуємо як новий масив phones, так і legacy phone + socials)
+    // Розділяємо наявні дані на телефони (з WhatsApp/Viber) та соцмережі без телефону
     let phonesList = [];
+    const standaloneList = Array.isArray(contact.standaloneSocials) ? [...contact.standaloneSocials] : [];
+
+    if (contact.telegram && !standaloneList.some(s => s.type === 'Telegram' && s.value === contact.telegram)) {
+      standaloneList.push({ type: 'Telegram', value: contact.telegram });
+    }
+
     if (Array.isArray(contact.phones) && contact.phones.length > 0) {
-      phonesList = contact.phones;
-    } else if (contact.phone || (Array.isArray(contact.socials) && contact.socials.length > 0)) {
-      phonesList = [
-        {
-          number: contact.phone || '',
-          socials: contact.socials || []
+      contact.phones.forEach(p => {
+        const pSocials = Array.isArray(p.socials) ? p.socials : [];
+        const phoneOnlySocials = [];
+        pSocials.forEach(s => {
+          if (PHONE_REQUIRED_MESSENGERS.has(s.type)) {
+            phoneOnlySocials.push(s);
+          } else if (s.value && !standaloneList.some(ex => ex.type === s.type && ex.value === s.value)) {
+            standaloneList.push({ type: s.type, value: s.value });
+          }
+        });
+        if (p.number || phoneOnlySocials.length > 0) {
+          phonesList.push({ number: p.number || '', socials: phoneOnlySocials });
         }
-      ];
+      });
+    } else if (contact.phone || (Array.isArray(contact.socials) && contact.socials.length > 0)) {
+      const legacySocials = Array.isArray(contact.socials) ? contact.socials : [];
+      const phoneOnlySocials = [];
+      legacySocials.forEach(s => {
+        if (PHONE_REQUIRED_MESSENGERS.has(s.type)) phoneOnlySocials.push(s);
+        else if (s.value) standaloneList.push({ type: s.type, value: s.value });
+      });
+      if (contact.phone || phoneOnlySocials.length > 0) {
+        phonesList.push({ number: contact.phone || '', socials: phoneOnlySocials });
+      }
     }
 
     if (phonesList.length > 0) {
       phonesList.forEach(p => addPhoneBlock(contactId, p));
-    } else {
-      addPhoneBlock(contactId);
+    }
+
+    if (standaloneList.length > 0) {
+      standaloneList.forEach(s => addStandaloneSocialRow(contactId, s.type, s.value));
     }
   }
 
@@ -2909,22 +3223,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function updateTariffCountersAndEmptyState() {
     const docCount = document.querySelectorAll('#tariff-documents-list .tariff-doc-item').length;
-    const docBadge = document.getElementById('doc-tariffs-count-badge');
     const emptyDocs = document.getElementById('tariff-documents-empty');
 
     const textInput = document.getElementById('input-warehouse-tariff-text');
-    const textBadge = document.getElementById('text-tariffs-count-badge');
     const textValidUntil = document.getElementById('input-warehouse-tariff-text-valid-until');
     const textBadgeContainer = document.getElementById('tariff-text-validity-badge-container');
 
-    if (docBadge) docBadge.textContent = docCount;
     if (emptyDocs) {
       if (docCount === 0) emptyDocs.classList.remove('hidden');
       else emptyDocs.classList.add('hidden');
     }
 
     const textLen = textInput?.value?.trim()?.length || 0;
-    if (textBadge) textBadge.textContent = textLen > 0 ? '1' : '0';
 
     if (textBadgeContainer && textValidUntil) {
       if (textValidUntil.value || textLen > 0) {
@@ -3041,8 +3351,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateTariffCountersAndEmptyState();
   }
 
+  const TARIFF_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 МБ
+  const TARIFF_ALLOWED_EXTENSIONS = ['pdf', 'xls', 'xlsx', 'xlsm', 'xlsb', 'csv'];
+
   function handleTariffFilesUpload(fileList) {
     if (!fileList || fileList.length === 0) return;
+
+    const validFiles = [];
+    const rejectedReasons = [];
+
+    Array.from(fileList).forEach(file => {
+      const ext = (file.name.split('.').pop() || '').toLowerCase();
+      if (!TARIFF_ALLOWED_EXTENSIONS.includes(ext)) {
+        rejectedReasons.push(`«${file.name}» — недопустимий формат (дозволено лише PDF та Excel: .pdf, .xlsx, .xls, .xlsm, .xlsb, .csv)`);
+        return;
+      }
+      if (file.size > TARIFF_MAX_FILE_SIZE_BYTES) {
+        rejectedReasons.push(`«${file.name}» — перевищено ліміт розміру 10 МБ`);
+        return;
+      }
+      validFiles.push(file);
+    });
+
+    if (rejectedReasons.length > 0) {
+      showToast(`Файл(и) відхилено: ${rejectedReasons.join('; ')}`);
+    }
+
+    if (validFiles.length === 0) return;
 
     // Спочатку переводимо всі попередні документи в статус неактивних
     document.querySelectorAll('#tariff-documents-list .tariff-doc-item').forEach(item => {
@@ -3059,7 +3394,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     nextYear.setFullYear(nextYear.getFullYear() + 1);
     const defaultValidUntil = nextYear.toISOString().split('T')[0];
 
-    Array.from(fileList).forEach((file, idx) => {
+    validFiles.forEach((file, idx) => {
       const sizeStr = formatFileSize(file.size);
       const uploadedAt = new Date().toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' });
       const reader = new FileReader();
@@ -3411,15 +3746,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  document.addEventListener('change', (e) => {
-    if (e.target.classList.contains('row-checkbox')) {
-      const id = e.target.getAttribute('data-id');
-      const isChecked = e.target.checked;
-      document.querySelectorAll(`.row-checkbox[data-id="${id}"]`).forEach(cb => cb.checked = isChecked);
-      updateBulkBar();
-    }
-  });
-
   document.getElementById('btn-add-contact')?.addEventListener('click', () => createContactRow());
 
   function updateCustomDropdown(inputId, value) {
@@ -3471,34 +3797,42 @@ document.addEventListener('DOMContentLoaded', async () => {
       schedule[day] = isOff ? 'Вихідний' : time;
     });
 
-    // Збір контактів (Блок 2.1: вибір головного менеджера через чекбокс)
+    // Збір контактів (телефони з WhatsApp/Viber + окремий блок соцмереж без телефону)
     const contacts = Array.from(document.querySelectorAll('.contact-card')).map(card => {
       const isPrimary = !!card.querySelector('.contact-is-primary-checkbox')?.checked;
       const phones = Array.from(card.querySelectorAll('.phone-item')).map(pItem => {
         const number = pItem.querySelector('.phone-number')?.value.trim() || '';
-        const socials = Array.from(pItem.querySelectorAll('.social-item')).map(s => ({
-          type: s.querySelector('.social-type')?.value,
-          value: s.querySelector('.social-value')?.value.trim()
-        })).filter(s => s.value);
+        const phoneMessengers = Array.from(pItem.querySelectorAll('.phone-messenger-cb:checked')).map(cb => ({
+          type: cb.value,
+          value: number
+        }));
 
         return {
           number: number,
-          socials: socials
+          socials: phoneMessengers
         };
-      }).filter(p => p.number || p.socials.length > 0);
+      }).filter(p => p.number);
+
+      const standaloneSocials = Array.from(card.querySelectorAll('.standalone-social-item')).map(s => ({
+        type: s.querySelector('.standalone-social-type')?.value || 'Telegram',
+        value: s.querySelector('.standalone-social-value')?.value.trim() || ''
+      })).filter(s => s.value);
 
       const firstPhone = phones[0]?.number || '';
+      const telegramEntry = standaloneSocials.find(s => s.type === 'Telegram');
 
       return {
         fullName: card.querySelector('.contact-fullname')?.value.trim(),
         position: card.querySelector('.contact-position')?.value.trim(),
         email: card.querySelector('.contact-email')?.value.trim(),
+        telegram: telegramEntry?.value || '',
+        standaloneSocials: standaloneSocials,
         comment: card.querySelector('.contact-comment')?.value.trim(),
         phone: firstPhone,
         phones: phones,
         isPrimary: isPrimary
       };
-    }).filter(c => c.fullName || c.position || c.email || c.comment || c.phones.length > 0);
+    }).filter(c => c.fullName || c.position || c.email || c.standaloneSocials.length > 0 || c.comment || c.phones.length > 0);
 
     if (contacts.length > 0 && !contacts.some(c => c.isPrimary)) {
       contacts[0].isPrimary = true;
@@ -3545,43 +3879,28 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   document.addEventListener('click', (e) => {
-    const actionBtn = e.target.closest('.action-menu-btn');
-
-    if (actionBtn) {
+    const quickEditBtn = e.target.closest('.quick-edit-btn');
+    if (quickEditBtn) {
       e.stopPropagation();
-      activeTargetWarehouseId = actionBtn.getAttribute('data-id');
-
-      // 1. Знаходимо поточний склад за його ID
-      const warehouse = warehousesData.find(w => w.id === activeTargetWarehouseId);
-
-      if (actionsDropdown && warehouse) {
-        // 2. Отримуємо кнопки дій
-        const btnArchive = actionsDropdown.querySelector('[data-action="open-archive"]');
-        const btnUnarchive = actionsDropdown.querySelector('[data-action="unarchive"]');
-
-        // 3. Якщо склад заархівований — показуємо "Відновити з архіву", ховаємо "Архівувати"
-        if (warehouse.status === 'archived') {
-          btnArchive?.classList.add('hidden');
-          btnUnarchive?.classList.remove('hidden');
-        } else {
-          // Якщо активний або неактивний — навпаки
-          btnArchive?.classList.remove('hidden');
-          btnUnarchive?.classList.add('hidden');
-        }
-
-        // 4. Позиціонування випадаючого меню поруч із кнопкою
-        const rect = actionBtn.getBoundingClientRect();
-        actionsDropdown.style.top = `${rect.bottom + window.scrollY + 4}px`;
-        actionsDropdown.style.left = `${rect.left + window.scrollX - 140}px`;
-
-        actionsDropdown.classList.remove('hidden');
-      }
+      const whId = quickEditBtn.getAttribute('data-id');
+      if (whId) openEditWarehouseForm(whId);
       return;
     }
 
-    // Закриття меню при кліку в будь-яку іншу область екрана
-    if (actionsDropdown && !e.target.closest('#actions-dropdown')) {
-      actionsDropdown.classList.add('hidden');
+    const quickArchiveBtn = e.target.closest('.quick-archive-btn');
+    if (quickArchiveBtn) {
+      e.stopPropagation();
+      const whId = quickArchiveBtn.getAttribute('data-id');
+      if (whId) openArchiveModal(whId);
+      return;
+    }
+
+    const quickUnarchiveBtn = e.target.closest('.quick-unarchive-btn');
+    if (quickUnarchiveBtn) {
+      e.stopPropagation();
+      const whId = quickUnarchiveBtn.getAttribute('data-id');
+      if (whId) updateWarehouseStatus(whId, 'active');
+      return;
     }
   });
 
@@ -3643,27 +3962,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       specialNotes: document.getElementById('input-warehouse-notes')?.value.trim()
     };
   }
-
-  if (cancelSelectionBtn) {
-    cancelSelectionBtn.addEventListener('click', () => {
-      document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = false);
-      if (selectAllCheckbox) selectAllCheckbox.checked = false;
-      updateBulkBar();
-    });
-  }
-
-  bulkArchiveBtn?.addEventListener('click', () => {
-    const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
-    const selectedIds = new Set(Array.from(checkedBoxes).map(cb => cb.getAttribute('data-id')));
-
-    selectedIds.forEach(id => {
-      if (id) updateWarehouseStatus(id, 'archived');
-    });
-
-    document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = false);
-    if (selectAllCheckbox) selectAllCheckbox.checked = false;
-    renderAllWarehouses();
-  });
 
   // --- 11. Triggers Setup ---
   setupModalTrigger('btn-settings', 'modal-settings');

@@ -183,23 +183,8 @@
             <tr
               class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase tracking-wider select-none">
 
-              <th class="relative px-3.5 py-3.5 w-11 text-center border-r border-slate-100">
-                <input type="checkbox" id="select-all"
-                  class="rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer">
-                <div
-                  class="col-resizer absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-brand-500/40 active:bg-brand-600 transition">
-                </div>
-              </th>
-
-              <th class="relative px-3.5 py-3.5 border-r border-slate-100 min-w-[180px]" style="width: 220px;">
-                <span class="truncate">Назва + Ознаки</span>
-                <div
-                  class="col-resizer absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-brand-500/40 active:bg-brand-600 transition">
-                </div>
-              </th>
-
-              <th class="relative px-3.5 py-3.5 border-r border-slate-100 min-w-[180px]" style="width: 220px;">
-                <span class="truncate">Країна та Адреса</span>
+              <th class="relative px-3.5 py-3.5 border-r border-slate-100 min-w-[220px]" style="width: 260px;">
+                <span class="truncate">Назва та Країна</span>
                 <div
                   class="col-resizer absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-brand-500/40 active:bg-brand-600 transition">
                 </div>
@@ -212,7 +197,7 @@
                 </div>
               </th>
 
-              <th class="relative px-3.5 py-3.5 border-r border-slate-100 min-w-[140px]" style="width: 170px;">
+              <th class="relative px-3 py-3.5 border-r border-slate-100 min-w-[110px]" style="width: 135px;">
                 <span class="truncate">Послуги</span>
                 <div
                   class="col-resizer absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-brand-500/40 active:bg-brand-600 transition">
@@ -234,7 +219,7 @@
                 </div>
               </th>
 
-              <th class="relative px-3 py-3.5 w-14 text-center">
+              <th class="relative px-3 py-3.5 w-20 text-center">
                 <span>Дії</span>
               </th>
 
@@ -287,23 +272,6 @@
       </div>
     </div>
   </main>
-
-  <!-- Actions Dropdown (Випадаюче меню дій з пунктом Редагувати) -->
-  <div id="actions-dropdown"
-    class="hidden fixed z-50 bg-white rounded-xl shadow-xl border border-slate-200 py-1 w-max text-xs font-medium text-slate-700 transition-all duration-150">
-    <button data-action="edit"
-      class="w-full text-left px-3.5 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-800 font-semibold whitespace-nowrap cursor-pointer">
-      <i class="fa-solid fa-pen text-brand-600 text-xs"></i> Редагувати
-    </button>
-    <button data-action="open-archive"
-      class="w-full text-left px-3.5 py-2 hover:bg-amber-50 text-amber-700 flex items-center gap-2 whitespace-nowrap cursor-pointer">
-      <i class="fa-solid fa-box-archive text-xs"></i> <span>Архівувати</span>
-    </button>
-    <button data-action="unarchive"
-      class="w-full text-left px-3.5 py-2 hover:bg-emerald-50 text-emerald-700 flex items-center gap-2 whitespace-nowrap cursor-pointer">
-      <i class="fa-solid fa-rotate-left text-xs"></i> <span>Відновити з архіву</span>
-    </button>
-  </div>
 
   <!-- MODAL: Створення / Редагування складу -->
   <div id="modal-create"
@@ -456,35 +424,99 @@
           </div>
         </div>
 
-        <!-- 2. Повна Адреса -->
-        <div class="bg-slate-50/60 border border-slate-200/70 rounded-xl p-4 space-y-4">
-          <div class="flex items-center gap-2 pb-2 border-b border-slate-200/50">
-            <span
-              class="w-6 h-6 rounded-md bg-emerald-100 text-emerald-700 font-bold text-xs flex items-center justify-center">2</span>
-            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700">Повна Адреса <span
-                class="text-rose-500">*</span></h4>
+        <!-- 2. Адреса (Структуровані поля) -->
+        <div class="bg-slate-50/60 border border-slate-200/70 rounded-xl p-4 space-y-3.5">
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/50">
+            <div class="flex items-center gap-2">
+              <span
+                class="w-6 h-6 rounded-md bg-emerald-100 text-emerald-700 font-bold text-xs flex items-center justify-center">2</span>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700">Адреса <span
+                  class="text-rose-500">*</span></h4>
+            </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <!-- Країна -->
-            <div>
-              <label class="block text-slate-700 text-[11px] font-semibold mb-1">Країна *</label>
-              <select id="select-warehouse-country" required
-                class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs">
-                <option value="">Оберіть країну</option>
-                <option value="Україна">Україна</option>
-                <option value="Китай">Китай</option>
-                <option value="Польща">Польща</option>
-                <option value="Німеччина">Німеччина</option>
-              </select>
+          <!-- Ряд 1: Країна, Індекс, Область/Штат -->
+          <div class="bg-white/80 border border-slate-200/70 rounded-xl p-3 space-y-3">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label for="select-warehouse-country" class="block text-slate-700 text-[11px] font-semibold mb-1">
+                  Країна <span class="text-rose-500">*</span>
+                </label>
+                <select id="select-warehouse-country" required
+                  class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
+                  <option value="">Оберіть країну</option>
+                  <option value="UA">UA — Україна</option>
+                  <option value="PL">PL — Польща</option>
+                  <option value="CN">CN — Китай</option>
+                  <option value="DE">DE — Німеччина</option>
+                  <option value="US">US — США</option>
+                  <option value="CA">CA — Канада</option>
+                  <option value="AU">AU — Австралія</option>
+                  <option value="GB">GB — Велика Британія</option>
+                  <option value="NL">NL — Нідерланди</option>
+                  <option value="TR">TR — Туреччина</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="input-warehouse-postal-code" class="block text-slate-700 text-[11px] font-semibold mb-1">
+                  Поштовий індекс <span class="text-rose-500">*</span>
+                </label>
+                <input type="text" id="input-warehouse-postal-code" required
+                  placeholder="03115 (UA), 00-001 (PL)"
+                  class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
+                <p id="postal-code-hint" class="text-[10px] text-slate-400 mt-1">Формат перевіряється під обрану країну</p>
+              </div>
+
+              <div>
+                <label for="input-warehouse-region" class="block text-slate-700 text-[11px] font-semibold mb-1">
+                  Область / Штат / Регіон
+                  <span id="region-required-star" class="text-rose-500 hidden">*</span>
+                </label>
+                <input type="text" id="input-warehouse-region"
+                  placeholder="Київська обл. або NY"
+                  class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
+              </div>
             </div>
 
-            <!-- Повна адреса (займає 2 колонки на десктопі) -->
-            <div class="md:col-span-2">
-              <label class="block text-slate-700 text-[11px] font-semibold mb-1">Повна адреса (місто, вулиця, будинок, корпус, склад) *</label>
-              <input type="text" id="input-warehouse-address" required
-                placeholder="м. Київ, вул. Промислова, 15, корпус 2, склад 4"
-                class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
+            <!-- Ряд 2: Місто, Вулиця, Квартира/Офіс -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 pt-2.5 border-t border-slate-100">
+              <div class="md:col-span-4">
+                <label for="input-warehouse-city" class="block text-slate-700 text-[11px] font-semibold mb-1">
+                  Місто / Населений пункт <span class="text-rose-500">*</span>
+                </label>
+                <input type="text" id="input-warehouse-city" required
+                  placeholder="Київ"
+                  class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
+              </div>
+
+              <div class="md:col-span-5">
+                <label for="input-warehouse-street" class="block text-slate-700 text-[11px] font-semibold mb-1">
+                  Вулиця <span class="text-rose-500">*</span>
+                </label>
+                <input type="text" id="input-warehouse-street" required
+                  placeholder="просп. Берестейський, 120"
+                  class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
+              </div>
+
+              <div class="md:col-span-3">
+                <label for="input-warehouse-address-line2" class="block text-slate-700 text-[11px] font-semibold mb-1">
+                  Квартира / Офіс / Корпус
+                </label>
+                <input type="text" id="input-warehouse-address-line2"
+                  placeholder="кв. 45 або офіс 302"
+                  class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
+              </div>
+            </div>
+
+            <!-- Ряд 3: Коментар -->
+            <div class="pt-2.5 border-t border-slate-100">
+              <label for="input-warehouse-delivery-instructions" class="block text-slate-700 text-[11px] font-semibold mb-1">
+                Коментар
+              </label>
+              <input type="text" id="input-warehouse-delivery-instructions"
+                placeholder="Код домофона 45К, поверх, ворота розвантаження..."
+                class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
             </div>
           </div>
         </div>
@@ -615,7 +647,7 @@
                 class="w-6 h-6 rounded-md bg-purple-100 text-purple-700 font-bold text-xs flex items-center justify-center">6</span>
               <div>
                 <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700">Контактні особи та посади</h4>
-                <p class="text-[10px] text-slate-400">Посадова особа &rarr; Посада, вибір головного менеджера (чекбокс), телефони із соцмережами</p>
+                <p class="text-[10px] text-slate-400">Обов'язкові: Посада та Email. Телефони (WhatsApp/Viber) та соцмережі за ніком (Telegram, WeChat, Signal, LinkedIn) — окремими блоками</p>
               </div>
             </div>
             <button type="button" id="btn-add-contact"
@@ -659,32 +691,29 @@
                 class="tariff-mode-tab px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-white text-teal-700 shadow-2xs flex items-center gap-1.5 cursor-pointer">
                 <i class="fa-solid fa-file-arrow-up text-[11px]"></i>
                 <span>Документи (файли)</span>
-                <span id="doc-tariffs-count-badge" class="px-1.5 py-0.2 bg-teal-50 text-teal-700 border border-teal-200 rounded-full text-[10px] font-bold">0</span>
               </button>
               <button type="button" data-tariff-mode="text"
                 class="tariff-mode-tab px-3 py-1.5 rounded-lg text-xs font-medium transition text-slate-600 hover:text-slate-900 flex items-center gap-1.5 cursor-pointer">
                 <i class="fa-solid fa-align-left text-[11px]"></i>
                 <span>Вставка тексту / коментар</span>
-                <span id="text-tariffs-count-badge" class="px-1.5 py-0.2 bg-slate-100 text-slate-600 border border-slate-200 rounded-full text-[10px] font-bold">0</span>
               </button>
             </div>
           </div>
 
-          <!-- Індикатор поточного активного тарифу (Взаємозамінність Блок 2.2) -->
+          <!-- Індикатор поточного активного тарифу -->
           <div id="tariff-active-indicator-banner" class="flex items-center justify-between p-2.5 rounded-xl border bg-emerald-50/80 border-emerald-200 text-emerald-900 text-xs shadow-2xs">
             <div class="flex items-center gap-2 min-w-0">
               <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
               <span class="font-bold shrink-0">Діючий тариф:</span>
               <span id="tariff-active-indicator-label" class="font-semibold text-emerald-800 truncate">Файл прайс-листа</span>
             </div>
-            <span class="text-[10px] text-emerald-700 font-medium shrink-0 ml-2 hidden sm:inline"><i class="fa-solid fa-rotate text-[9px] mr-1"></i> Тільки 1 активний тариф (взаємозамінні)</span>
           </div>
 
           <!-- ВАРІАНТ 1: Завантаження документа (прикріпити прайс-лист/документ від підрядника) -->
           <div id="tariff-panel-document" class="space-y-3">
             <div id="tariff-dropzone"
               class="border-2 border-dashed border-teal-300 hover:border-teal-500 bg-white hover:bg-teal-50/30 rounded-xl p-5 text-center transition cursor-pointer group">
-              <input type="file" id="input-tariff-files" multiple accept=".pdf,.xls,.xlsx,.csv,.doc,.docx,.png,.jpg,.jpeg" class="hidden">
+              <input type="file" id="input-tariff-files" multiple accept=".pdf,.xls,.xlsx,.xlsm,.xlsb,.csv" class="hidden">
               <div class="w-11 h-11 rounded-full bg-teal-50 border border-teal-100 text-teal-600 flex items-center justify-center mx-auto mb-2.5 group-hover:scale-105 transition">
                 <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
               </div>
@@ -692,7 +721,7 @@
                 Перетягніть файл прайс-листа сюди або <span class="text-teal-600 underline">оберіть на комп'ютері</span>
               </p>
               <p class="text-[11px] text-slate-400 mt-1">
-                PDF, Excel (.xlsx, .xls, .csv), Word, зображення (до 25 МБ). <span class="text-teal-700 font-semibold">Новий файл стає єдиним активним тарифом</span> (актуальність тексту та минулих файлів втрачається).
+                Формати: PDF, Excel (.xlsx, .xls, .xlsm, .xlsb, .csv), максимальний розмір — 10 МБ. <span class="text-teal-700 font-semibold">Новий файл стає єдиним активним тарифом</span> (актуальність тексту та минулих файлів втрачається).
               </p>
             </div>
 
@@ -866,25 +895,7 @@
 
         <!-- Перемикачі колонок -->
         <div class="space-y-2.5">
-          <!-- Країна та Адреса (Col 3) -->
-          <label
-            class="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-slate-100/80 transition cursor-pointer group">
-            <div class="flex items-center gap-3">
-              <div
-                class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-500 group-hover:text-brand-600 group-hover:border-brand-200 flex items-center justify-center text-xs transition">
-                <i class="fa-solid fa-location-dot"></i>
-              </div>
-              <span class="text-xs sm:text-sm font-semibold text-slate-800">Країна та Адреса</span>
-            </div>
-            <div class="relative inline-flex items-center">
-              <input type="checkbox" checked class="column-toggle sr-only peer" data-col="3">
-              <div
-                class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-600">
-              </div>
-            </div>
-          </label>
-
-          <!-- Завантаженість та Об'єм (Col 4) -->
+          <!-- Завантаженість та Об'єм (Col 2) -->
           <label
             class="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-slate-100/80 transition cursor-pointer group">
             <div class="flex items-center gap-3">
@@ -895,14 +906,14 @@
               <span class="text-xs sm:text-sm font-semibold text-slate-800">Завантаженість та Об'єм</span>
             </div>
             <div class="relative inline-flex items-center">
-              <input type="checkbox" checked class="column-toggle sr-only peer" data-col="4">
+              <input type="checkbox" checked class="column-toggle sr-only peer" data-col="2">
               <div
                 class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-600">
               </div>
             </div>
           </label>
 
-          <!-- Послуги (Col 5) -->
+          <!-- Послуги (Col 3) -->
           <label
             class="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-slate-100/80 transition cursor-pointer group">
             <div class="flex items-center gap-3">
@@ -913,14 +924,14 @@
               <span class="text-xs sm:text-sm font-semibold text-slate-800">Послуги</span>
             </div>
             <div class="relative inline-flex items-center">
-              <input type="checkbox" checked class="column-toggle sr-only peer" data-col="5">
+              <input type="checkbox" checked class="column-toggle sr-only peer" data-col="3">
               <div
                 class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-600">
               </div>
             </div>
           </label>
 
-          <!-- Правила та Обмеження (Col 6) -->
+          <!-- Правила та Обмеження (Col 4) -->
           <label
             class="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-slate-100/80 transition cursor-pointer group">
             <div class="flex items-center gap-3">
@@ -931,7 +942,7 @@
               <span class="text-xs sm:text-sm font-semibold text-slate-800">Правила та Обмеження</span>
             </div>
             <div class="relative inline-flex items-center">
-              <input type="checkbox" checked class="column-toggle sr-only peer" data-col="6">
+              <input type="checkbox" checked class="column-toggle sr-only peer" data-col="4">
               <div
                 class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-600">
               </div>
@@ -1276,23 +1287,6 @@
       </div>
 
     </div>
-  </div>
-
-  <!-- Floating Bulk Actions Bar -->
-  <div id="bulk-actions-bar"
-    class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl z-40 flex items-center gap-4 transition-all duration-300 translate-y-24 opacity-0 pointer-events-none">
-    <span class="text-xs font-medium text-slate-300 border-r border-slate-700 pr-4">
-      Вибрано: <strong id="selected-count" class="text-white font-bold">0</strong>
-    </span>
-    <div class="flex items-center gap-2">
-      <button id="bulk-archive-btn"
-        class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-medium transition flex items-center gap-1.5 cursor-pointer shadow-sm shadow-amber-600/20">
-        <i class="fa-solid fa-box-archive text-xs"></i> Архівувати
-      </button>
-    </div>
-    <button id="cancel-selection" class="text-slate-400 hover:text-white text-xs underline pl-2 cursor-pointer">&times;
-      Скасувати
-    </button>
   </div>
 
   <!-- Modal 5: Save Filter Template -->

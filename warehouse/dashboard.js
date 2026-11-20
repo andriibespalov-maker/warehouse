@@ -7,16 +7,19 @@ const warehouseInfoData = {
   // 1. Назва Складу
   name: "New FOSHAN",
   code: "WH-FOSHAN-01",
+  type: "Difreight", // 'Difreight' (Власний) або 'Партнерський'
+  volumeLimit: 400.0,
 
-  // 2. Повна Адреса
+  // 2. Повна Адреса (єдиний структурований формат у рядок: Індекс, Країна, Область/Регіон, Місто, Вулиця, Офіс/Корпус)
   address: {
-    country: "Китай",
-    province: "Гуандун",
-    city: "Фошань",
-    district: "Наньхай",
-    street: "No. 88 Logistics Avenue, Gate 3",
     zipCode: "528200",
-    fullAddress: "Китай, провінція Гуандун, м. Фошань, р-н Наньхай, No. 88 Logistics Avenue, Gate 3"
+    country: "Китай",
+    province: "провінція Гуандун",
+    city: "м. Фошань",
+    district: "р-н Наньхай",
+    street: "No. 88 Logistics Avenue",
+    addressLine2: "Gate 3",
+    fullAddress: "528200, Китай, провінція Гуандун, м. Фошань (р-н Наньхай), No. 88 Logistics Avenue, Gate 3"
   },
 
   // 3. Підрядник
@@ -61,33 +64,47 @@ const warehouseInfoData = {
     { day: "Неділя", hours: "Вихідний", isDayOff: true }
   ],
 
-  // 7. Контактні особи (Блок 2.1: вибір головного менеджера)
+  // 7. Контактні особи (структура як при створенні складу: телефони з WhatsApp/Viber + окремо месенджери/соцмережі без телефону)
   contacts: [
     {
       fullName: "L. Wei",
+      position: "Senior Warehouse Operator",
       role: "Senior Warehouse Operator",
       email: "wei.fsh@difreight.com",
       comment: "Відповідає за приймання негабаритних вантажів, вхідну фотофіксацію та перевірку пакування LCL.",
       isPrimary: true,
-      phone: "+86 757 8820 1102",
-      socials: {
-        wechat: "wxid_wei_foshan88",
-        whatsapp: "+8675788201102",
-        telegram: "@wei_foshan_logix"
-      }
+      phones: [
+        {
+          number: "+86 757 8820 1102",
+          socials: [
+            { type: "WhatsApp", value: "+86 757 8820 1102" }
+          ]
+        }
+      ],
+      standaloneSocials: [
+        { type: "WeChat", value: "wxid_wei_foshan88" },
+        { type: "Telegram", value: "@wei_foshan_logix" }
+      ]
     },
     {
       fullName: "Chen Xiu",
+      position: "Receiving & Inspection Supervisor",
       role: "Receiving & Inspection Supervisor",
       email: "chen.x@difreight.com",
       comment: "",
       isPrimary: false,
-      phone: "+86 757 8820 1105",
-      socials: {
-        wechat: "chen_xiu_wh",
-        whatsapp: "+8675788201105",
-        telegram: "@chen_xiu_wh"
-      }
+      phones: [
+        {
+          number: "+86 757 8820 1105",
+          socials: [
+            { type: "WhatsApp", value: "+86 757 8820 1105" }
+          ]
+        }
+      ],
+      standaloneSocials: [
+        { type: "WeChat", value: "chen_xiu_wh" },
+        { type: "Telegram", value: "@chen_xiu_wh" }
+      ]
     }
   ],
 
@@ -135,6 +152,24 @@ const warehouseInfoData = {
   specialNotes: "Склад обладнаний рампою для великогабаритного транспорту та вилковими навантажувачами до 5000 кг. У разі доставки небезпечних вантажів (напр. Lithium Batteries) обов'язково надавати MSDS та сертифікат UN38.3 до заїзду авто."
 };
 
+function formatStructuredAddressLine(addr = {}) {
+  if (!addr) return '';
+  const zip = (addr.postalCode || addr.zipCode || '').trim();
+  const country = (addr.countryName || addr.country || '').trim();
+  const region = (addr.region || addr.province || '').trim();
+  const cityBase = (addr.city || '').trim();
+  const district = (addr.district || '').trim();
+  const city = cityBase && district && !cityBase.includes(district)
+    ? `${cityBase} (${district})`
+    : (cityBase || district);
+  const street = (addr.street || '').trim();
+  const line2 = (addr.addressLine2 || '').trim();
+
+  const parts = [zip, country, region, city, street, line2].filter(Boolean);
+  if (parts.length >= 2) return parts.join(', ');
+  return (addr.fullAddress || addr.address || parts[0] || '').trim();
+}
+
 /**
  * Оновлення статистики Дашборду (включаючи Кейс 2.1: Оперативний рух — сумарна кількість підрейсів та загальний об'єм у м³)
  */
@@ -150,41 +185,81 @@ function updateDashboardStats(cargoes = [], subvoyages = []) {
   let allocatedVolume = 0;
   let readyVolume = 0;
   let notReadyVolume = 0;
+  let unlinkedOnWarehouseVolume = 0;
   let plannedPromisesVolume = 0;
   let unmarkedVolume = 0;
 
+  // Вантажі з реєстру, які вже фізично на складі (і промарковані), але ще не прив'язані до обіцянок чи перевезень
+  const unlinkedFromCargoes = (Array.isArray(cargoes) ? cargoes : [])
+    .filter(c =>
+      !c.dfPromise &&
+      !c.dfShipment &&
+      !c.subvoyage &&
+      c.statusCode !== 'received_unmarked' &&
+      c.statusCode !== 'in_transit' &&
+      c.statusCode !== 'issued' &&
+      c.statusCode !== 'returned_to_customer'
+    )
+    .reduce((sum, c) => sum + (parseFloat(c.volume) || 0), 0);
+
   if (svShipments) {
-    // 1. Завантажені на рейси (розподілені по контейнерах/підрейсах на оформленні або завантаженні)
-    allocatedVolume = svShipments
-      .filter(s => s.subvoyageId && s.status !== 'В дорозі' && s.status !== 'Вивантажений' && s.status !== 'Прибув на склад отримання' && s.status !== 'Отримано на складі')
+    // 1. Завантажені на рейси (фактичний об'єм на складі, розподілений по підрейсах на формуванні/завантаженні, без планових обіцянок і без рейсів, які вже в дорозі/вивантажені)
+    const activeWarehouseSvIds = new Set(
+      svSubvoyages
+        .filter(sv => sv.status !== 'В дорозі' && sv.status !== 'Вивантажений' && sv.status !== 'Прибув на склад отримання' && sv.status !== 'Завершений' && sv.status !== 'Вантаж видано отримувачам')
+        .map(sv => sv.id)
+    );
+
+    const assignedOnWarehouse = svShipments.filter(s =>
+      s.subvoyageId &&
+      (activeWarehouseSvIds.size === 0 || activeWarehouseSvIds.has(s.subvoyageId)) &&
+      s.status !== 'В дорозі' &&
+      s.status !== 'Вивантажений' &&
+      s.status !== 'Прибув на склад отримання'
+    );
+
+    allocatedVolume = assignedOnWarehouse
+      .filter(s => s.readinessCategory !== 'planned')
+      .reduce((sum, s) => sum + (parseFloat(s.totalVolume ?? s.volume) || 0), 0);
+
+    const assignedPlannedVolume = assignedOnWarehouse
+      .filter(s => s.readinessCategory === 'planned')
       .reduce((sum, s) => sum + (parseFloat(s.totalVolume ?? s.volume) || 0), 0);
 
     // Для нерозподілених позицій ділимо за категорією готовності (readinessCategory)
     const unassigned = svShipments.filter(s => !s.subvoyageId);
     readyVolume = unassigned
-      .filter(s => (s.readinessCategory || 'ready') === 'ready')
+      .filter(s => (s.readinessCategory || 'ready') === 'ready' && !s.isUnlinkedToPromise)
       .reduce((sum, s) => sum + (parseFloat(s.totalVolume ?? s.volume) || 0), 0);
     notReadyVolume = unassigned
-      .filter(s => s.readinessCategory === 'not_ready')
-      .reduce((sum, s) => sum + (parseFloat(s.totalVolume ?? s.volume) || 0), 0);
-    plannedPromisesVolume = unassigned
-      .filter(s => s.readinessCategory === 'planned')
+      .filter(s => s.readinessCategory === 'not_ready' && !s.isUnlinkedToPromise)
       .reduce((sum, s) => sum + (parseFloat(s.totalVolume ?? s.volume) || 0), 0);
     unmarkedVolume = unassigned
       .filter(s => s.readinessCategory === 'unmarked')
       .reduce((sum, s) => sum + (parseFloat(s.totalVolume ?? s.volume) || 0), 0);
+
+    const unlinkedFromPlanner = unassigned
+      .filter(s => s.isUnlinkedToPromise || s.readinessCategory === 'unlinked_on_warehouse')
+      .reduce((sum, s) => sum + (parseFloat(s.totalVolume ?? s.volume) || 0), 0);
+    unlinkedOnWarehouseVolume = unlinkedFromPlanner > 0 ? unlinkedFromPlanner : unlinkedFromCargoes;
+
+    plannedPromisesVolume = unassigned
+      .filter(s => s.readinessCategory === 'planned')
+      .reduce((sum, s) => sum + (parseFloat(s.totalVolume ?? s.volume) || 0), 0) + assignedPlannedVolume;
   } else {
     allocatedVolume = cargoes
-      .filter(c => (c.subvoyage || c.dfShipment) && c.statusCode !== 'issued' && c.statusCode !== 'returned_to_customer')
+      .filter(c => c.subvoyage && c.statusCode !== 'in_transit' && c.statusCode !== 'issued' && c.statusCode !== 'returned_to_customer')
       .reduce((sum, c) => sum + (parseFloat(c.volume) || 0), 0);
 
     readyVolume = cargoes
-      .filter(c => !c.subvoyage && (c.statusCode === 'ready_for_loading' || c.statusCode === 'storaging_in_warehouse'))
+      .filter(c => !c.subvoyage && (c.dfPromise || c.dfShipment) && (c.statusCode === 'ready_for_loading' || c.statusCode === 'storaging_in_warehouse'))
       .reduce((sum, c) => sum + (parseFloat(c.volume) || 0), 0);
 
     notReadyVolume = cargoes
-      .filter(c => !c.subvoyage && (c.statusCode === 'waiting_for_other_parts' || c.statusCode === 'damaged_delayed'))
+      .filter(c => !c.subvoyage && (c.dfPromise || c.dfShipment) && (c.statusCode === 'waiting_for_other_parts' || c.statusCode === 'awaiting_readiness' || c.statusCode === 'at_origin_warehouse' || c.statusCode === 'damaged_delayed'))
       .reduce((sum, c) => sum + (parseFloat(c.volume) || 0), 0);
+
+    unlinkedOnWarehouseVolume = unlinkedFromCargoes;
 
     plannedPromisesVolume = cargoes
       .filter(c => !c.subvoyage && (c.statusCode === 'promise' || c.statusCode === 'in_transit'))
@@ -195,13 +270,12 @@ function updateDashboardStats(cargoes = [], subvoyages = []) {
       .reduce((sum, c) => sum + (parseFloat(c.volume) || 0), 0);
   }
 
-  const inWorkVolume = readyVolume + notReadyVolume + unmarkedVolume;
+  const inWorkVolume = readyVolume + notReadyVolume + unlinkedOnWarehouseVolume + unmarkedVolume;
 
-  // 1. Загальний фактичний обʼєм на складі (м³), кількість вантажів та підрейсів
-  const rawCargoesVolume = cargoes.reduce((sum, c) => sum + (parseFloat(c.volume) || 0), 0);
-  const totalVolume = rawCargoesVolume > 0
-    ? rawCargoesVolume
-    : (allocatedVolume + readyVolume + notReadyVolume + unmarkedVolume);
+  // Головне правило: Об'єм на складі ТОЧНО дорівнює сумі всіх фактичних категорій розподілу на складі (крім планових обіцянок)
+  const totalVolume = Number((readyVolume + notReadyVolume + unlinkedOnWarehouseVolume + unmarkedVolume + allocatedVolume).toFixed(1));
+  const isOwnWarehouse = warehouseInfoData.type === 'Difreight' || warehouseInfoData.type === 'Власний';
+  const warehouseLimit = isOwnWarehouse && Number(warehouseInfoData.volumeLimit) > 0 ? Number(warehouseInfoData.volumeLimit) : null;
 
   const totalCargoes = cargoes.length > 0
     ? cargoes.length
@@ -246,21 +320,18 @@ function updateDashboardStats(cargoes = [], subvoyages = []) {
     receivedTodaySvCount = arrivedSvIds.size || (arrivedShipments.length > 0 ? 1 : 0);
   }
 
-  // 5. Відправлено сьогодні (об'єм м³ та кількість підрейсів)
-  const shippedTodayCargoes = cargoes.filter(c =>
-    c.shippedDate
-      ? c.shippedDate.startsWith(todayStr)
-      : ((c.statusCode === 'in_transit' || c.statusCode === 'issued') && (c.shipmentDate === todayStr || c.arrivalDate === todayStr))
-  );
-  let shippedTodayVolume = shippedTodayCargoes.reduce((sum, c) => sum + (parseFloat(c.volume) || 0), 0);
-  const shippedTodaySvSet = new Set(shippedTodayCargoes.map(c => c.subvoyage).filter(Boolean));
-  let shippedTodaySvCount = shippedTodaySvSet.size || (shippedTodayCargoes.length > 0 ? 1 : 0);
+  // 5. Планова відправка (те, що планується виїхати зі складу, щоб бачити майбутнє вивільнення місця)
+  const plannedDepartureSubvoyages = svSubvoyages.filter(s => s.status === 'Формування' || s.status === 'Завантажений');
+  const plannedDepartureSvIds = new Set(plannedDepartureSubvoyages.map(s => s.id));
+  let shippedTodayVolume = allocatedVolume;
+  let shippedTodaySvCount = plannedDepartureSvIds.size;
+  const shippedTodaySvSet = new Set(plannedDepartureSvIds);
 
-  if (shippedTodayVolume === 0 && svShipments) {
-    const loadedSvIds = new Set(svSubvoyages.filter(s => s.status === 'Завантажений').map(s => s.id));
-    const loadedShipments = svShipments.filter(s => s.subvoyageId && loadedSvIds.has(s.subvoyageId));
-    shippedTodayVolume = loadedShipments.reduce((sum, s) => sum + (parseFloat(s.totalVolume ?? s.volume) || 0), 0);
-    shippedTodaySvCount = loadedSvIds.size;
+  if (shippedTodayVolume === 0 && cargoes.length > 0) {
+    const plannedCargoes = cargoes.filter(c => c.subvoyage && c.statusCode !== 'in_transit' && c.statusCode !== 'issued');
+    shippedTodayVolume = plannedCargoes.reduce((sum, c) => sum + (parseFloat(c.volume) || 0), 0);
+    plannedCargoes.forEach(c => { if (c.subvoyage) shippedTodaySvSet.add(c.subvoyage); });
+    shippedTodaySvCount = shippedTodaySvSet.size;
   }
 
   // 6. Очікуємо (14 днів) — об'єм м³ та кількість підрейсів в дорозі за плановою датою прибуття (незалежно від фактичної)
@@ -280,7 +351,7 @@ function updateDashboardStats(cargoes = [], subvoyages = []) {
   ]);
   let expectedArrival3DaysSvCount = expectedArrivalSvSet.size;
 
-  if (expectedArrival3DaysVolume === 0 && svShipments) {
+  if (svShipments) {
     const inTransitSvIds = new Set(inTransitWithin14Days.map(s => s.id));
     const inTransitVol = svShipments
       .filter(s => s.subvoyageId && inTransitSvIds.has(s.subvoyageId))
@@ -288,22 +359,15 @@ function updateDashboardStats(cargoes = [], subvoyages = []) {
     expectedArrival3DaysVolume = inTransitVol + plannedPromisesVolume;
   }
 
-  // 7. Відправка (7 днів) — об'єм м³ та кількість підрейсів на формуванні/завантаженні
-  const expectedShipmentCargoes = cargoes.filter(c => {
-    const shipDate = c.expectedShipmentDate || c.plannedShipmentDate;
-    if (shipDate && shipDate >= todayStr && shipDate <= sevenDaysStr && c.statusCode !== 'in_transit') return true;
-    return Boolean(c.subvoyage && (c.statusCode === 'ready_for_loading' || c.statusCode === 'waiting_for_other_parts' || c.statusCode === 'storaging_in_warehouse'));
-  });
-  let expectedShipment3DaysVolume = expectedShipmentCargoes.reduce((sum, c) => sum + (parseFloat(c.volume) || 0), 0);
-  const expectedShipmentSvSet = new Set([
-    ...expectedShipmentCargoes.map(c => c.subvoyage).filter(Boolean),
-    ...svSubvoyages.filter(s => s.status === 'Формування' || s.status === 'Завантажений').map(s => s.id)
-  ]);
+  // 7. План виїзду (7 днів) — об'єм м³ та кількість підрейсів на формуванні/завантаженні
+  let expectedShipment3DaysVolume = allocatedVolume;
+  const expectedShipmentSvSet = new Set(plannedDepartureSvIds);
   const expectedShipment3DaysSvCount = expectedShipmentSvSet.size;
 
-  if (expectedShipment3DaysVolume === 0) {
-    expectedShipment3DaysVolume = allocatedVolume;
-  }
+  // Вільне місце = Загальний об'єм складу - Фактична завантаженість (без урахування «Очікується», тільки для власного складу)
+  const freeWarehouseVolume = warehouseLimit !== null
+    ? Math.max(0, Number((warehouseLimit - totalVolume).toFixed(1)))
+    : null;
 
   // Сумарні показники блоку «Оперативний рух» (Кейс 2.1): сумарна кількість підрейсів та загальний об'єм у кубометрах (м³)
   const opTotalSubvoyagesSet = new Set([
@@ -328,9 +392,13 @@ function updateDashboardStats(cargoes = [], subvoyages = []) {
   const totalCargoesElem = document.getElementById('stat-total-cargoes');
   const activeSubvoyagesElem = document.getElementById('stat-active-subvoyages');
   const totalVolumeElem = document.getElementById('stat-total-volume');
+  const summaryExpectedElem = document.getElementById('stat-summary-expected-volume');
+  const summaryFreeElem = document.getElementById('stat-summary-free-volume');
+  const summaryFreeWrap = document.getElementById('stat-summary-free-volume-wrap');
   const allocatedVolumeElem = document.getElementById('stat-allocated-volume');
   const readyVolumeElem = document.getElementById('stat-ready-volume');
   const notReadyVolumeElem = document.getElementById('stat-not-ready-volume');
+  const unlinkedOnWarehouseElem = document.getElementById('stat-unlinked-on-warehouse-volume');
   const plannedPromisesVolumeElem = document.getElementById('stat-planned-promises-volume');
   const unmarkedVolumeElem = document.getElementById('stat-unmarked-volume');
   const inWorkVolumeElem = document.getElementById('stat-in-work-volume');
@@ -353,7 +421,18 @@ function updateDashboardStats(cargoes = [], subvoyages = []) {
   if (opTotalVolumeElem) opTotalVolumeElem.innerText = `${opTotalMovementVolume.toFixed(1)} м³`;
 
   if (totalVolumeElem) {
-    totalVolumeElem.innerHTML = `${totalVolume.toFixed(1)} <span class="text-xs font-normal text-slate-500">/ 400.0 м³</span>`;
+    totalVolumeElem.innerHTML = warehouseLimit !== null
+      ? `${totalVolume.toFixed(1)} <span class="text-xs font-normal text-slate-500">/ ${warehouseLimit.toFixed(1)} м³</span>`
+      : `${totalVolume.toFixed(1)} <span class="text-xs font-normal text-slate-500">м³</span>`;
+  }
+  if (summaryExpectedElem) {
+    summaryExpectedElem.innerHTML = `${expectedArrival3DaysVolume.toFixed(1)} <span class="text-xs font-normal text-slate-500">м³</span>`;
+  }
+  if (summaryFreeWrap) {
+    summaryFreeWrap.classList.toggle('hidden', freeWarehouseVolume === null);
+  }
+  if (summaryFreeElem && freeWarehouseVolume !== null) {
+    summaryFreeElem.innerHTML = `${freeWarehouseVolume.toFixed(1)} <span class="text-xs font-normal text-slate-500">м³</span>`;
   }
   if (allocatedVolumeElem) {
     allocatedVolumeElem.innerHTML = `${allocatedVolume.toFixed(1)} <span class="text-[11px] font-normal text-slate-500">м³</span>`;
@@ -363,6 +442,9 @@ function updateDashboardStats(cargoes = [], subvoyages = []) {
   }
   if (notReadyVolumeElem) {
     notReadyVolumeElem.innerHTML = `${notReadyVolume.toFixed(1)} <span class="text-[11px] font-normal text-slate-500">м³</span>`;
+  }
+  if (unlinkedOnWarehouseElem) {
+    unlinkedOnWarehouseElem.innerHTML = `${unlinkedOnWarehouseVolume.toFixed(1)} <span class="text-[11px] font-normal text-slate-500">м³</span>`;
   }
   if (plannedPromisesVolumeElem) {
     plannedPromisesVolumeElem.innerHTML = `${plannedPromisesVolume.toFixed(1)} <span class="text-[11px] font-normal text-slate-500">м³</span>`;
@@ -525,14 +607,11 @@ function renderWarehouseServices(data = warehouseInfoData) {
       }
     }).join('');
 
-    const countBadge = selectedSubs ? `${activeCount}/${allSubs.length}` : `${allSubs.length}`;
-
     return `
       <div class="relative group/macro inline-flex">
         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border cursor-help ${meta.badgeClass} transition shadow-2xs hover:shadow-xs">
           <i class="fa-solid ${meta.icon} text-[11px] opacity-80"></i>
           <span>${catName}</span>
-          <span class="text-[10px] font-bold opacity-85 px-1 py-0.2 rounded-full bg-white/70 border border-black/5">(${countBadge})</span>
         </span>
 
         <!-- Тултіп нового контуру з переліком послуг: активні (✓) та неактивні (✕) -->
@@ -712,9 +791,13 @@ function renderWarehouseInfo(data = warehouseInfoData) {
   const nameElem = document.getElementById('wh-display-name');
   if (nameElem) nameElem.innerText = data.name;
 
-  // 2. Повна Адреса
+  // 2. Повна Адреса (у єдиному структурованому рядку: індекс, країна, область/регіон, місто, вулиця)
   const addressElem = document.getElementById('wh-display-address');
-  if (addressElem) addressElem.innerText = data.address.fullAddress;
+  const modalAddressElem = document.getElementById('wh-modal-display-address');
+  const formattedAddressLine = formatStructuredAddressLine(data.address);
+  if (data.address) data.address.fullAddress = formattedAddressLine;
+  if (addressElem) addressElem.innerText = formattedAddressLine;
+  if (modalAddressElem) modalAddressElem.innerText = formattedAddressLine;
 
   // 3. Підрядник
   const contractorElem = document.getElementById('wh-display-contractor');
@@ -768,63 +851,142 @@ function renderWarehouseInfo(data = warehouseInfoData) {
     `).join('');
   }
 
-  // 7. Контактні особи
+  // 7. Контактні особи (структура як при створенні складу: телефони з WhatsApp/Viber + окремий блок соцмереж без телефону)
+  const PHONE_MESSENGER_TYPES = new Set(['WhatsApp', 'Viber']);
+
+  function normalizeContactChannels(c = {}) {
+    const phones = [];
+    const standalone = Array.isArray(c.standaloneSocials)
+      ? c.standaloneSocials.filter(s => s && s.value).map(s => ({ type: s.type || 'Telegram', value: s.value }))
+      : [];
+
+    const pushStandaloneUnique = (type, value) => {
+      if (!value) return;
+      if (!standalone.some(s => (s.type || '').toLowerCase() === (type || '').toLowerCase() && s.value === value)) {
+        standalone.push({ type, value });
+      }
+    };
+
+    if (c.telegram) pushStandaloneUnique('Telegram', c.telegram);
+
+    if (Array.isArray(c.phones) && c.phones.length > 0) {
+      c.phones.forEach(p => {
+        const rawSocials = Array.isArray(p.socials) ? p.socials : [];
+        const phoneMessengers = [];
+        rawSocials.forEach(s => {
+          if (!s || !s.type) return;
+          if (PHONE_MESSENGER_TYPES.has(s.type)) {
+            if (!phoneMessengers.includes(s.type)) phoneMessengers.push(s.type);
+          } else if (s.value) {
+            pushStandaloneUnique(s.type, s.value);
+          }
+        });
+        if (p.number || phoneMessengers.length > 0) {
+          phones.push({ number: p.number || '', messengers: phoneMessengers });
+        }
+      });
+    } else if (c.phone || c.socials) {
+      const phoneMessengers = [];
+      if (c.socials && typeof c.socials === 'object' && !Array.isArray(c.socials)) {
+        if (c.socials.whatsapp) phoneMessengers.push('WhatsApp');
+        if (c.socials.viber) phoneMessengers.push('Viber');
+        if (c.socials.telegram) pushStandaloneUnique('Telegram', c.socials.telegram);
+        if (c.socials.wechat) pushStandaloneUnique('WeChat', c.socials.wechat);
+        if (c.socials.signal) pushStandaloneUnique('Signal', c.socials.signal);
+        if (c.socials.linkedin) pushStandaloneUnique('LinkedIn', c.socials.linkedin);
+      } else if (Array.isArray(c.socials)) {
+        c.socials.forEach(s => {
+          if (PHONE_MESSENGER_TYPES.has(s.type)) {
+            if (!phoneMessengers.includes(s.type)) phoneMessengers.push(s.type);
+          } else if (s.value) {
+            pushStandaloneUnique(s.type, s.value);
+          }
+        });
+      }
+      if (c.phone || phoneMessengers.length > 0) {
+        phones.push({ number: c.phone || '', messengers: phoneMessengers });
+      }
+    }
+
+    return { phones, standalone };
+  }
+
+  function renderStandaloneSocialBadge(s) {
+    const t = (s.type || '').toLowerCase();
+    let icon = 'fa-solid fa-at';
+    let cls = 'bg-slate-100 text-slate-700 border-slate-200';
+    if (t === 'telegram') {
+      icon = 'fa-brands fa-telegram text-sky-600';
+      cls = 'bg-sky-50 text-sky-800 border-sky-200';
+    } else if (t === 'wechat') {
+      icon = 'fa-brands fa-weixin text-emerald-600';
+      cls = 'bg-emerald-50 text-emerald-800 border-emerald-200';
+    } else if (t === 'signal') {
+      icon = 'fa-solid fa-comment-dots text-blue-600';
+      cls = 'bg-blue-50 text-blue-800 border-blue-200';
+    } else if (t === 'linkedin') {
+      icon = 'fa-brands fa-linkedin text-indigo-600';
+      cls = 'bg-indigo-50 text-indigo-800 border-indigo-200';
+    }
+    const safeVal = String(s.value || '').replace(/'/g, "\\'");
+    const safeType = String(s.type || '').replace(/'/g, "\\'");
+    return `
+      <button type="button" onclick="DashboardModule.copyTextWithToast('${safeVal}', '${safeType} скопійовано!')"
+        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border ${cls} hover:brightness-95 transition cursor-pointer"
+        title="${s.type}: ${s.value} (натисніть, щоб скопіювати)">
+        <i class="${icon} text-[10px]"></i>
+        <span>${s.type}:</span>
+        <span class="font-mono">${s.value}</span>
+      </button>
+    `;
+  }
+
+  function renderPhoneMessengerTag(type) {
+    if (type === 'WhatsApp') {
+      return `<span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"><i class="fa-brands fa-whatsapp text-emerald-600"></i> WhatsApp</span>`;
+    }
+    if (type === 'Viber') {
+      return `<span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-50 text-purple-700 border border-purple-200"><i class="fa-brands fa-viber text-purple-600"></i> Viber</span>`;
+    }
+    return '';
+  }
+
   const contactsElem = document.getElementById('wh-display-contacts');
   if (contactsElem) {
     contactsElem.innerHTML = data.contacts.map((c, idx) => {
-      // Підтримка як масиву телефонів із соцмережами phones, так і одиничного phone + socials
-      let phonesHtml = '';
-      if (Array.isArray(c.phones) && c.phones.length > 0) {
-        phonesHtml = c.phones.map(p => {
-          const socialsHtml = Array.isArray(p.socials) ? p.socials.map(s => {
-            const isWeChat = (s.type || '').toLowerCase() === 'wechat';
-            const isTelegram = (s.type || '').toLowerCase() === 'telegram';
-            const icon = isWeChat ? 'fa-brands fa-weixin' : (isTelegram ? 'fa-brands fa-telegram' : 'fa-solid fa-comment-dots');
-            const colorClass = isWeChat ? 'text-emerald-600' : (isTelegram ? 'text-sky-600' : 'text-slate-600');
-            return `<span class="${colorClass} font-semibold text-[10px]" title="${s.type}"><i class="${icon} mr-0.5"></i> ${s.value}</span>`;
-          }).join('') : '';
-
-          return `
-            <div class="py-1 border-t border-slate-200/60 first:border-0 first:pt-0">
-              <div class="flex items-center gap-1.5">
-                <i class="fa-solid fa-phone text-slate-400 mr-0.5"></i>
-                <a href="tel:${p.number}" class="hover:underline text-slate-800 font-semibold">${p.number || '-'}</a>
-              </div>
-              ${socialsHtml ? `<div class="flex flex-wrap gap-2 text-xs pt-1 pl-4">${socialsHtml}</div>` : ''}
-            </div>
-          `;
-        }).join('');
-      } else {
-        const wechatVal = c.socials?.wechat || '';
-        const telegramVal = c.socials?.telegram || '';
-        phonesHtml = `
-          <div class="space-y-1">
-            <div><i class="fa-solid fa-phone text-slate-400 mr-1.5"></i><a href="tel:${c.phone}" class="hover:underline">${c.phone}</a></div>
-            ${(wechatVal || telegramVal) ? `
-              <div class="flex gap-2 text-xs pt-1 border-t border-slate-200">
-                ${wechatVal ? `<span class="text-emerald-600 font-semibold text-[10px]" title="WeChat"><i class="fa-brands fa-weixin mr-0.5"></i> ${wechatVal}</span>` : ''}
-                ${telegramVal ? `<span class="text-sky-600 font-semibold text-[10px]" title="Telegram"><i class="fa-brands fa-telegram mr-0.5"></i> ${telegramVal}</span>` : ''}
-              </div>
-            ` : ''}
-          </div>
-        `;
-      }
-
+      const { phones, standalone } = normalizeContactChannels(c);
       const isPrimary = c.isPrimary || (idx === 0 && !data.contacts.some(item => item.isPrimary));
+
+      const phonesHtml = phones.length > 0
+        ? phones.map(p => `
+            <div class="flex flex-wrap items-center justify-between gap-1.5 py-1 border-t border-slate-200/60 first:border-0 first:pt-0">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <i class="fa-solid fa-phone text-slate-400 text-[10px]"></i>
+                <a href="tel:${p.number}" class="hover:underline text-slate-800 font-semibold">${p.number || '-'}</a>
+                ${p.messengers.map(renderPhoneMessengerTag).join('')}
+              </div>
+            </div>
+          `).join('')
+        : '';
+
+      const standaloneHtml = standalone.length > 0
+        ? `<div class="flex flex-wrap gap-1.5 pt-1.5 border-t border-slate-200/70">${standalone.map(renderStandaloneSocialBadge).join('')}</div>`
+        : '';
 
       return `
         <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
           <div class="flex items-center justify-between gap-2 flex-wrap">
             <div class="flex items-center gap-2">
-              <span class="font-bold text-slate-900 text-xs">${c.fullName}</span>
+              <span class="font-bold text-slate-900 text-xs">${c.fullName || '—'}</span>
               ${isPrimary ? `<span class="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md border border-amber-300 font-bold inline-flex items-center gap-1 shadow-2xs"><i class="fa-solid fa-star text-amber-500 text-[9px]"></i> Головний менеджер</span>` : ''}
             </div>
-            <span class="text-[10px] bg-brand-50 text-brand-700 px-2 py-0.5 rounded border border-brand-200 font-medium">${c.role || c.position || 'Контактна особа'}</span>
+            <span class="text-[10px] bg-brand-50 text-brand-700 px-2 py-0.5 rounded border border-brand-200 font-medium">${c.position || c.role || 'Контактна особа'}</span>
           </div>
           <div class="text-[11px] text-slate-600 space-y-1 font-mono">
             ${c.email ? `<div><i class="fa-regular fa-envelope text-slate-400 mr-1.5"></i><a href="mailto:${c.email}" class="hover:underline">${c.email}</a></div>` : ''}
             ${phonesHtml}
           </div>
+          ${standaloneHtml}
           ${(c.comment && c.comment.trim()) ? `
             <div class="pt-2 border-t border-slate-200/70 mt-1">
               <div class="bg-amber-50/70 border border-amber-200/70 rounded-lg px-2.5 py-1.5 flex items-start gap-2">
@@ -841,57 +1003,69 @@ function renderWarehouseInfo(data = warehouseInfoData) {
     }).join('');
   }
 
-  // Блок 3.1: Виведення основної контактної особи (з галочкою «Головний») у спойлер на головному екрані з кнопками швидкого копіювання
+  // Блок 3.1: Основна контактна особа у спойлері «Довідка та правила складу» (у структурі створення складу: Посада, Email, Телефони з WhatsApp/Viber, Месенджери без телефону, Коментар)
   const primaryContact = Array.isArray(data.contacts) && data.contacts.length > 0
     ? (data.contacts.find(c => c.isPrimary) || data.contacts[0])
     : null;
   const spoilerPrimaryContactElem = document.getElementById('wh-spoiler-primary-contact');
   if (spoilerPrimaryContactElem) {
     if (primaryContact) {
-      let phone = '';
-      let socialsList = [];
-      if (Array.isArray(primaryContact.phones) && primaryContact.phones.length > 0) {
-        phone = primaryContact.phones[0].number || '';
-        if (Array.isArray(primaryContact.phones[0].socials)) {
-          socialsList = primaryContact.phones[0].socials.map(s => `${s.type}: ${s.value}`);
-        }
-      } else if (primaryContact.phone) {
-        phone = primaryContact.phone;
-        if (primaryContact.socials?.wechat) socialsList.push(`WeChat: ${primaryContact.socials.wechat}`);
-        if (primaryContact.socials?.telegram) socialsList.push(`Telegram: ${primaryContact.socials.telegram}`);
-      }
-      spoilerPrimaryContactElem.innerHTML = `
-        <div class="bg-white border border-amber-200/80 rounded-lg p-2.5 space-y-1.5 shadow-2xs">
+      const { phones, standalone } = normalizeContactChannels(primaryContact);
+      const phonesRowsHtml = phones.map(p => {
+        const safeNum = String(p.number || '').replace(/'/g, "\\'");
+        return `
           <div class="flex items-center justify-between gap-2 flex-wrap">
-            <div class="flex items-center gap-1.5">
-              <span class="font-bold text-slate-900 text-xs">${primaryContact.fullName}</span>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span><i class="fa-solid fa-phone text-amber-600 mr-1 text-[10px]"></i>${p.number}</span>
+              ${p.messengers.map(renderPhoneMessengerTag).join('')}
+            </div>
+            <button type="button" onclick="DashboardModule.copyTextWithToast('${safeNum}', 'Телефон скопійовано!')"
+              class="text-[10px] text-slate-500 hover:text-amber-700 px-1.5 py-0.2 bg-slate-100 hover:bg-amber-50 rounded border border-slate-200 cursor-pointer shrink-0" title="Скопіювати телефон">
+              <i class="fa-regular fa-copy"></i>
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      spoilerPrimaryContactElem.innerHTML = `
+        <div class="bg-white border border-amber-200/80 rounded-lg p-3 space-y-2 shadow-2xs">
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="font-bold text-slate-900 text-xs">${primaryContact.fullName || '—'}</span>
               <span class="text-[9px] bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300 font-bold inline-flex items-center gap-1">
-                <i class="fa-solid fa-check text-amber-600 text-[8px]"></i> Головний
+                <i class="fa-solid fa-star text-amber-500 text-[8px]"></i> Головний менеджер
               </span>
             </div>
-            <span class="text-[10px] text-slate-500 font-medium">${primaryContact.position || primaryContact.role || 'Менеджер складу'}</span>
+            <span class="text-[10px] bg-brand-50 text-brand-700 px-2 py-0.5 rounded border border-brand-200 font-semibold">${primaryContact.position || primaryContact.role || 'Менеджер складу'}</span>
           </div>
-          <div class="space-y-1 font-mono text-[11px] text-slate-700 pt-1 border-t border-slate-100">
-            ${phone ? `
-              <div class="flex items-center justify-between gap-2">
-                <span><i class="fa-solid fa-phone text-amber-600 mr-1.5 text-[10px]"></i>${phone}</span>
-                <button type="button" onclick="DashboardModule.copyTextWithToast('${phone.replace(/'/g, "\\'")}', 'Телефон скопійовано!')"
-                  class="text-[10px] text-slate-500 hover:text-amber-700 px-1.5 py-0.2 bg-slate-100 hover:bg-amber-50 rounded border border-slate-200 cursor-pointer" title="Скопіювати телефон">
-                  <i class="fa-regular fa-copy"></i>
-                </button>
-              </div>
-            ` : ''}
+
+          <div class="space-y-1.5 font-mono text-[11px] text-slate-700 pt-1.5 border-t border-slate-100">
             ${primaryContact.email ? `
               <div class="flex items-center justify-between gap-2">
                 <span class="truncate"><i class="fa-regular fa-envelope text-slate-400 mr-1.5 text-[10px]"></i>${primaryContact.email}</span>
                 <button type="button" onclick="DashboardModule.copyTextWithToast('${primaryContact.email.replace(/'/g, "\\'")}', 'Email скопійовано!')"
-                  class="text-[10px] text-slate-500 hover:text-amber-700 px-1.5 py-0.2 bg-slate-100 hover:bg-amber-50 rounded border border-slate-200 cursor-pointer" title="Скопіювати Email">
+                  class="text-[10px] text-slate-500 hover:text-amber-700 px-1.5 py-0.2 bg-slate-100 hover:bg-amber-50 rounded border border-slate-200 cursor-pointer shrink-0" title="Скопіювати Email">
                   <i class="fa-regular fa-copy"></i>
                 </button>
               </div>
             ` : ''}
-            ${socialsList.length > 0 ? `<div class="text-[10px] text-emerald-700 font-semibold pt-0.5">${socialsList.join(' • ')}</div>` : ''}
+            ${phonesRowsHtml}
           </div>
+
+          ${standalone.length > 0 ? `
+            <div class="pt-1.5 border-t border-slate-100 space-y-1">
+              <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Месенджери та соцмережі без телефону</span>
+              <div class="flex flex-wrap gap-1.5">
+                ${standalone.map(renderStandaloneSocialBadge).join('')}
+              </div>
+            </div>
+          ` : ''}
+
+          ${(primaryContact.comment && primaryContact.comment.trim()) ? `
+            <div class="pt-1.5 border-t border-slate-100 text-[11px] text-slate-600 italic">
+              <i class="fa-regular fa-comment-dots text-amber-600 mr-1"></i>${primaryContact.comment.trim()}
+            </div>
+          ` : ''}
         </div>
       `;
     } else {
@@ -1067,9 +1241,21 @@ function renderWarehouseInfo(data = warehouseInfoData) {
     }
   }
 
-  // 9. Інструкція для клієнта
+  // 9. Інструкція для клієнта (текст + згорнутий прев'ю на 3 рядки з кнопкою «Ще / Згорнути»)
+  const instructionText = data.clientInstruction || data.shippingInstructions || '';
   const instructionElem = document.getElementById('wh-display-instruction');
-  if (instructionElem) instructionElem.value = data.clientInstruction || data.shippingInstructions || '';
+  if (instructionElem) instructionElem.value = instructionText;
+  const instructionPreviewElem = document.getElementById('wh-display-instruction-preview');
+  if (instructionPreviewElem) {
+    instructionPreviewElem.innerText = instructionText || 'Інструкція відправки не заповнена.';
+    instructionPreviewElem.classList.add('line-clamp-3');
+  }
+  const instrToggleBtn = document.getElementById('btn-toggle-instruction-preview');
+  const instrToggleLabel = document.getElementById('btn-instruction-preview-label');
+  const instrToggleIcon = document.getElementById('btn-instruction-preview-icon');
+  if (instrToggleLabel) instrToggleLabel.textContent = 'Ще';
+  if (instrToggleIcon) instrToggleIcon.classList.remove('rotate-180');
+  if (instrToggleBtn) instrToggleBtn.classList.toggle('hidden', !instructionText);
 
   // 10. Особливі примітки
   const notesElem = document.getElementById('wh-display-special-notes');
@@ -1386,11 +1572,32 @@ function copyTextWithToast(text, toastMessage = 'Скопійовано в бу�
 }
 
 /**
- * Швидке копіювання адреси складу (Блок 3.1)
+ * Розгортання / згортання тексту інструкції у вікні «Детальна інформація та правила складу»
+ */
+function toggleInstructionPreview() {
+  const previewElem = document.getElementById('wh-display-instruction-preview');
+  const labelElem = document.getElementById('btn-instruction-preview-label');
+  const iconElem = document.getElementById('btn-instruction-preview-icon');
+  if (!previewElem) return;
+
+  const isCollapsed = previewElem.classList.contains('line-clamp-3');
+  if (isCollapsed) {
+    previewElem.classList.remove('line-clamp-3');
+    if (labelElem) labelElem.textContent = 'Згорнути';
+    if (iconElem) iconElem.classList.add('rotate-180');
+  } else {
+    previewElem.classList.add('line-clamp-3');
+    if (labelElem) labelElem.textContent = 'Ще';
+    if (iconElem) iconElem.classList.remove('rotate-180');
+  }
+}
+
+/**
+ * Швидке копіювання адреси складу в один рядок у чіткому порядку полів (Індекс, Країна, Область/Регіон, Місто, Вулиця, Офіс/Корпус)
  */
 function copyWarehouseAddress() {
-  const addr = warehouseInfoData.address?.fullAddress || document.getElementById('wh-display-address')?.innerText || '';
-  copyTextWithToast(addr, 'Адресу складу скопійовано в буфер обміну!');
+  const addr = formatStructuredAddressLine(warehouseInfoData.address) || document.getElementById('wh-display-address')?.innerText || '';
+  copyTextWithToast(addr, 'Адресу складу скопійовано!');
 }
 
 /**
@@ -1403,24 +1610,40 @@ function copyPrimaryContactInfo() {
     if (typeof showToast === 'function') showToast('Основну контактну особу не вказано');
     return;
   }
-  let phone = '';
-  let socials = [];
+  const phoneLines = [];
+  const standaloneLines = [];
+  const phoneTypes = new Set(['WhatsApp', 'Viber']);
+
   if (Array.isArray(primary.phones) && primary.phones.length > 0) {
-    phone = primary.phones[0].number || '';
-    if (Array.isArray(primary.phones[0].socials)) {
-      socials = primary.phones[0].socials.map(s => `${s.type}: ${s.value}`);
-    }
+    primary.phones.forEach(p => {
+      if (!p.number) return;
+      const ms = (Array.isArray(p.socials) ? p.socials : []).filter(s => phoneTypes.has(s.type)).map(s => s.type);
+      phoneLines.push(ms.length ? `${p.number} (${ms.join(', ')})` : p.number);
+      (Array.isArray(p.socials) ? p.socials : []).filter(s => !phoneTypes.has(s.type) && s.value).forEach(s => {
+        standaloneLines.push(`${s.type}: ${s.value}`);
+      });
+    });
   } else if (primary.phone) {
-    phone = primary.phone;
-    if (primary.socials?.wechat) socials.push(`WeChat: ${primary.socials.wechat}`);
-    if (primary.socials?.telegram) socials.push(`Telegram: ${primary.socials.telegram}`);
+    const ms = [];
+    if (primary.socials?.whatsapp) ms.push('WhatsApp');
+    if (primary.socials?.viber) ms.push('Viber');
+    phoneLines.push(ms.length ? `${primary.phone} (${ms.join(', ')})` : primary.phone);
+    if (primary.socials?.wechat) standaloneLines.push(`WeChat: ${primary.socials.wechat}`);
+    if (primary.socials?.telegram) standaloneLines.push(`Telegram: ${primary.socials.telegram}`);
   }
+  if (Array.isArray(primary.standaloneSocials)) {
+    primary.standaloneSocials.forEach(s => {
+      if (s && s.value) standaloneLines.push(`${s.type}: ${s.value}`);
+    });
+  }
+
   const summary = [
-    `Головний менеджер складу (${warehouseInfoData.name}): ${primary.fullName}`,
+    `Головний менеджер складу (${warehouseInfoData.name}): ${primary.fullName || '—'}`,
     primary.position || primary.role ? `Посада: ${primary.position || primary.role}` : '',
-    phone ? `Телефон: ${phone}` : '',
     primary.email ? `Email: ${primary.email}` : '',
-    socials.length ? `Месенджери: ${socials.join(', ')}` : ''
+    phoneLines.length ? `Телефон: ${phoneLines.join('; ')}` : '',
+    standaloneLines.length ? `Месенджери та соцмережі: ${Array.from(new Set(standaloneLines)).join(', ')}` : '',
+    primary.comment ? `Коментар: ${primary.comment}` : ''
   ].filter(Boolean).join('\n');
 
   copyTextWithToast(summary, `Контакти (${primary.fullName}) скопійовано!`);
@@ -1666,8 +1889,9 @@ function openAcceptVoyageModal(voyageId, event = null) {
   voyage.shipments.forEach(sh => {
     const prevAcc = sh.acceptance || {};
     acceptShipmentState[sh.id] = {
-      shortage: Boolean(prevAcc.shortage),
-      shortagePlaces: Number(prevAcc.shortagePlaces) || 0,
+      actualPlaces: prevAcc.receivedPlaces !== undefined ? Number(prevAcc.receivedPlaces) : Number(sh.places || 0),
+      actualVolume: prevAcc.actualVolume !== undefined ? Number(prevAcc.actualVolume) : Number(Number(sh.volume || 0).toFixed(2)),
+      actualWeight: prevAcc.actualWeight !== undefined ? Number(prevAcc.actualWeight) : Number(Number(sh.weight || 0).toFixed(1)),
       damage: prevAcc.damageLevel || null,
       damageComment: prevAcc.damageComment || '',
       damagePhotos: Array.isArray(prevAcc.damagePhotos) ? [...prevAcc.damagePhotos] : []
@@ -1691,16 +1915,20 @@ function openAcceptVoyageModal(voyageId, event = null) {
   const dateEl = document.getElementById('accept-voyage-receive-date');
   if (dateEl) dateEl.innerText = toLocalDateTimeText();
 
-  // 2. Параметри підрейсу: Вага та Об'єм підтягуються автоматично, Кількість місць логіст вводить вручну
-  document.getElementById('accept-voyage-expected-places').innerText = voyage.expectedPlaces;
-  document.getElementById('accept-voyage-expected-weight').innerText = Math.round(voyage.expectedWeight);
-  document.getElementById('accept-voyage-expected-volume').innerText = Number(voyage.expectedVolume).toFixed(2);
-  const placesInput = document.getElementById('accept-voyage-actual-places');
-  const weightInput = document.getElementById('accept-voyage-actual-weight');
-  const volumeInput = document.getElementById('accept-voyage-actual-volume');
-  if (placesInput) placesInput.value = '';
-  if (weightInput) weightInput.value = Math.round(Number(voyage.expectedWeight) || 0);
-  if (volumeInput) volumeInput.value = Number(voyage.expectedVolume || 0).toFixed(2);
+  // 2. Очікувані підсумкові параметри підрейсу (фактичні рахуються автоматично як сума по перевезеннях)
+  const expPlacesSum = voyage.shipments.reduce((s, sh) => s + (Number(sh.places) || 0), 0);
+  const expWeightSum = voyage.shipments.reduce((s, sh) => s + (Number(sh.weight) || 0), 0);
+  const expVolumeSum = voyage.shipments.reduce((s, sh) => s + (Number(sh.volume) || 0), 0);
+  voyage.expectedPlaces = expPlacesSum;
+  voyage.expectedWeight = Number(expWeightSum.toFixed(1));
+  voyage.expectedVolume = Number(expVolumeSum.toFixed(2));
+
+  const expPlacesEl = document.getElementById('accept-voyage-expected-places');
+  const expWeightEl = document.getElementById('accept-voyage-expected-weight');
+  const expVolumeEl = document.getElementById('accept-voyage-expected-volume');
+  if (expPlacesEl) expPlacesEl.innerText = voyage.expectedPlaces;
+  if (expWeightEl) expWeightEl.innerText = Number(voyage.expectedWeight.toFixed(1));
+  if (expVolumeEl) expVolumeEl.innerText = Number(voyage.expectedVolume).toFixed(2);
 
   // 3. Фото — порожньо, масове завантаження
   currentAcceptVoyagePhotos.forEach(p => { if (p.url) URL.revokeObjectURL(p.url); });
@@ -1726,54 +1954,241 @@ function closeAcceptVoyageModal() {
 // Сумісність зі старими викликами (режим «Все добре / Проблеми» замінено новою формою)
 function toggleAcceptVoyageMode() { }
 
-function getAcceptActualParams() {
+function getShipmentDiscrepancy(sh, st) {
+  const expPlaces = Number(sh?.places) || 0;
+  const expVolume = Number((Number(sh?.volume) || 0).toFixed(2));
+  const expWeight = Number((Number(sh?.weight) || 0).toFixed(1));
+
+  const actPlaces = st?.actualPlaces === '' || st?.actualPlaces === null || st?.actualPlaces === undefined ? NaN : Number(st.actualPlaces);
+  const actVolume = st?.actualVolume === '' || st?.actualVolume === null || st?.actualVolume === undefined ? NaN : Number(st.actualVolume);
+  const actWeight = st?.actualWeight === '' || st?.actualWeight === null || st?.actualWeight === undefined ? NaN : Number(st.actualWeight);
+
+  const missingPlaces = isNaN(actPlaces) || actPlaces < 0;
+  const missingVolume = isNaN(actVolume) || actVolume < 0;
+  const missingWeight = isNaN(actWeight) || actWeight < 0;
+  const hasMissing = missingPlaces || missingVolume || missingWeight;
+
+  const placesDiff = missingPlaces ? null : actPlaces - expPlaces;
+  const volumeDiff = missingVolume ? null : Number((actVolume - expVolume).toFixed(2));
+  const weightDiff = missingWeight ? null : Number((actWeight - expWeight).toFixed(1));
+
+  const hasPlacesDiff = placesDiff !== null && placesDiff !== 0;
+  const hasVolumeDiff = volumeDiff !== null && Math.abs(volumeDiff) > 0.001;
+  const hasWeightDiff = weightDiff !== null && Math.abs(weightDiff) > 0.05;
+  const shortage = placesDiff !== null && placesDiff < 0;
+  const shortagePlaces = shortage ? Math.abs(placesDiff) : 0;
+
   return {
-    places: parseInt(document.getElementById('accept-voyage-actual-places')?.value, 10),
-    weight: parseFloat(document.getElementById('accept-voyage-actual-weight')?.value),
-    volume: parseFloat(document.getElementById('accept-voyage-actual-volume')?.value)
+    expPlaces, expVolume, expWeight,
+    actPlaces, actVolume, actWeight,
+    missingPlaces, missingVolume, missingWeight, hasMissing,
+    placesDiff, volumeDiff, weightDiff,
+    hasPlacesDiff, hasVolumeDiff, hasWeightDiff,
+    shortage, shortagePlaces,
+    hasAny: hasPlacesDiff || hasVolumeDiff || hasWeightDiff
+  };
+}
+
+function getAcceptActualParams() {
+  const v = currentAcceptVoyage;
+  if (!v || !Array.isArray(v.shipments)) {
+    return { places: 0, weight: 0, volume: 0, hasInvalid: false, missingPlacesCount: 0, missingVolumeCount: 0, missingWeightCount: 0, missingShipmentsCount: 0 };
+  }
+  let places = 0;
+  let weight = 0;
+  let volume = 0;
+  let missingPlacesCount = 0;
+  let missingVolumeCount = 0;
+  let missingWeightCount = 0;
+  let missingShipmentsCount = 0;
+
+  v.shipments.forEach(sh => {
+    const disc = getShipmentDiscrepancy(sh, acceptShipmentState[sh.id] || {});
+    if (disc.missingPlaces) missingPlacesCount++;
+    if (disc.missingVolume) missingVolumeCount++;
+    if (disc.missingWeight) missingWeightCount++;
+    if (disc.hasMissing) missingShipmentsCount++;
+
+    if (!disc.missingPlaces) places += disc.actPlaces;
+    if (!disc.missingVolume) volume += disc.actVolume;
+    if (!disc.missingWeight) weight += disc.actWeight;
+  });
+
+  return {
+    places,
+    weight: Number(weight.toFixed(1)),
+    volume: Number(volume.toFixed(2)),
+    hasInvalid: missingShipmentsCount > 0,
+    missingPlacesCount,
+    missingVolumeCount,
+    missingWeightCount,
+    missingShipmentsCount
   };
 }
 
 function getAcceptMismatch() {
   const v = currentAcceptVoyage;
-  if (!v) return { any: false };
+  if (!v) return { any: false, shipmentDiscrepancyCount: 0, missingShipmentsCount: 0 };
   const a = getAcceptActualParams();
   const expPlaces = Number(v.expectedPlaces) || 0;
-  const expWeight = Math.round(Number(v.expectedWeight) || 0);
+  const expWeight = Number((Number(v.expectedWeight) || 0).toFixed(1));
   const expVolume = Number((Number(v.expectedVolume) || 0).toFixed(2));
-  const placesDiff = isNaN(a.places) ? null : a.places - expPlaces;
-  const weightDiff = isNaN(a.weight) ? null : Number((a.weight - expWeight).toFixed(1));
-  const volumeDiff = isNaN(a.volume) ? null : Number((a.volume - expVolume).toFixed(2));
+  const placesDiff = a.places - expPlaces;
+  const weightDiff = Number((a.weight - expWeight).toFixed(1));
+  const volumeDiff = Number((a.volume - expVolume).toFixed(2));
+
+  const shipmentDiscrepancies = v.shipments
+    .map(sh => ({ sh, disc: getShipmentDiscrepancy(sh, acceptShipmentState[sh.id] || {}) }))
+    .filter(x => x.disc.hasAny);
+
   return {
     placesDiff, weightDiff, volumeDiff,
-    places: placesDiff !== null && placesDiff !== 0,
-    weight: weightDiff !== null && weightDiff !== 0,
-    volume: volumeDiff !== null && volumeDiff !== 0,
-    get any() { return this.places || this.weight || this.volume; }
+    places: placesDiff !== 0,
+    weight: Math.abs(weightDiff) > 0.05,
+    volume: Math.abs(volumeDiff) > 0.001,
+    shipmentDiscrepancyCount: shipmentDiscrepancies.length,
+    missingShipmentsCount: a.missingShipmentsCount,
+    get any() { return this.places || this.weight || this.volume || this.shipmentDiscrepancyCount > 0; }
   };
 }
 
+function formatShipmentDiscrepancyBadgesHtml(sh, disc) {
+  const pills = [];
+  if (disc.hasMissing) {
+    const missingNames = [];
+    if (disc.missingPlaces) missingNames.push('місця');
+    if (disc.missingVolume) missingNames.push("об'єм");
+    if (disc.missingWeight) missingNames.push('вагу');
+    pills.push(`<span class="px-1.5 py-0.2 rounded border text-[9px] font-bold bg-rose-100 text-rose-800 border-rose-300 inline-flex items-center gap-1"><i class="fa-solid fa-circle-exclamation text-[8px]"></i>Вкажіть ${missingNames.join(', ')}</span>`);
+  }
+  if (disc.hasPlacesDiff) {
+    const cls = disc.placesDiff < 0 ? 'bg-rose-100 text-rose-800 border-rose-300' : 'bg-amber-100 text-amber-900 border-amber-300';
+    const sign = disc.placesDiff > 0 ? '+' : '';
+    const extra = disc.placesDiff < 0 ? ' (недостача)' : ' (надлишок)';
+    pills.push(`<span class="px-1.5 py-0.2 rounded border text-[9px] font-bold ${cls}">Місця: ${sign}${disc.placesDiff} шт${extra}</span>`);
+  }
+  if (disc.hasVolumeDiff) {
+    const cls = disc.volumeDiff < 0 ? 'bg-rose-100 text-rose-800 border-rose-300' : 'bg-amber-100 text-amber-900 border-amber-300';
+    const sign = disc.volumeDiff > 0 ? '+' : '';
+    pills.push(`<span class="px-1.5 py-0.2 rounded border text-[9px] font-bold ${cls}">Об'єм: ${sign}${disc.volumeDiff.toFixed(2)} м³</span>`);
+  }
+  if (disc.hasWeightDiff) {
+    const cls = disc.weightDiff < 0 ? 'bg-rose-100 text-rose-800 border-rose-300' : 'bg-amber-100 text-amber-900 border-amber-300';
+    const sign = disc.weightDiff > 0 ? '+' : '';
+    pills.push(`<span class="px-1.5 py-0.2 rounded border text-[9px] font-bold ${cls}">Вага: ${sign}${disc.weightDiff} кг</span>`);
+  }
+
+  if (pills.length === 0) {
+    return `<span class="text-[9px] font-semibold text-emerald-600 inline-flex items-center gap-0.5"><i class="fa-solid fa-check text-[8px]"></i> Збігається з планом</span>`;
+  }
+
+  return `<div class="flex flex-wrap items-center gap-1 mt-1">${pills.join('')}</div>`;
+}
+
+function getParamInputClass(diff, isMissing = false) {
+  if (isMissing) {
+    return 'bg-rose-50/80 border-rose-500 text-rose-900 focus:ring-rose-500';
+  }
+  if (diff === null || Math.abs(diff) < 0.001) {
+    return 'bg-white border-slate-300 text-slate-900 focus:ring-indigo-500';
+  }
+  if (diff < 0) {
+    return 'bg-rose-50/70 border-rose-400 text-rose-900 focus:ring-rose-400';
+  }
+  return 'bg-amber-50/70 border-amber-400 text-amber-900 focus:ring-amber-400';
+}
+
+function setAcceptShipmentParam(shipmentId, field, rawValue) {
+  const st = acceptShipmentState[shipmentId];
+  const sh = currentAcceptVoyage?.shipments?.find(s => s.id === shipmentId);
+  if (!st || !sh) return;
+
+  const trimmed = String(rawValue ?? '').trim();
+  if (field === 'places') {
+    st.actualPlaces = trimmed === '' ? '' : Math.max(0, parseInt(trimmed, 10));
+  } else if (field === 'volume') {
+    st.actualVolume = trimmed === '' ? '' : Math.max(0, parseFloat(trimmed));
+  } else if (field === 'weight') {
+    st.actualWeight = trimmed === '' ? '' : Math.max(0, parseFloat(trimmed));
+  }
+
+  const disc = getShipmentDiscrepancy(sh, st);
+  const safeId = shipmentId.replace(/[^a-zA-Z0-9_-]/g, '_');
+
+  const rowEl = document.getElementById(`accept-row-${safeId}`);
+  if (rowEl) {
+    rowEl.className = `${(disc.hasMissing || disc.shortage) ? 'bg-rose-50/60' : disc.hasAny ? 'bg-amber-50/50' : 'bg-white'} align-top transition-colors`;
+  }
+  const diffEl = document.getElementById(`accept-row-diff-${safeId}`);
+  if (diffEl) {
+    diffEl.innerHTML = formatShipmentDiscrepancyBadgesHtml(sh, disc);
+  }
+
+  const pInp = document.getElementById(`accept-inp-places-${safeId}`);
+  const vInp = document.getElementById(`accept-inp-volume-${safeId}`);
+  const wInp = document.getElementById(`accept-inp-weight-${safeId}`);
+  const baseCls = 'w-16 border rounded px-1.5 py-0.5 font-mono font-bold text-[11px] focus:ring-2 focus:outline-none transition';
+  if (pInp) pInp.className = `${baseCls} ${getParamInputClass(disc.placesDiff, disc.missingPlaces)}`;
+  if (vInp) vInp.className = `${baseCls} ${getParamInputClass(disc.volumeDiff, disc.missingVolume)}`;
+  if (wInp) wInp.className = `${baseCls} ${getParamInputClass(disc.weightDiff, disc.missingWeight)}`;
+
+  updateAcceptParamsDiff();
+}
+
 function updateAcceptParamsDiff() {
+  const a = getAcceptActualParams();
   const m = getAcceptMismatch();
-  const fmt = (diff, unit) => {
+
+  const setText = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
+  setText('accept-voyage-actual-places-display', a.places);
+  setText('accept-voyage-actual-volume-display', a.volume.toFixed(2));
+  setText('accept-voyage-actual-weight-display', Number(a.weight.toFixed(1)));
+
+  const fmt = (diff, unit, missingCount) => {
+    if (missingCount > 0) {
+      return `<span class="text-rose-600"><i class="fa-solid fa-circle-exclamation mr-0.5"></i>Не заповнено (${missingCount})</span>`;
+    }
     if (diff === null) return '';
-    if (diff === 0) return `<span class="text-emerald-600"><i class="fa-solid fa-check mr-0.5"></i>Збігається</span>`;
+    if (Math.abs(diff) < 0.001) return `<span class="text-emerald-600"><i class="fa-solid fa-check mr-0.5"></i>Збігається</span>`;
     const cls = diff < 0 ? 'text-rose-600' : 'text-amber-600';
     return `<span class="${cls}"><i class="fa-solid fa-not-equal mr-0.5"></i>${diff > 0 ? '+' : ''}${diff} ${unit}</span>`;
   };
   const setHtml = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
-  setHtml('accept-voyage-diff-places', fmt(m.placesDiff, 'шт'));
-  setHtml('accept-voyage-diff-weight', fmt(m.weightDiff, 'кг'));
-  setHtml('accept-voyage-diff-volume', fmt(m.volumeDiff, 'м³'));
+  setHtml('accept-voyage-diff-places', fmt(m.placesDiff, 'шт', a.missingPlacesCount));
+  setHtml('accept-voyage-diff-weight', fmt(m.weightDiff, 'кг', a.missingWeightCount));
+  setHtml('accept-voyage-diff-volume', fmt(m.volumeDiff, 'м³', a.missingVolumeCount));
 
   const banner = document.getElementById('accept-voyage-mismatch-banner');
   const bannerText = document.getElementById('accept-voyage-mismatch-text');
-  if (banner) banner.classList.toggle('hidden', !m.any);
-  if (bannerText && m.any) {
-    bannerText.innerText = m.places && m.placesDiff < 0
-      ? `Не вистачає ${Math.abs(m.placesDiff)} місць відносно очікуваних. Позначте у списку нижче, в яких перевезеннях недостача — відповідальні менеджери отримають сповіщення.`
-      : 'Параметри не збігаються з очікуваними. Якщо в якомусь перевезенні не вистачає місць — позначте недостачу у списку нижче.';
+  const showBanner = a.hasInvalid;
+  if (banner) {
+    banner.classList.toggle('hidden', !showBanner);
+    banner.className = `${showBanner ? '' : 'hidden '}p-3 rounded-xl border text-[11px] flex items-start gap-2 bg-rose-50 border-rose-300 text-rose-900`;
   }
+  if (bannerText && showBanner) {
+    const shWord = a.missingShipmentsCount === 1 ? 'перевезенні' : 'перевезеннях';
+    bannerText.innerText = `Не заповнено фактичні параметри у ${a.missingShipmentsCount} ${shWord}. Введіть кількість місць, об'єм та вагу для кожного перевезення (якщо позиція не надійшла — вкажіть 0).`;
+  }
+
+  // Керування кнопками підтвердження у футері
+  const btnStandard = document.getElementById('btn-accept-voyage-standard');
+  const btnAdjusted = document.getElementById('btn-accept-voyage-adjusted');
+  const footerHint = document.getElementById('accept-voyage-footer-hint');
+  if (btnStandard) {
+    btnStandard.classList.toggle('hidden', m.any || a.hasInvalid);
+  }
+  if (btnAdjusted) {
+    btnAdjusted.classList.toggle('ring-2', m.any && !a.hasInvalid);
+    btnAdjusted.classList.toggle('ring-amber-300', m.any && !a.hasInvalid);
+  }
+  if (footerHint) {
+    footerHint.innerText = a.hasInvalid
+      ? 'Заповніть усі обов\'язкові фактичні параметри по кожному перевезенню.'
+      : m.any
+        ? 'Виявлено розбіжності по перевезеннях — підрейс буде прийнято зі статусом «Прийнято з коригуванням / уточненням».'
+        : 'Підрейс перейде у «Вивантажений», перевезення — в «Отримано на складі». За потреби можна обрати «Прийняти з коригуванням / уточненням».';
+  }
+
   renderAcceptShortageSummary();
 }
 
@@ -1783,6 +2198,9 @@ function renderAcceptShipmentsList() {
 
   tbody.innerHTML = currentAcceptVoyage.shipments.map(sh => {
     const st = acceptShipmentState[sh.id] || {};
+    const disc = getShipmentDiscrepancy(sh, st);
+    const safeId = sh.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+
     const damageBtns = Object.entries(ACCEPT_DAMAGE_LEVELS).map(([key, lvl]) => `
       <button type="button" onclick="DashboardModule.setAcceptDamage('${sh.id}', '${key}')" title="${lvl.label}: ${lvl.desc}"
         class="px-1.5 py-1 rounded-md border text-[10px] font-bold inline-flex items-center gap-1 cursor-pointer transition ${st.damage === key ? lvl.on : lvl.off}">
@@ -1802,7 +2220,7 @@ function renderAcceptShipmentsList() {
     const detailBadgeCls = st.damage === 'red' ? 'text-rose-800' : 'text-amber-900';
 
     const damageExtraHtml = isDamaged ? `
-      <div class="mt-2 p-2 rounded-lg border ${detailBorderCls} space-y-1.5 min-w-[240px]"
+      <div class="mt-2 p-2 rounded-lg border ${detailBorderCls} space-y-1.5 min-w-[230px]"
            ondragover="event.preventDefault(); this.classList.add('ring-2','ring-indigo-400')"
            ondragleave="this.classList.remove('ring-2','ring-indigo-400')"
            ondrop="event.preventDefault(); this.classList.remove('ring-2','ring-indigo-400'); DashboardModule.handleShipmentDamagePhotoFiles('${sh.id}', event.dataTransfer.files)">
@@ -1819,7 +2237,6 @@ function renderAcceptShipmentsList() {
         </div>
         <div class="text-[9px] text-amber-800 flex items-center justify-between gap-2 flex-wrap">
           <span><i class="fa-solid fa-bell mr-0.5"></i>Менеджер <strong>${sh.manager}</strong> отримає сповіщення</span>
-          <span class="text-slate-400">Можна перетягнути кілька фото сюди</span>
         </div>
         ${damagePhotos.length > 0 ? `
           <div class="flex items-center gap-1.5 flex-wrap pt-0.5">
@@ -1843,8 +2260,10 @@ function renderAcceptShipmentsList() {
       </div>
     ` : '';
 
+    const baseCls = 'w-16 border rounded px-1.5 py-0.5 font-mono font-bold text-[11px] focus:ring-2 focus:outline-none transition';
+
     return `
-      <tr class="${st.shortage ? 'bg-rose-50/60' : 'bg-white'} align-top">
+      <tr id="accept-row-${safeId}" class="${(disc.hasMissing || disc.shortage) ? 'bg-rose-50/60' : disc.hasAny ? 'bg-amber-50/50' : 'bg-white'} align-top transition-colors">
         <td class="p-2">
           <div class="font-mono font-bold text-slate-900">${sh.id}</div>
           <div class="text-slate-600 font-semibold">${sh.client}</div>
@@ -1855,22 +2274,28 @@ function renderAcceptShipmentsList() {
           <div><strong>${sh.places}</strong> шт</div>
           <div class="text-[10px] text-slate-500">${Number(sh.volume).toFixed(2)} м³ · ${sh.weight} кг</div>
         </td>
-        <td class="p-2 whitespace-nowrap">
-          <label class="inline-flex items-center gap-1.5 cursor-pointer select-none">
-            <input type="checkbox" ${st.shortage ? 'checked' : ''} onchange="DashboardModule.toggleAcceptShortage('${sh.id}', this.checked)"
-              class="accent-rose-600 w-3.5 h-3.5 rounded cursor-pointer">
-            <span class="font-bold ${st.shortage ? 'text-rose-700' : 'text-slate-600'}">Недостача</span>
-          </label>
-          ${st.shortage ? `
-            <div class="mt-1 flex items-center gap-1">
-              <span class="text-[10px] text-slate-500">не вистачає</span>
-              <input type="number" min="1" max="${sh.places}" step="1" value="${st.shortagePlaces || ''}" placeholder="к-сть"
-                oninput="DashboardModule.setAcceptShortagePlaces('${sh.id}', this.value)"
-                class="w-14 bg-white border border-rose-300 rounded px-1.5 py-0.5 font-mono font-bold text-rose-800 text-[11px] focus:ring-2 focus:ring-rose-400 focus:outline-none">
-              <span class="text-[10px] text-slate-500">шт</span>
-            </div>
-            <div class="text-[9px] text-amber-700 mt-0.5"><i class="fa-solid fa-bell mr-0.5"></i>Сповіщення: ${sh.manager}</div>
-          ` : ''}
+        <td class="p-2">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <label class="inline-flex flex-col">
+              <span class="text-[9px] text-slate-400 font-semibold">Місць (шт)</span>
+              <input id="accept-inp-places-${safeId}" type="number" min="0" step="1" value="${st.actualPlaces ?? ''}"
+                oninput="DashboardModule.setAcceptShipmentParam('${sh.id}', 'places', this.value)"
+                class="${baseCls} ${getParamInputClass(disc.placesDiff, disc.missingPlaces)}">
+            </label>
+            <label class="inline-flex flex-col">
+              <span class="text-[9px] text-slate-400 font-semibold">Об'єм (м³)</span>
+              <input id="accept-inp-volume-${safeId}" type="number" min="0" step="0.01" value="${st.actualVolume ?? ''}"
+                oninput="DashboardModule.setAcceptShipmentParam('${sh.id}', 'volume', this.value)"
+                class="${baseCls} ${getParamInputClass(disc.volumeDiff, disc.missingVolume)}">
+            </label>
+            <label class="inline-flex flex-col">
+              <span class="text-[9px] text-slate-400 font-semibold">Вага (кг)</span>
+              <input id="accept-inp-weight-${safeId}" type="number" min="0" step="0.1" value="${st.actualWeight ?? ''}"
+                oninput="DashboardModule.setAcceptShipmentParam('${sh.id}', 'weight', this.value)"
+                class="${baseCls} ${getParamInputClass(disc.weightDiff, disc.missingWeight)}">
+            </label>
+          </div>
+          <div id="accept-row-diff-${safeId}">${formatShipmentDiscrepancyBadgesHtml(sh, disc)}</div>
         </td>
         <td class="p-2">
           <div class="flex items-center gap-1 flex-wrap">${damageBtns}</div>
@@ -1886,18 +2311,20 @@ function renderAcceptShipmentsList() {
 function renderAcceptShortageSummary() {
   const el = document.getElementById('accept-voyage-shortage-summary');
   if (!el || !currentAcceptVoyage) return;
-  const states = currentAcceptVoyage.shipments.map(sh => acceptShipmentState[sh.id] || {});
-  const shortageCount = states.filter(s => s.shortage).length;
-  const shortagePlaces = states.reduce((sum, s) => sum + (s.shortage ? (Number(s.shortagePlaces) || 0) : 0), 0);
+  const rows = currentAcceptVoyage.shipments.map(sh => {
+    const st = acceptShipmentState[sh.id] || {};
+    return { sh, st, disc: getShipmentDiscrepancy(sh, st) };
+  });
+  const missingCount = rows.filter(r => r.disc.hasMissing).length;
+  const discCount = rows.filter(r => r.disc.hasAny).length;
+  const shortagePlaces = rows.reduce((sum, r) => sum + r.disc.shortagePlaces, 0);
   const counts = { green: 0, yellow: 0, red: 0 };
-  states.forEach(s => { if (s.damage) counts[s.damage]++; });
-  const unset = states.filter(s => !s.damage).length;
-  const m = getAcceptMismatch();
-  const expectedShortage = m.placesDiff !== null && m.placesDiff < 0 ? Math.abs(m.placesDiff) : 0;
+  rows.forEach(r => { if (r.st.damage) counts[r.st.damage]++; });
+  const unset = rows.filter(r => !r.st.damage).length;
 
   el.innerHTML = `
-    <span><i class="fa-solid fa-box-open text-rose-500 mr-1"></i>Недостача: <strong class="${shortageCount ? 'text-rose-700' : ''}">${shortageCount}</strong> перевез. / <strong>${shortagePlaces}</strong> місць</span>
-    ${expectedShortage && shortagePlaces !== expectedShortage ? `<span class="text-amber-700 font-bold"><i class="fa-solid fa-triangle-exclamation mr-0.5"></i>За параметрами рейсу не вистачає ${expectedShortage} шт</span>` : ''}
+    <span><i class="fa-solid fa-scale-unbalanced text-amber-500 mr-1"></i>Розбіжності: <strong class="${discCount ? 'text-amber-700' : 'text-emerald-700'}">${discCount}</strong>${shortagePlaces ? ` · <strong class="text-rose-700">нестача ${shortagePlaces} місць</strong>` : ''}</span>
+    ${missingCount ? `<span class="text-rose-600 font-bold"><i class="fa-solid fa-circle-exclamation mr-0.5"></i>Не заповнено параметри: ${missingCount}</span>` : ''}
     <span class="ml-auto inline-flex items-center gap-2">
       <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>${counts.green}</span>
       <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span>${counts.yellow}</span>
@@ -1907,20 +2334,9 @@ function renderAcceptShortageSummary() {
   `;
 }
 
-function toggleAcceptShortage(shipmentId, checked) {
-  const st = acceptShipmentState[shipmentId];
-  if (!st) return;
-  st.shortage = !!checked;
-  if (!checked) st.shortagePlaces = 0;
-  renderAcceptShipmentsList();
-}
-
-function setAcceptShortagePlaces(shipmentId, value) {
-  const st = acceptShipmentState[shipmentId];
-  if (!st) return;
-  st.shortagePlaces = Math.max(0, parseInt(value, 10) || 0);
-  renderAcceptShortageSummary();
-}
+// Збережено як no-op для зворотної сумісності
+function toggleAcceptShortage() { }
+function setAcceptShortagePlaces() { }
 
 function setAcceptDamage(shipmentId, level) {
   const st = acceptShipmentState[shipmentId];
@@ -2080,7 +2496,7 @@ function notifyManagerAboutShortage(params) {
   return notifyManagerAboutAcceptanceIssue({ ...params, shortage: true });
 }
 
-function submitAcceptVoyageReport() {
+function submitAcceptVoyageReport(mode = 'standard') {
   const voyageId = document.getElementById('accept-voyage-target-id')?.value;
   const svList = Array.isArray(window.svManagementSubvoyages) ? window.svManagementSubvoyages : [];
   const svObj = svList.find(s => s.id === voyageId);
@@ -2092,7 +2508,7 @@ function submitAcceptVoyageReport() {
   const dateEl = document.getElementById('accept-voyage-receive-date');
   if (dateEl) dateEl.innerText = receiveDate;
 
-  const { places: actualPlaces, weight: actualWeight, volume: actualVolume } = getAcceptActualParams();
+  const { places: actualPlaces, weight: actualWeight, volume: actualVolume, hasInvalid } = getAcceptActualParams();
   const notes = (document.getElementById('accept-voyage-notes')?.value || '').trim();
 
   const errBox = document.getElementById('accept-voyage-validation-error');
@@ -2105,32 +2521,54 @@ function submitAcceptVoyageReport() {
     }
   };
 
-  if (isNaN(actualPlaces) || actualPlaces < 0) {
-    showError('Введіть фактичну кількість місць після вивантаження.');
-    document.getElementById('accept-voyage-actual-places')?.focus();
-    return;
-  }
-  if (isNaN(actualVolume) || actualVolume <= 0) {
-    showError('Поле «Об\'єм (м³)» є обов\'язковим і має бути більшим за 0.');
-    document.getElementById('accept-voyage-actual-volume')?.focus();
-    return;
-  }
-  if (isNaN(actualWeight) || actualWeight <= 0) {
-    showError('Поле «Вага (кг)» є обов\'язковим і має бути більшим за 0.');
-    document.getElementById('accept-voyage-actual-weight')?.focus();
+  if (hasInvalid) {
+    const missingDetails = [];
+    let firstMissingInputId = null;
+    voyage.shipments.forEach(sh => {
+      const disc = getShipmentDiscrepancy(sh, acceptShipmentState[sh.id] || {});
+      if (disc.hasMissing) {
+        const safeId = sh.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+        const fields = [];
+        if (disc.missingPlaces) {
+          fields.push('місця');
+          if (!firstMissingInputId) firstMissingInputId = `accept-inp-places-${safeId}`;
+        }
+        if (disc.missingVolume) {
+          fields.push("об'єм");
+          if (!firstMissingInputId) firstMissingInputId = `accept-inp-volume-${safeId}`;
+        }
+        if (disc.missingWeight) {
+          fields.push('вага');
+          if (!firstMissingInputId) firstMissingInputId = `accept-inp-weight-${safeId}`;
+        }
+        missingDetails.push(`${sh.id} (${fields.join(', ')})`);
+      }
+    });
+    showError(`Заповніть обов'язкові фактичні параметри: ${missingDetails.join('; ')}.`);
+    if (firstMissingInputId) document.getElementById(firstMissingInputId)?.focus();
     return;
   }
 
   const shipmentsReport = voyage.shipments.map(sh => {
     const st = acceptShipmentState[sh.id] || {};
+    const disc = getShipmentDiscrepancy(sh, st);
     const isDamaged = st.damage === 'yellow' || st.damage === 'red';
     return {
       id: sh.id,
       rawId: sh.rawId || sh.id,
       manager: sh.manager,
-      expectedPlaces: sh.places,
-      shortage: !!st.shortage,
-      shortagePlaces: st.shortage ? (Number(st.shortagePlaces) || 0) : 0,
+      expectedPlaces: disc.expPlaces,
+      expectedVolume: disc.expVolume,
+      expectedWeight: disc.expWeight,
+      actualPlaces: disc.actPlaces,
+      actualVolume: disc.actVolume,
+      actualWeight: disc.actWeight,
+      placesDiff: disc.placesDiff || 0,
+      volumeDiff: disc.volumeDiff || 0,
+      weightDiff: disc.weightDiff || 0,
+      hasDiscrepancy: disc.hasAny,
+      shortage: disc.shortage,
+      shortagePlaces: disc.shortagePlaces,
       damageLevel: st.damage || null,
       damageComment: isDamaged ? (st.damageComment || '').trim() : '',
       damagePhotos: isDamaged && Array.isArray(st.damagePhotos)
@@ -2140,16 +2578,6 @@ function submitAcceptVoyageReport() {
   });
 
   const mismatch = getAcceptMismatch();
-  const shortageItems = shipmentsReport.filter(s => s.shortage);
-  if (mismatch.places && mismatch.placesDiff < 0 && shortageItems.length === 0) {
-    showError(`Кількість місць не збігається (не вистачає ${Math.abs(mismatch.placesDiff)} шт). Позначте у списку перевезення, в яких недостача.`);
-    return;
-  }
-  const badShortage = shortageItems.find(s => s.shortagePlaces <= 0 || s.shortagePlaces > s.expectedPlaces);
-  if (badShortage) {
-    showError(`Вкажіть кількість місць, яких не вистачає, у перевезенні ${badShortage.id} (від 1 до ${badShortage.expectedPlaces}).`);
-    return;
-  }
   const noDamage = shipmentsReport.filter(s => !s.damageLevel);
   if (noDamage.length > 0) {
     showError(`Проставте стан вантажу («Гарний» / «Поганий» / «Критичний») для всіх перевезень (не вказано: ${noDamage.map(s => s.id).join(', ')}).`);
@@ -2160,8 +2588,13 @@ function submitAcceptVoyageReport() {
     return;
   }
 
-  // Сповіщення менеджерам при недостачі місць або пошкодженні вантажу («Поганий» / «Критичний»)
-  const issueItems = shipmentsReport.filter(s => s.shortage || s.damageLevel === 'yellow' || s.damageLevel === 'red');
+  const effectiveMode = (mode === 'adjusted' || mismatch.any) ? 'adjusted' : 'standard';
+  const acceptanceStatusLabel = effectiveMode === 'adjusted'
+    ? 'Прийнято з коригуванням / уточненням'
+    : 'Отримано на складі';
+
+  // Сповіщення менеджерам при розбіжностях параметрів або пошкодженні вантажу («Поганий» / «Критичний»)
+  const issueItems = shipmentsReport.filter(s => s.hasDiscrepancy || s.damageLevel === 'yellow' || s.damageLevel === 'red');
   const notifications = issueItems.map(s => notifyManagerAboutAcceptanceIssue({
     manager: s.manager,
     shipmentId: s.id,
@@ -2179,6 +2612,8 @@ function submitAcceptVoyageReport() {
 
   const reportData = {
     receiveDate,
+    acceptanceMode: effectiveMode,
+    acceptanceStatusLabel,
     actualPlaces,
     actualWeight,
     actualVolume,
@@ -2191,7 +2626,7 @@ function submitAcceptVoyageReport() {
     notes,
     photos: currentAcceptVoyagePhotos.map(p => ({ name: p.name, size: p.size, url: p.url })),
     // Сумісність зі старим форматом звіту
-    isAllGood: issueItems.length === 0,
+    isAllGood: issueItems.length === 0 && effectiveMode === 'standard',
     selectedProblemShipments: issueItems.map(s => s.id)
   };
 
@@ -2203,9 +2638,10 @@ function submitAcceptVoyageReport() {
     return;
   }
 
-  // Автономний вхідний рейс (incomingVoyagesData): стан «Вивантажений», фіксація дати, перевезення «Отримано на складі»
+  // Автономний вхідний рейс (incomingVoyagesData)
   voyage.status = 'Вивантажений';
-  voyage.customStatus = 'Вивантажено на складі';
+  voyage.customStatus = effectiveMode === 'adjusted' ? 'Прийнято з коригуванням / уточненням' : 'Вивантажено на складі';
+  voyage.acceptanceMode = effectiveMode;
   voyage.actualArrival = receiveDate;
   voyage.acceptedAt = receiveDate;
   voyage.acceptanceReport = reportData;
@@ -2370,7 +2806,7 @@ function downloadClientInstruction() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   if (typeof showToast === 'function') {
-    showToast('Файл інструкції для клієнта завантажено (.txt)');
+    showToast('Файл інструкції для клієнта завантажено');
   }
 }
 
@@ -2388,7 +2824,24 @@ async function initWarehouseDataSync() {
       const currentWh = warehouses.find(w => w.id === whId) || warehouses.find(w => w.name === warehouseInfoData.name) || warehouses[0];
       if (currentWh) {
         if (currentWh.name) warehouseInfoData.name = currentWh.name;
-        if (currentWh.address) warehouseInfoData.address.fullAddress = currentWh.address;
+        if (currentWh.type) warehouseInfoData.type = currentWh.type;
+        if (currentWh.volume !== undefined) {
+          warehouseInfoData.volumeLimit = currentWh.volume && Number(currentWh.volume) > 0 ? Number(currentWh.volume) : null;
+        }
+        if (currentWh.addressFields || currentWh.country || currentWh.city || currentWh.address) {
+          const af = currentWh.addressFields || {};
+          warehouseInfoData.address = {
+            ...warehouseInfoData.address,
+            zipCode: af.postalCode || currentWh.postalCode || warehouseInfoData.address.zipCode || '',
+            country: af.countryName || currentWh.country || warehouseInfoData.address.country || '',
+            province: af.region || currentWh.region || warehouseInfoData.address.province || '',
+            city: af.city || currentWh.city || warehouseInfoData.address.city || '',
+            district: af.city ? '' : warehouseInfoData.address.district,
+            street: af.street || currentWh.street || warehouseInfoData.address.street || currentWh.address || '',
+            addressLine2: af.addressLine2 || warehouseInfoData.address.addressLine2 || ''
+          };
+          warehouseInfoData.address.fullAddress = formatStructuredAddressLine(warehouseInfoData.address);
+        }
         if (currentWh.contractor) warehouseInfoData.contractor.name = currentWh.contractor;
         if (Array.isArray(currentWh.services) && currentWh.services.length > 0) {
           warehouseInfoData.services = currentWh.services;
@@ -2457,6 +2910,7 @@ window.DashboardModule = {
   initWarehouseDataSync: initWarehouseDataSync,
   copyInstruction: copyClientInstruction,
   downloadInstruction: downloadClientInstruction,
+  toggleInstructionPreview: toggleInstructionPreview,
   copyWarehouseAddress: copyWarehouseAddress,
   copyPrimaryContactInfo: copyPrimaryContactInfo,
   copyTextWithToast: copyTextWithToast,
@@ -2469,6 +2923,7 @@ window.DashboardModule = {
   removeAcceptPhoto: removeAcceptPhoto,
   clearAcceptPhotos: clearAcceptPhotos,
   updateAcceptParamsDiff: updateAcceptParamsDiff,
+  setAcceptShipmentParam: setAcceptShipmentParam,
   toggleAcceptShortage: toggleAcceptShortage,
   setAcceptShortagePlaces: setAcceptShortagePlaces,
   setAcceptDamage: setAcceptDamage,

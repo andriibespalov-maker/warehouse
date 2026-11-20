@@ -79,6 +79,12 @@
       <div class="flex items-center gap-1.5 flex-wrap">
         <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1">Готовність:</span>
         <div class="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs font-semibold flex-wrap gap-0.5">
+          <button type="button" id="btn-quick-filter-all" data-readiness="all"
+            class="sv-readiness-tab px-3 py-1 rounded-lg transition text-slate-600 hover:text-slate-900 font-medium cursor-pointer inline-flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+            <span>Всі</span>
+            <span id="badge-readiness-all" class="text-[10px] font-mono bg-slate-200/70 text-slate-700 px-1.5 py-0.2 rounded-full">0</span>
+          </button>
           <button type="button" id="btn-quick-filter-ready" data-readiness="ready"
             class="sv-readiness-tab px-3 py-1 rounded-lg transition bg-white text-emerald-700 font-bold shadow-2xs cursor-pointer inline-flex items-center gap-1.5">
             <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
@@ -94,7 +100,7 @@
           <button type="button" id="btn-quick-filter-planned" data-readiness="planned"
             class="sv-readiness-tab px-3 py-1 rounded-lg transition text-slate-600 hover:text-slate-900 font-medium cursor-pointer inline-flex items-center gap-1.5">
             <span class="w-2 h-2 rounded-full bg-purple-500"></span>
-            <span>Планові (обіцянки)</span>
+            <span>Обіцянки</span>
             <span id="badge-readiness-planned" class="text-[10px] font-mono bg-slate-200/70 text-slate-700 px-1.5 py-0.2 rounded-full">0</span>
           </button>
           <button type="button" id="btn-quick-filter-unmarked" data-readiness="unmarked"
@@ -102,6 +108,13 @@
             <span class="w-2 h-2 rounded-full bg-rose-500"></span>
             <span>Непромарковані</span>
             <span id="badge-readiness-unmarked" class="text-[10px] font-mono bg-slate-200/70 text-slate-700 px-1.5 py-0.2 rounded-full">0</span>
+          </button>
+          <button type="button" id="btn-quick-filter-cargoes" data-readiness="unlinked_on_warehouse"
+            class="sv-readiness-tab px-3 py-1 rounded-lg transition text-slate-600 hover:text-slate-900 font-medium cursor-pointer inline-flex items-center gap-1.5"
+            title="Промарковані вантажі на складі, які ще не додані до обіцянки">
+            <span class="w-2 h-2 rounded-full bg-teal-500"></span>
+            <span>Вантажі</span>
+            <span id="badge-readiness-unlinked_on_warehouse" class="text-[10px] font-mono bg-slate-200/70 text-slate-700 px-1.5 py-0.2 rounded-full">0</span>
           </button>
         </div>
       </div>
@@ -130,11 +143,6 @@
           <button id="btn-clear-active-sv-focus" type="button" class="hidden px-2.5 py-1 bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-300 rounded-lg text-[10px] font-bold transition cursor-pointer items-center gap-1 shadow-2xs"
             title="Скинути вибір підрейсу та повернутися до загального пулу">
             <i class="fa-solid fa-xmark"></i> <span>Скинути вибір</span>
-          </button>
-          <button id="btn-header-add-arrive" type="button" onclick="if (window.openAddArriveModal) window.openAddArriveModal(); else { const b = document.getElementById('btn-add-arrive'); if (b) b.click(); }"
-            class="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer">
-            <i class="fa-solid fa-plus text-[10px]"></i>
-            <span>Додати Єрайв</span>
           </button>
         </div>
       </div>

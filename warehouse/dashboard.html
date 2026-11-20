@@ -102,7 +102,7 @@
               </button>
               <button type="button" onclick="DashboardModule.downloadInstruction()"
                 class="px-2.5 py-1 bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-900 border border-slate-200 hover:border-indigo-300 rounded-lg text-[11px] font-bold transition inline-flex items-center gap-1 cursor-pointer shadow-2xs"
-                title="Скачати файл інструкції клієнту (.txt)">
+                title="Скачати інструкцію клієнту">
                 <i class="fa-solid fa-download text-indigo-600 text-[10px]"></i>
                 <span>Скачати інструкцію</span>
               </button>
@@ -133,9 +133,6 @@
               <div id="wh-spoiler-schedule" class="grid grid-cols-2 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs">
                 <!-- Заповнюється з dashboard.js -->
               </div>
-            </div>
-            <div class="mt-2.5 pt-2 border-t border-slate-200/60 text-[10px] text-slate-400 flex items-center justify-between">
-              <span><i class="fa-regular fa-clock mr-1"></i>Конвертація за часовим поясом користувача — у беклозі</span>
             </div>
           </div>
 
@@ -180,12 +177,28 @@
               <!-- 1. Об'єм на складі -->
               <div>
                 <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Об'єм на складі</span>
-                <div class="text-lg sm:text-xl font-black text-slate-900 tracking-tight" id="stat-total-volume">
-                  0.0 <span class="text-xs font-normal text-slate-500">/ 400.0 m³</span>
+                <div class="text-lg sm:text-xl font-black text-emerald-700 tracking-tight" id="stat-total-volume">
+                  0.0 <span class="text-xs font-normal text-slate-500">/ 400.0 м³</span>
                 </div>
               </div>
 
-              <!-- 2. Вантажів -->
+              <!-- 2. Очікується -->
+              <div class="pl-4 sm:pl-6">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Очікується</span>
+                <div class="text-lg sm:text-xl font-black text-amber-600 tracking-tight" id="stat-summary-expected-volume">
+                  0.0 <span class="text-xs font-normal text-slate-500">м³</span>
+                </div>
+              </div>
+
+              <!-- 3. Вільне місце (тільки для власного складу) -->
+              <div class="pl-4 sm:pl-6" id="stat-summary-free-volume-wrap">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Вільне місце</span>
+                <div class="text-lg sm:text-xl font-black text-slate-800 tracking-tight" id="stat-summary-free-volume">
+                  400.0 <span class="text-xs font-normal text-slate-500">м³</span>
+                </div>
+              </div>
+
+              <!-- 4. Вантажів -->
               <div class="pl-4 sm:pl-6">
                 <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Вантажів</span>
                 <div class="text-lg sm:text-xl font-black text-slate-800 tracking-tight" id="stat-total-cargoes">
@@ -193,7 +206,7 @@
                 </div>
               </div>
 
-              <!-- 3. Підрейсів -->
+              <!-- 5. Підрейсів -->
               <div class="pl-4 sm:pl-6">
                 <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Підрейсів</span>
                 <div class="text-lg sm:text-xl font-black text-indigo-600 tracking-tight" id="stat-active-subvoyages">
@@ -227,7 +240,7 @@
         <div class="p-4 border-t border-slate-200/80 bg-slate-50/50">
           <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 items-stretch">
 
-            <!-- БЛОК 1: РОЗПОДІЛ ОБ'ЄМУ СКЛАДУ (Блок 3.3: 5 категорій) -->
+            <!-- БЛОК 1: РОЗПОДІЛ ОБ'ЄМУ СКЛАДУ -->
             <div class="xl:col-span-7 bg-white border border-slate-200/90 rounded-xl p-4 shadow-2xs flex flex-col justify-between gap-3.5">
               <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 flex-wrap gap-2">
                 <div class="flex items-center gap-2">
@@ -236,70 +249,76 @@
                 </div>
               </div>
 
-              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 flex-1 items-stretch">
-                <!-- 1. Завантажені на рейси -->
-                <div class="bg-blue-50/60 border border-blue-200/80 rounded-xl p-2.5 flex flex-col justify-between">
-                  <div class="flex items-center justify-between gap-1">
-                    <span class="text-[11px] font-bold text-slate-800 leading-tight">Завантажені на рейси</span>
-                    <i class="fa-solid fa-truck-ramp-box text-blue-600 text-xs shrink-0"></i>
-                  </div>
-                  <div class="text-lg font-black text-blue-700 tracking-tight my-1" id="stat-allocated-volume">
-                    0.0 <span class="text-[11px] font-normal text-slate-500">м³</span>
-                  </div>
-                  <span class="text-[9px] text-blue-700/80 leading-tight block">Розподілені по підрейсах на оформленні</span>
-                </div>
-
-                <!-- 2. Готові до завантаження -->
+              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 flex-1 items-stretch">
+                <!-- 1. Готові до завантаження -->
                 <div class="bg-emerald-50/60 border border-emerald-200/80 rounded-xl p-2.5 flex flex-col justify-between">
                   <div class="flex items-center justify-between gap-1">
-                    <span class="text-[11px] font-bold text-slate-800 leading-tight">Готові до завантаження</span>
+                    <span class="text-[11px] font-bold text-slate-800 leading-tight">Готові до завантаж.</span>
                     <i class="fa-solid fa-circle-check text-emerald-600 text-xs shrink-0"></i>
                   </div>
-                  <div class="text-lg font-black text-emerald-700 tracking-tight my-1" id="stat-ready-volume">
+                  <div class="text-lg font-black text-emerald-700 tracking-tight mt-2" id="stat-ready-volume">
                     0.0 <span class="text-[11px] font-normal text-slate-500">м³</span>
                   </div>
-                  <span class="text-[9px] text-emerald-700/80 leading-tight block">Чистий об'єм на складі, промаркований</span>
                 </div>
 
-                <!-- 3. Не готові до завантаження -->
+                <!-- 2. Не готові до завантаження -->
                 <div class="bg-amber-50/60 border border-amber-200/80 rounded-xl p-2.5 flex flex-col justify-between">
                   <div class="flex items-center justify-between gap-1">
                     <span class="text-[11px] font-bold text-slate-800 leading-tight">Не готові до завантаж.</span>
                     <i class="fa-solid fa-clock text-amber-600 text-xs shrink-0"></i>
                   </div>
-                  <div class="text-lg font-black text-amber-700 tracking-tight my-1" id="stat-not-ready-volume">
+                  <div class="text-lg font-black text-amber-700 tracking-tight mt-2" id="stat-not-ready-volume">
                     0.0 <span class="text-[11px] font-normal text-slate-500">м³</span>
                   </div>
-                  <span class="text-[9px] text-amber-700/80 leading-tight block">Фізично на складі (консолідація / документи)</span>
                 </div>
 
-                <!-- 4. Планові (обіцянки) -->
-                <div class="bg-purple-50/60 border border-purple-200/80 rounded-xl p-2.5 flex flex-col justify-between">
+                <!-- 3. На складі (Вантажі) -->
+                <div class="bg-teal-50/60 border border-teal-200/80 rounded-xl p-2.5 flex flex-col justify-between">
                   <div class="flex items-center justify-between gap-1">
-                    <span class="text-[11px] font-bold text-slate-800 leading-tight">Планові (обіцянки)</span>
-                    <i class="fa-regular fa-calendar-plus text-purple-600 text-xs shrink-0"></i>
+                    <span class="text-[11px] font-bold text-slate-800 leading-tight">На складі (Вантажі)</span>
+                    <i class="fa-solid fa-boxes-stacked text-teal-600 text-xs shrink-0"></i>
                   </div>
-                  <div class="text-lg font-black text-purple-700 tracking-tight my-1" id="stat-planned-promises-volume">
+                  <div class="text-lg font-black text-teal-700 tracking-tight mt-2" id="stat-unlinked-on-warehouse-volume">
                     0.0 <span class="text-[11px] font-normal text-slate-500">м³</span>
                   </div>
-                  <span class="text-[9px] text-purple-700/80 leading-tight block">Заявлені клієнтами, ще не на складі</span>
                 </div>
 
-                <!-- 5. Непромарковані -->
-                <div class="bg-rose-50/60 border border-rose-200/80 rounded-xl p-2.5 flex flex-col justify-between col-span-2 sm:col-span-1">
+                <!-- 4. Непромарковані -->
+                <div class="bg-rose-50/60 border border-rose-200/80 rounded-xl p-2.5 flex flex-col justify-between">
                   <div class="flex items-center justify-between gap-1">
                     <span class="text-[11px] font-bold text-slate-800 leading-tight">Непромарковані</span>
                     <i class="fa-solid fa-tag text-rose-600 text-xs shrink-0"></i>
                   </div>
-                  <div class="text-lg font-black text-rose-700 tracking-tight my-1" id="stat-unmarked-volume">
+                  <div class="text-lg font-black text-rose-700 tracking-tight mt-2" id="stat-unmarked-volume">
                     0.0 <span class="text-[11px] font-normal text-slate-500">м³</span>
                   </div>
-                  <span class="text-[9px] text-rose-700/80 leading-tight block">Прийняті на склад без ідентифікації</span>
+                </div>
+
+                <!-- 5. Планові (обіцянки) -->
+                <div class="bg-purple-50/60 border border-purple-200/80 rounded-xl p-2.5 flex flex-col justify-between">
+                  <div class="flex items-center justify-between gap-1">
+                    <span class="text-[11px] font-bold text-slate-800 leading-tight">Обіцянки</span>
+                    <i class="fa-regular fa-calendar-plus text-purple-600 text-xs shrink-0"></i>
+                  </div>
+                  <div class="text-lg font-black text-purple-700 tracking-tight mt-2" id="stat-planned-promises-volume">
+                    0.0 <span class="text-[11px] font-normal text-slate-500">м³</span>
+                  </div>
+                </div>
+
+                <!-- 6. Завантажені на рейси -->
+                <div class="bg-blue-50/60 border border-blue-200/80 rounded-xl p-2.5 flex flex-col justify-between">
+                  <div class="flex items-center justify-between gap-1">
+                    <span class="text-[11px] font-bold text-slate-800 leading-tight">Завантажені на рейси</span>
+                    <i class="fa-solid fa-truck-ramp-box text-blue-600 text-xs shrink-0"></i>
+                  </div>
+                  <div class="text-lg font-black text-blue-700 tracking-tight mt-2" id="stat-allocated-volume">
+                    0.0 <span class="text-[11px] font-normal text-slate-500">м³</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- БЛОК 2: ОПЕРАТИВНИЙ РУХ (ЗАЛИШЕНО БЕЗ ЗМІН) -->
+            <!-- БЛОК 2: ОПЕРАТИВНИЙ РУХ -->
             <div class="xl:col-span-5 bg-white border border-slate-200/90 rounded-xl p-4 shadow-2xs flex flex-col justify-between gap-3.5">
               <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 flex-wrap gap-2">
                 <div class="flex items-center gap-2">
@@ -324,17 +343,17 @@
                   </div>
                 </div>
 
-                <!-- Відправлено сьогодні -->
+                <!-- Планова відправка (замість фактичної «Відправлено сьогодні», щоб бачити майбутнє вивільнення місця) -->
                 <div class="bg-slate-50 border border-slate-200/70 rounded-xl p-2.5 flex flex-col justify-between">
                   <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
-                    <span>Відправлено</span>
-                    <i class="fa-solid fa-arrow-up text-sky-500"></i>
+                    <span>План відправки</span>
+                    <i class="fa-solid fa-arrow-up-right-dots text-sky-500"></i>
                   </div>
-                  <div class="text-base font-black text-slate-800 mt-1.5" id="stat-shipped-today">
+                  <div class="text-base font-black text-sky-700 mt-1.5" id="stat-shipped-today">
                     0.0 <span class="text-xs font-normal text-slate-500">м³</span>
                   </div>
                   <div class="text-[9px] text-slate-500 font-semibold mt-1 flex items-center justify-between">
-                    <span>Сьогодні</span>
+                    <span>Вивільнення</span>
                     <span id="stat-shipped-today-sv" class="font-mono text-sky-600 font-bold">0 підрейсів</span>
                   </div>
                 </div>
@@ -354,10 +373,10 @@
                   </div>
                 </div>
 
-                <!-- Відправка (7 днів) -->
+                <!-- Відправка (План 7 днів) -->
                 <div class="bg-slate-50 border border-slate-200/70 rounded-xl p-2.5 flex flex-col justify-between">
                   <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
-                    <span>Відправка</span>
+                    <span>План виїзду</span>
                     <i class="fa-solid fa-truck-fast text-rose-500"></i>
                   </div>
                   <div class="text-base font-black text-rose-600 mt-1.5" id="stat-expected-shipment-3days">
@@ -399,6 +418,25 @@
 
       <!-- Modal Content -->
       <div class="p-6 space-y-6 bg-white overflow-y-auto custom-scrollbar flex-1">
+        <!-- Структурована адреса складу з офіційним копіюванням для підрядника / документів -->
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-start gap-2.5 min-w-0">
+            <div class="w-8 h-8 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center shrink-0 mt-0.5">
+              <i class="fa-solid fa-location-dot text-xs"></i>
+            </div>
+            <div class="min-w-0">
+              <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Адреса складу (для документів та підрядника)</div>
+              <div id="wh-modal-display-address" class="text-xs font-semibold text-slate-800 mt-0.5 break-words">528200, Китай, провінція Гуандун, м. Фошань (р-н Наньхай), No. 88 Logistics Avenue, Gate 3</div>
+            </div>
+          </div>
+          <button type="button" onclick="DashboardModule.copyWarehouseAddress()"
+            class="px-3 py-1.5 bg-white hover:bg-brand-50 text-slate-700 hover:text-brand-700 border border-slate-200 hover:border-brand-300 rounded-lg text-[11px] font-bold transition inline-flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
+            title="Скопіювати структуровану адресу у стандартному форматі для документів та підрядника">
+            <i class="fa-regular fa-copy text-brand-600 text-[10px]"></i>
+            <span>Скопіювати адресу</span>
+          </button>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           <!-- Ліва колонка: Послуги, Умови, Примітки -->
@@ -447,7 +485,7 @@
             </div>
           </div>
 
-          <!-- Права колонка: Інструкція для клієнта (тільки швидкі дії: копіювати або скачати) -->
+          <!-- Права колонка: Інструкція для клієнта (прев'ю 3 рядки + кнопка «Ще / Згорнути», копіювання та скачування) -->
           <div class="space-y-4">
             <div>
               <label class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 block">
@@ -460,8 +498,19 @@
                   </div>
                   <div>
                     <h4 class="text-xs font-bold text-slate-900">Готова інструкція відправки</h4>
-                    <p class="text-[11px] text-slate-500">Уніфікований текст із китайською адресою, обов'язковим кодом маркування та умовами прийому</p>
+                    <p class="text-[11px] text-slate-500">Уніфікований текст із адресою, маркуванням та умовами прийому</p>
                   </div>
+                </div>
+
+                <!-- Прев'ю інструкції (2-3 рядки + кнопка «Ще» для розгортання/згортання) -->
+                <div class="bg-white border border-slate-200/90 rounded-lg p-3 space-y-1.5">
+                  <div id="wh-display-instruction-preview"
+                    class="text-[11px] text-slate-700 leading-relaxed whitespace-pre-line font-sans line-clamp-3"></div>
+                  <button type="button" id="btn-toggle-instruction-preview" onclick="DashboardModule.toggleInstructionPreview()"
+                    class="text-[11px] font-bold text-brand-600 hover:text-brand-800 hover:underline inline-flex items-center gap-1 cursor-pointer transition">
+                    <span id="btn-instruction-preview-label">Ще</span>
+                    <i id="btn-instruction-preview-icon" class="fa-solid fa-chevron-down text-[9px] transition-transform"></i>
+                  </button>
                 </div>
 
                 <div class="pt-2 border-t border-slate-200/80 flex flex-col gap-2">
@@ -473,7 +522,7 @@
                   <button type="button" onclick="DashboardModule.downloadInstruction()"
                     class="w-full py-2.5 px-3 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-2xs">
                     <i class="fa-solid fa-download text-indigo-600"></i>
-                    <span>Скачати інструкцію (.txt)</span>
+                    <span>Скачати інструкцію</span>
                   </button>
                 </div>
               </div>
@@ -495,13 +544,11 @@
                 class="wh-pricing-tab px-3 py-1 rounded-lg text-xs font-bold transition bg-white text-emerald-700 shadow-2xs flex items-center gap-1.5 cursor-pointer">
                 <i class="fa-solid fa-file-pdf text-[11px]"></i>
                 <span>Документи прайс-листів</span>
-                <span id="wh-pricing-docs-count" class="px-1.5 py-0.2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[10px] font-bold">0</span>
               </button>
               <button type="button" data-pricing-tab="text" onclick="DashboardModule.switchPricingTab('text')"
                 class="wh-pricing-tab px-3 py-1 rounded-lg text-xs font-semibold transition text-slate-600 hover:text-slate-900 flex items-center gap-1.5 cursor-pointer">
                 <i class="fa-solid fa-align-left text-[11px]"></i>
                 <span>Текстовий тариф / коментар</span>
-                <span id="wh-pricing-text-count" class="px-1.5 py-0.2 bg-slate-200/70 text-slate-700 rounded-full text-[10px] font-bold">0</span>
               </button>
             </div>
           </div>
@@ -611,7 +658,7 @@
               <h3 class="font-bold text-base">Отримання підрейсу на баланс складу</h3>
               <span id="accept-voyage-id-badge" class="px-2.5 py-0.5 rounded-md bg-indigo-500/30 border border-indigo-400/40 text-indigo-200 font-mono text-xs font-bold">SV-2026-101</span>
             </div>
-            <p class="text-[11px] text-slate-400 mt-0.5">Вага та об'єм підтягуються автоматично з підрейсу. Введіть фактичну кількість місць та зафіксуйте стан вантажу.</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">Введіть фактичні параметри (місця, об'єм, вагу) по кожному перевезенню — підсумки рейсу та розбіжності розраховуються автоматично.</p>
           </div>
         </div>
         <button type="button" onclick="DashboardModule.closeAcceptVoyageModal()" class="w-8 h-8 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer text-xl leading-none">&times;</button>
@@ -643,63 +690,63 @@
           </div>
         </section>
 
-        <!-- 2. Отримані параметри рейсу після вивантаження -->
+        <!-- 2. Отримані параметри рейсу після вивантаження (автопідрахунок як сума по всіх перевезеннях) -->
         <section class="space-y-2">
-          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-            <span class="w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] flex items-center justify-center">2</span>
-            Отримані параметри рейсу після вивантаження
-          </h4>
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <span class="w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] flex items-center justify-center">2</span>
+              Підсумкові отримані параметри рейсу
+            </h4>
+            <span class="text-[10px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+              <i class="fa-solid fa-calculator text-[9px]"></i>
+              Автосума по перевезеннях нижче
+            </span>
+          </div>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div class="bg-white border border-slate-200 rounded-xl p-3">
-              <label for="accept-voyage-actual-places" class="block text-[10px] font-bold text-slate-500 uppercase">Кількість місць (шт) <span class="text-rose-500">*</span></label>
-              <div class="flex items-center gap-2 mt-1">
-                <input type="number" id="accept-voyage-actual-places" min="0" step="1" placeholder="Факт"
-                  oninput="DashboardModule.updateAcceptParamsDiff()"
-                  class="w-24 bg-slate-50 border border-slate-300 rounded px-2 py-1 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                <span class="text-[10px] text-slate-400 font-mono">Очікувалось: <strong id="accept-voyage-expected-places">0</strong></span>
+            <div class="bg-slate-50/70 border border-slate-200 rounded-xl p-3">
+              <div class="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase">
+                <span>Кількість місць (шт)</span>
+                <span class="text-[9px] font-semibold normal-case text-slate-500">Очікувалось: <strong id="accept-voyage-expected-places" class="font-mono text-slate-700">0</strong></span>
               </div>
-              <div id="accept-voyage-diff-places" class="mt-1 text-[10px] font-bold"></div>
+              <div class="flex items-baseline justify-between gap-2 mt-1.5">
+                <span id="accept-voyage-actual-places-display" class="text-lg font-mono font-black text-slate-900">0</span>
+                <div id="accept-voyage-diff-places" class="text-[10px] font-bold"></div>
+              </div>
             </div>
             <div class="bg-slate-50/70 border border-slate-200 rounded-xl p-3">
-              <label for="accept-voyage-actual-volume" class="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase">
-                <span>Об'єм (м³) <span class="text-rose-500">*</span></span>
-                <span class="text-[9px] font-semibold normal-case text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.2 rounded">авто з підрейсу</span>
-              </label>
-              <div class="flex items-center gap-2 mt-1">
-                <input type="number" id="accept-voyage-actual-volume" min="0.01" step="0.01" required placeholder="Авто"
-                  oninput="DashboardModule.updateAcceptParamsDiff()"
-                  class="w-24 bg-white border border-slate-300 rounded px-2 py-1 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                <span class="text-[10px] text-slate-400 font-mono">З підрейсу: <strong id="accept-voyage-expected-volume">0.0</strong></span>
+              <div class="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase">
+                <span>Об'єм (м³)</span>
+                <span class="text-[9px] font-semibold normal-case text-slate-500">Очікувалось: <strong id="accept-voyage-expected-volume" class="font-mono text-slate-700">0.00</strong></span>
               </div>
-              <div id="accept-voyage-diff-volume" class="mt-1 text-[10px] font-bold"></div>
+              <div class="flex items-baseline justify-between gap-2 mt-1.5">
+                <span id="accept-voyage-actual-volume-display" class="text-lg font-mono font-black text-slate-900">0.00</span>
+                <div id="accept-voyage-diff-volume" class="text-[10px] font-bold"></div>
+              </div>
             </div>
             <div class="bg-slate-50/70 border border-slate-200 rounded-xl p-3">
-              <label for="accept-voyage-actual-weight" class="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase">
-                <span>Вага (кг) <span class="text-rose-500">*</span></span>
-                <span class="text-[9px] font-semibold normal-case text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.2 rounded">авто з підрейсу</span>
-              </label>
-              <div class="flex items-center gap-2 mt-1">
-                <input type="number" id="accept-voyage-actual-weight" min="0.1" step="0.1" required placeholder="Авто"
-                  oninput="DashboardModule.updateAcceptParamsDiff()"
-                  class="w-24 bg-white border border-slate-300 rounded px-2 py-1 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                <span class="text-[10px] text-slate-400 font-mono">З підрейсу: <strong id="accept-voyage-expected-weight">0</strong> кг</span>
+              <div class="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase">
+                <span>Вага (кг)</span>
+                <span class="text-[9px] font-semibold normal-case text-slate-500">Очікувалось: <strong id="accept-voyage-expected-weight" class="font-mono text-slate-700">0</strong></span>
               </div>
-              <div id="accept-voyage-diff-weight" class="mt-1 text-[10px] font-bold"></div>
+              <div class="flex items-baseline justify-between gap-2 mt-1.5">
+                <span id="accept-voyage-actual-weight-display" class="text-lg font-mono font-black text-slate-900">0</span>
+                <div id="accept-voyage-diff-weight" class="text-[10px] font-bold"></div>
+              </div>
             </div>
           </div>
-          <!-- Банер розбіжності параметрів -->
+          <!-- Банер автоматично виявленої розбіжності параметрів -->
           <div id="accept-voyage-mismatch-banner" class="hidden p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-[11px] flex items-start gap-2">
             <i class="fa-solid fa-triangle-exclamation text-amber-600 mt-0.5"></i>
-            <span id="accept-voyage-mismatch-text">Параметри не збігаються з очікуваними — позначте у списку нижче, в яких перевезеннях не вистачає місць.</span>
+            <span id="accept-voyage-mismatch-text">Виявлено розбіжності фактичних параметрів із плановими. Використовуйте «Прийняти з коригуванням / уточненням».</span>
           </div>
         </section>
 
-        <!-- 3. Перевезення підрейсу: недостача та стан вантажу -->
+        <!-- 3. Перевезення підрейсу: фактичні параметри (місця, об'єм, вага) та стан вантажу -->
         <section class="space-y-2">
           <div class="flex items-center justify-between flex-wrap gap-2">
             <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
               <span class="w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] flex items-center justify-center">3</span>
-              Перевезення підрейсу: недостача та стан вантажу
+              Перевезення підрейсу: фактичні параметри та стан вантажу
             </h4>
             <div class="flex items-center gap-1.5 flex-wrap">
               <span class="text-[10px] text-slate-500">Проставити всім:</span>
@@ -710,14 +757,14 @@
           </div>
 
           <div class="border border-slate-200 rounded-xl overflow-hidden">
-            <div class="max-h-72 overflow-y-auto custom-scrollbar">
+            <div class="max-h-80 overflow-y-auto custom-scrollbar">
               <table class="w-full text-left text-[11px]">
                 <thead class="bg-slate-100 text-slate-600 uppercase text-[9px] tracking-wider sticky top-0 z-10">
                   <tr>
                     <th class="p-2">Перевезення / клієнт</th>
                     <th class="p-2">Менеджер</th>
                     <th class="p-2 whitespace-nowrap">Очікувалось</th>
-                    <th class="p-2 whitespace-nowrap">Недостача місць</th>
+                    <th class="p-2 whitespace-nowrap">Фактично отримано (Місця · м³ · кг) <span class="text-rose-500">*</span></th>
                     <th class="p-2 whitespace-nowrap">Стан вантажу <span class="text-rose-500">*</span></th>
                   </tr>
                 </thead>
@@ -782,12 +829,18 @@
           <i class="fa-solid fa-bell text-amber-500"></i>
           <span id="accept-voyage-footer-hint">Підрейс перейде у «Вивантажений», перевезення — в «Отримано на складі». При недостачі або стані «Поганий»/«Критичний» менеджеру надійде сповіщення.</span>
         </div>
-        <div class="flex items-center gap-2.5">
+        <div class="flex items-center gap-2.5 flex-wrap">
           <button type="button" onclick="DashboardModule.closeAcceptVoyageModal()"
             class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold transition cursor-pointer">
             Скасувати
           </button>
-          <button type="button" onclick="DashboardModule.submitAcceptVoyageReport()"
+          <button type="button" id="btn-accept-voyage-adjusted" onclick="DashboardModule.submitAcceptVoyageReport('adjusted')"
+            class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+            title="Прийняти підрейс зі статусом «Прийнято з коригуванням / уточненням» та зберегти фактичні розбіжності">
+            <i class="fa-solid fa-pen-ruler"></i>
+            <span>Прийняти з коригуванням / уточненням</span>
+          </button>
+          <button type="button" id="btn-accept-voyage-standard" onclick="DashboardModule.submitAcceptVoyageReport('standard')"
             class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-sm">
             <i class="fa-solid fa-check-double"></i>
             <span>Прийняти підрейс на склад</span>
