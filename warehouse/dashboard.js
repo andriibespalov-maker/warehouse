@@ -300,9 +300,9 @@ function updateDashboardStats(cargoes = [], subvoyages = []) {
   sevenDaysLater.setDate(baseDate.getDate() + 7);
   const sevenDaysStr = sevenDaysLater.toISOString().split('T')[0];
 
-  const fourteenDaysLater = new Date(realTodayStr + 'T00:00:00');
-  fourteenDaysLater.setDate(fourteenDaysLater.getDate() + 14);
-  const fourteenDaysStr = fourteenDaysLater.toISOString().split('T')[0];
+  const expectedSevenDaysLater = new Date(realTodayStr + 'T00:00:00');
+  expectedSevenDaysLater.setDate(expectedSevenDaysLater.getDate() + 7);
+  const expectedSevenDaysStr = expectedSevenDaysLater.toISOString().split('T')[0];
 
   // 4. Отримано сьогодні (об'єм м³ та кількість підрейсів)
   const receivedTodayCargoes = cargoes.filter(c =>
@@ -334,25 +334,25 @@ function updateDashboardStats(cargoes = [], subvoyages = []) {
     shippedTodaySvCount = shippedTodaySvSet.size;
   }
 
-  // 6. Очікуємо (14 днів) — об'єм м³ та кількість підрейсів в дорозі за плановою датою прибуття (незалежно від фактичної)
+  // 6. Очікуємо (7 днів) — об'єм м³ та кількість підрейсів в дорозі за плановою датою прибуття (незалежно від фактичної)
   const expectedArrivalCargoes = cargoes.filter(c => {
     const arrDate = (c.expectedArrivalDate || c.arrivalDate || '').slice(0, 10);
-    return (arrDate && arrDate <= fourteenDaysStr && c.statusCode === 'in_transit') || c.statusCode === 'in_transit';
+    return (arrDate && arrDate <= expectedSevenDaysStr && c.statusCode === 'in_transit') || c.statusCode === 'in_transit';
   });
   let expectedArrival3DaysVolume = expectedArrivalCargoes.reduce((sum, c) => sum + (parseFloat(c.volume) || 0), 0);
-  const inTransitWithin14Days = svSubvoyages.filter(s => {
+  const inTransitWithin7Days = svSubvoyages.filter(s => {
     if (s.status !== 'В дорозі') return false;
     const planArr = (s.plannedArrival || '').slice(0, 10);
-    return !planArr || planArr <= fourteenDaysStr;
+    return !planArr || planArr <= expectedSevenDaysStr;
   });
   const expectedArrivalSvSet = new Set([
     ...expectedArrivalCargoes.map(c => c.subvoyage).filter(Boolean),
-    ...inTransitWithin14Days.map(s => s.id)
+    ...inTransitWithin7Days.map(s => s.id)
   ]);
   let expectedArrival3DaysSvCount = expectedArrivalSvSet.size;
 
   if (svShipments) {
-    const inTransitSvIds = new Set(inTransitWithin14Days.map(s => s.id));
+    const inTransitSvIds = new Set(inTransitWithin7Days.map(s => s.id));
     const inTransitVol = svShipments
       .filter(s => s.subvoyageId && inTransitSvIds.has(s.subvoyageId))
       .reduce((sum, s) => sum + (parseFloat(s.totalVolume ?? s.volume) || 0), 0);
