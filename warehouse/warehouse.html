@@ -56,8 +56,12 @@
     <!-- sub-voyages-container видалено (секція "Підрейси та контроль місткості" прибрана) -->
     <div id="filters-container"></div>
     <div id="cargo-registry-container" class="hidden"></div>
-    <!-- Компонент планувальника підрейсів (активний за замовчуванням — Кейс 2.3) -->
+    <!-- Перемикач робочих режимів (Відправка / Отримання / Транзит / Вантажі) -->
+    <div id="workspace-mode-switcher-container"></div>
+    <!-- Компонент планувальника підрейсів (Режим 1: Відправка) -->
     <div id="subvoyages-workspace-container"></div>
+    <!-- Контейнер додаткових режимів (Режим 2: Отримання, Режим 3: Склад / Комірник) -->
+    <div id="workspace-modes-panels-container" class="hidden"></div>
   </main>
 
   <!-- Modals for Subvoyages Planner -->
@@ -1139,6 +1143,7 @@
   <script src="preset-manager.js"></script>
   <script src="cargo-filters.js"></script>
   <script src="sub-voyages-management.js"></script>
+  <script src="workspace-modes.js"></script>
   <script src="warehouse.js"></script>
 </body>
 

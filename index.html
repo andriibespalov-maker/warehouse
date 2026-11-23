@@ -344,7 +344,8 @@
               </div>
 
               <div class="relative group">
-                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-600 transition-colors text-xs pointer-events-none"></i>
+                <i
+                  class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-600 transition-colors text-xs pointer-events-none"></i>
                 <input type="text" id="input-contractor-search" required autocomplete="off"
                   placeholder="Пошук підрядника за назвою, країною або ЄДРПОУ..."
                   class="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-14 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
@@ -357,7 +358,8 @@
                   <button type="button" id="btn-toggle-contractor-menu"
                     class="w-6 h-6 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition cursor-pointer"
                     title="Відкрити список підрядників">
-                    <i id="contractor-dropdown-arrow" class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200"></i>
+                    <i id="contractor-dropdown-arrow"
+                      class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200"></i>
                   </button>
                 </div>
               </div>
@@ -422,6 +424,77 @@
                 class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
             </div>
           </div>
+
+          <!-- Доступні робочі режими (Таби на складі) -->
+          <div class="pt-3.5 border-t border-slate-200/70 space-y-2.5">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <div>
+                <label class="block text-slate-800 text-xs font-semibold flex items-center gap-1.5">
+                  <i class="fa-solid fa-layer-group text-brand-600"></i>
+                  <span>Робочі режими складу (Активні таби) <span class="text-rose-500">*</span></span>
+                </label>
+                <p class="text-[10px] text-slate-500 mt-0.5">
+                  Оберіть, які робочі режими (таби) будуть доступні на цьому складі
+                </p>
+              </div>
+              <span id="functional-modes-count-badge" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-200">
+                2 з 4 табів
+              </span>
+            </div>
+            <div id="warehouse-allowed-modes-group" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
+              <label class="wh-mode-checkbox-card flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition select-none">
+                <input type="checkbox" value="dispatch" checked class="wh-allowed-mode-cb rounded text-brand-600 focus:ring-brand-500 cursor-pointer">
+                <i class="fa-solid fa-truck-ramp-box text-brand-600 text-[11px] w-4 text-center"></i>
+                <span class="text-[11px] font-semibold text-slate-800">1. Відправка рейсів</span>
+              </label>
+              <label class="wh-mode-checkbox-card flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition select-none">
+                <input type="checkbox" value="receiving" class="wh-allowed-mode-cb rounded text-brand-600 focus:ring-brand-500 cursor-pointer">
+                <i class="fa-solid fa-plane-arrival text-amber-600 text-[11px] w-4 text-center"></i>
+                <span class="text-[11px] font-semibold text-slate-800">2. Приймання рейсів</span>
+              </label>
+              <label class="wh-mode-checkbox-card flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition select-none">
+                <input type="checkbox" value="transit" class="wh-allowed-mode-cb rounded text-brand-600 focus:ring-brand-500 cursor-pointer">
+                <i class="fa-solid fa-shuffle text-indigo-600 text-[11px] w-4 text-center"></i>
+                <span class="text-[11px] font-semibold text-slate-800">3. Транзит</span>
+              </label>
+              <label class="wh-mode-checkbox-card flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition select-none">
+                <input type="checkbox" value="cargo_ops" checked class="wh-allowed-mode-cb rounded text-brand-600 focus:ring-brand-500 cursor-pointer">
+                <i class="fa-solid fa-boxes-stacked text-emerald-600 text-[11px] w-4 text-center"></i>
+                <span class="text-[11px] font-semibold text-slate-800">4. Вантажі (Комірник)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Оперативний рух (Кількість днів для Очікуємо та План виїзду) -->
+          <div class="pt-3.5 border-t border-slate-200/70 space-y-2.5">
+            <div>
+              <label class="block text-slate-800 text-xs font-semibold flex items-center gap-1.5">
+                <i class="fa-solid fa-arrows-rotate text-violet-600"></i>
+                <span>Оперативний рух (горизонт планування, днів)</span>
+              </label>
+              <p class="text-[10px] text-slate-500 mt-0.5">
+                Кількість днів, за яку на дашборді складу розраховуються показники «Очікуємо» та «План виїзду»
+              </p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label for="input-operational-expected-days" class="block text-slate-700 text-[11px] font-semibold mb-1">
+                  Очікуємо (днів)
+                </label>
+                <input type="number" id="input-operational-expected-days" min="1" max="365" step="1" value="7"
+                  placeholder="7"
+                  class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
+              </div>
+              <div>
+                <label for="input-operational-departure-days" class="block text-slate-700 text-[11px] font-semibold mb-1">
+                  План виїзду (днів)
+                </label>
+                <input type="number" id="input-operational-departure-days" min="1" max="365" step="1" value="7"
+                  placeholder="7"
+                  class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- 2. Адреса (Структуровані поля) -->
@@ -462,10 +535,10 @@
                 <label for="input-warehouse-postal-code" class="block text-slate-700 text-[11px] font-semibold mb-1">
                   Поштовий індекс <span class="text-rose-500">*</span>
                 </label>
-                <input type="text" id="input-warehouse-postal-code" required
-                  placeholder="03115 (UA), 00-001 (PL)"
+                <input type="text" id="input-warehouse-postal-code" required placeholder="03115 (UA), 00-001 (PL)"
                   class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
-                <p id="postal-code-hint" class="text-[10px] text-slate-400 mt-1">Формат перевіряється під обрану країну</p>
+                <p id="postal-code-hint" class="text-[10px] text-slate-400 mt-1">Формат перевіряється під обрану країну
+                </p>
               </div>
 
               <div>
@@ -473,8 +546,7 @@
                   Область / Штат / Регіон
                   <span id="region-required-star" class="text-rose-500 hidden">*</span>
                 </label>
-                <input type="text" id="input-warehouse-region"
-                  placeholder="Київська обл. або NY"
+                <input type="text" id="input-warehouse-region" placeholder="Київська обл. або NY"
                   class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
               </div>
             </div>
@@ -485,8 +557,7 @@
                 <label for="input-warehouse-city" class="block text-slate-700 text-[11px] font-semibold mb-1">
                   Місто / Населений пункт <span class="text-rose-500">*</span>
                 </label>
-                <input type="text" id="input-warehouse-city" required
-                  placeholder="Київ"
+                <input type="text" id="input-warehouse-city" required placeholder="Київ"
                   class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
               </div>
 
@@ -494,8 +565,7 @@
                 <label for="input-warehouse-street" class="block text-slate-700 text-[11px] font-semibold mb-1">
                   Вулиця <span class="text-rose-500">*</span>
                 </label>
-                <input type="text" id="input-warehouse-street" required
-                  placeholder="просп. Берестейський, 120"
+                <input type="text" id="input-warehouse-street" required placeholder="просп. Берестейський, 120"
                   class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
               </div>
 
@@ -503,15 +573,15 @@
                 <label for="input-warehouse-address-line2" class="block text-slate-700 text-[11px] font-semibold mb-1">
                   Квартира / Офіс / Корпус
                 </label>
-                <input type="text" id="input-warehouse-address-line2"
-                  placeholder="кв. 45 або офіс 302"
+                <input type="text" id="input-warehouse-address-line2" placeholder="кв. 45 або офіс 302"
                   class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
               </div>
             </div>
 
             <!-- Ряд 3: Коментар -->
             <div class="pt-2.5 border-t border-slate-100">
-              <label for="input-warehouse-delivery-instructions" class="block text-slate-700 text-[11px] font-semibold mb-1">
+              <label for="input-warehouse-delivery-instructions"
+                class="block text-slate-700 text-[11px] font-semibold mb-1">
                 Коментар
               </label>
               <input type="text" id="input-warehouse-delivery-instructions"
@@ -523,17 +593,22 @@
 
         <!-- 3. Сверхпослуги та детальні послуги складу -->
         <div class="bg-slate-50/60 border border-slate-200/70 rounded-xl p-4 space-y-3">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200/50">
+          <div
+            class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200/50">
             <div class="flex items-center gap-2">
               <span
                 class="w-6 h-6 rounded-md bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center">3</span>
               <div>
                 <div class="flex items-center gap-2">
-                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700">Сверхпослуги та послуги складу <span
-                      class="text-rose-500">*</span></h4>
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700">Сверхпослуги та послуги складу
+                    <span class="text-rose-500">*</span>
+                  </h4>
                 </div>
                 <p class="text-[10px] text-slate-500 mt-0.5">
-                  По дефолту послуги <strong>не вибрані з червоним хрестиком (<span class="text-rose-500 font-bold">✕</span>)</strong>. Клікніть на послугу, щоб вибрати її (<span class="text-emerald-600 font-bold">✓</span>), або скористайтесь кнопками швидкого вибору («Всі» / «Жодної»).
+                  По дефолту послуги <strong>не вибрані з червоним хрестиком (<span
+                      class="text-rose-500 font-bold">✕</span>)</strong>. Клікніть на послугу, щоб вибрати її (<span
+                    class="text-emerald-600 font-bold">✓</span>), або скористайтесь кнопками швидкого вибору («Всі» /
+                  «Жодної»).
                 </p>
               </div>
             </div>
@@ -647,7 +722,8 @@
                 class="w-6 h-6 rounded-md bg-purple-100 text-purple-700 font-bold text-xs flex items-center justify-center">6</span>
               <div>
                 <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700">Контактні особи та посади</h4>
-                <p class="text-[10px] text-slate-400">Обов'язкові: Посада та Email. Телефони (WhatsApp/Viber) та соцмережі за ніком (Telegram, WeChat, Signal, LinkedIn) — окремими блоками</p>
+                <p class="text-[10px] text-slate-400">Обов'язкові: Посада та Email. Телефони (WhatsApp/Viber) та
+                  соцмережі за ніком (Telegram, WeChat, Signal, LinkedIn) — окремими блоками</p>
               </div>
             </div>
             <button type="button" id="btn-add-contact"
@@ -673,14 +749,17 @@
 
         <!-- 7. Управління прайс-листом (Тарифи підрядника) — Блок 2.2 -->
         <div class="bg-slate-50/60 border border-slate-200/70 rounded-xl p-4 space-y-4">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/60">
+          <div
+            class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/60">
             <div class="flex items-center gap-2.5">
               <span
                 class="w-6 h-6 rounded-md bg-teal-100 text-teal-700 font-bold text-xs flex items-center justify-center shrink-0">7</span>
               <div>
-                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700">Управління прайс-листом (Тарифи підрядника)</h4>
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700">Управління прайс-листом (Тарифи
+                  підрядника)</h4>
                 <p class="text-[10px] text-slate-500 mt-0.5">
-                  Фіксація тарифів: діє <span class="font-bold text-teal-800">лише один активний тариф</span> (файл або текст є взаємозамінними)
+                  Фіксація тарифів: діє <span class="font-bold text-teal-800">лише один активний тариф</span> (файл або
+                  текст є взаємозамінними)
                 </p>
               </div>
             </div>
@@ -701,11 +780,13 @@
           </div>
 
           <!-- Індикатор поточного активного тарифу -->
-          <div id="tariff-active-indicator-banner" class="flex items-center justify-between p-2.5 rounded-xl border bg-emerald-50/80 border-emerald-200 text-emerald-900 text-xs shadow-2xs">
+          <div id="tariff-active-indicator-banner"
+            class="flex items-center justify-between p-2.5 rounded-xl border bg-emerald-50/80 border-emerald-200 text-emerald-900 text-xs shadow-2xs">
             <div class="flex items-center gap-2 min-w-0">
               <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
               <span class="font-bold shrink-0">Діючий тариф:</span>
-              <span id="tariff-active-indicator-label" class="font-semibold text-emerald-800 truncate">Файл прайс-листа</span>
+              <span id="tariff-active-indicator-label" class="font-semibold text-emerald-800 truncate">Файл
+                прайс-листа</span>
             </div>
           </div>
 
@@ -713,15 +794,18 @@
           <div id="tariff-panel-document" class="space-y-3">
             <div id="tariff-dropzone"
               class="border-2 border-dashed border-teal-300 hover:border-teal-500 bg-white hover:bg-teal-50/30 rounded-xl p-5 text-center transition cursor-pointer group">
-              <input type="file" id="input-tariff-files" multiple accept=".pdf,.xls,.xlsx,.xlsm,.xlsb,.csv" class="hidden">
-              <div class="w-11 h-11 rounded-full bg-teal-50 border border-teal-100 text-teal-600 flex items-center justify-center mx-auto mb-2.5 group-hover:scale-105 transition">
+              <input type="file" id="input-tariff-files" multiple class="hidden">
+              <div
+                class="w-11 h-11 rounded-full bg-teal-50 border border-teal-100 text-teal-600 flex items-center justify-center mx-auto mb-2.5 group-hover:scale-105 transition">
                 <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
               </div>
               <p class="text-xs font-bold text-slate-800">
                 Перетягніть файл прайс-листа сюди або <span class="text-teal-600 underline">оберіть на комп'ютері</span>
               </p>
               <p class="text-[11px] text-slate-400 mt-1">
-                Формати: PDF, Excel (.xlsx, .xls, .xlsm, .xlsb, .csv), максимальний розмір — 10 МБ. <span class="text-teal-700 font-semibold">Новий файл стає єдиним активним тарифом</span> (актуальність тексту та минулих файлів втрачається).
+                Формати: будь-який формат (система автоматично конвертує у PDF), максимальний розмір — 10 МБ. <span
+                  class="text-teal-700 font-semibold">Новий файл стає єдиним активним тарифом</span> (актуальність
+                тексту та минулих файлів втрачається).
               </p>
             </div>
 
@@ -730,22 +814,28 @@
               <!-- Документи генеруються через JS -->
             </div>
 
-            <div id="tariff-documents-empty" class="hidden text-center py-6 bg-white rounded-xl border border-dashed border-slate-200 text-slate-400">
+            <div id="tariff-documents-empty"
+              class="hidden text-center py-6 bg-white rounded-xl border border-dashed border-slate-200 text-slate-400">
               <i class="fa-solid fa-file-invoice-dollar text-xl mb-1.5 text-slate-300"></i>
               <p class="text-xs font-semibold text-slate-600">Файли прайс-листа ще не завантажені</p>
-              <p class="text-[11px] text-slate-400 mt-0.5">Перетягніть файл у зону завантаження або скористайтесь вкладкою «Вставка тексту / коментар»</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">Перетягніть файл у зону завантаження або скористайтесь
+                вкладкою «Вставка тексту / коментар»</p>
             </div>
           </div>
 
           <!-- ВАРІАНТ 2: Текстове поле / коментар для швидкої вставки тарифів -->
           <div id="tariff-panel-text" class="hidden space-y-3">
             <div class="bg-white p-3.5 rounded-xl border border-slate-200 space-y-3 shadow-2xs">
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-slate-100">
+              <div
+                class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-slate-100">
                 <div class="flex items-center gap-2 flex-wrap">
-                  <label for="input-warehouse-tariff-text" class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                    <i class="fa-solid fa-paste text-teal-600"></i> Текст тарифів (копіпаст із повідомлень / чату підрядника)
+                  <label for="input-warehouse-tariff-text"
+                    class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <i class="fa-solid fa-paste text-teal-600"></i> Текст тарифів (копіпаст із повідомлень / чату
+                    підрядника)
                   </label>
-                  <span id="tariff-text-active-badge" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                  <span id="tariff-text-active-badge"
+                    class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
                     ⚪ Неактивний
                   </span>
                 </div>
@@ -756,7 +846,8 @@
                     <i class="fa-solid fa-circle-check text-teal-600"></i> Встановити як діючий тариф
                   </button>
                   <div class="flex items-center gap-1.5">
-                    <label for="input-warehouse-tariff-text-valid-until" class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                    <label for="input-warehouse-tariff-text-valid-until"
+                      class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
                       Термін дії: <span class="text-rose-500">*</span>
                     </label>
                     <input type="date" id="input-warehouse-tariff-text-valid-until"
@@ -769,8 +860,10 @@
                 placeholder="Вставте простий текст або повідомлення підрядника з тарифами (наприклад:&#10;Приймання товару — $15 за палету&#10;Зберігання — $0.80 за куб.м/доба (перші 3 дні безкоштовно)&#10;Відвантаження — $12 за палету&#10;Стікерування — $0.15 за коробку...)"
                 class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-mono text-slate-800 placeholder-slate-400 focus:bg-white focus:border-teal-500 focus:outline-none transition"></textarea>
               <div class="flex items-center justify-between text-[11px] text-slate-400">
-                <span>Швидке збереження простих тарифів текстом. Активація тексту переводить усі завантажені файли в неактивний архів.</span>
-                <button type="button" id="btn-clear-tariff-text" class="text-slate-400 hover:text-rose-600 transition cursor-pointer">
+                <span>Швидке збереження простих тарифів текстом. Активація тексту переводить усі завантажені файли в
+                  неактивний архів.</span>
+                <button type="button" id="btn-clear-tariff-text"
+                  class="text-slate-400 hover:text-rose-600 transition cursor-pointer">
                   Очистити
                 </button>
               </div>
@@ -1217,7 +1310,8 @@
                   <button type="button"
                     class="multiselect-toggle-btn w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-left flex justify-between items-center transition focus:outline-none focus:border-brand-500 cursor-pointer"
                     data-field="services">
-                    <span id="multiselect-btn-text-services" class="text-slate-400 truncate">Обрати категорії послуг...</span>
+                    <span id="multiselect-btn-text-services" class="text-slate-400 truncate">Обрати категорії
+                      послуг...</span>
                     <i class="fa-solid fa-chevron-down text-slate-400 text-[10px]"></i>
                   </button>
                   <div id="multiselect-menu-services"
@@ -1387,7 +1481,8 @@
       class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col border border-slate-100 transform transition-all">
       <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-amber-50/60">
         <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-amber-100 border border-amber-200 text-amber-800 flex items-center justify-center text-sm font-bold shadow-2xs">
+          <div
+            class="w-9 h-9 rounded-xl bg-amber-100 border border-amber-200 text-amber-800 flex items-center justify-center text-sm font-bold shadow-2xs">
             <i class="fa-solid fa-file-lines"></i>
           </div>
           <div>
@@ -1420,30 +1515,37 @@
   <!-- Modal 9: Попередній перегляд документа тарифів (Preview) — Блок 2.2 -->
   <div id="modal-doc-preview"
     class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[85] hidden [&:not(.hidden)]:flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col my-auto border border-slate-200 max-h-[92vh] transform transition-all">
+    <div
+      class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col my-auto border border-slate-200 max-h-[92vh] transform transition-all">
       <!-- Header -->
       <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/90 shrink-0">
         <div class="flex items-center gap-3 min-w-0">
-          <div id="doc-preview-icon" class="w-10 h-10 rounded-xl bg-teal-50 border border-teal-200 text-teal-600 flex items-center justify-center text-lg shrink-0">
+          <div id="doc-preview-icon"
+            class="w-10 h-10 rounded-xl bg-teal-50 border border-teal-200 text-teal-600 flex items-center justify-center text-lg shrink-0">
             <i class="fa-solid fa-file-invoice-dollar"></i>
           </div>
           <div class="min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
               <h3 id="doc-preview-title" class="font-bold text-slate-900 text-sm truncate max-w-md">Прайс-лист</h3>
-              <span id="doc-preview-size" class="text-[10px] px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded font-mono font-medium"></span>
+              <span id="doc-preview-size"
+                class="text-[10px] px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded font-mono font-medium"></span>
               <span id="doc-preview-status-badge"></span>
             </div>
-            <p id="doc-preview-subtitle" class="text-[11px] text-slate-400 mt-0.5">Офіційний прайс-лист підрядника складу</p>
+            <p id="doc-preview-subtitle" class="text-[11px] text-slate-400 mt-0.5">Офіційний прайс-лист підрядника
+              складу</p>
           </div>
         </div>
-        <button type="button" class="close-doc-preview text-slate-400 hover:text-slate-600 text-2xl cursor-pointer px-2 leading-none">&times;</button>
+        <button type="button"
+          class="close-doc-preview text-slate-400 hover:text-slate-600 text-2xl cursor-pointer px-2 leading-none">&times;</button>
       </div>
 
       <!-- Top Meta Info Bar -->
-      <div class="px-5 py-2.5 bg-slate-100/70 border-b border-slate-200/70 flex items-center justify-between flex-wrap gap-2 text-xs shrink-0">
+      <div
+        class="px-5 py-2.5 bg-slate-100/70 border-b border-slate-200/70 flex items-center justify-between flex-wrap gap-2 text-xs shrink-0">
         <div class="flex items-center gap-3 flex-wrap">
           <span class="text-slate-600 font-medium">
-            <i class="fa-regular fa-calendar-check text-slate-400 mr-1"></i> <span id="doc-preview-upload-date">Завантажено: —</span>
+            <i class="fa-regular fa-calendar-check text-slate-400 mr-1"></i> <span
+              id="doc-preview-upload-date">Завантажено: —</span>
           </span>
           <span id="doc-preview-validity-wrap"></span>
         </div>
@@ -1451,7 +1553,8 @@
       </div>
 
       <!-- Body / Document Viewer Content -->
-      <div id="modal-doc-preview-body" class="p-5 overflow-y-auto max-h-[62vh] space-y-4 custom-scrollbar bg-slate-50/40">
+      <div id="modal-doc-preview-body"
+        class="p-5 overflow-y-auto max-h-[62vh] space-y-4 custom-scrollbar bg-slate-50/40">
         <!-- Вміст генерується динамічно через JS -->
       </div>
 
@@ -1468,7 +1571,8 @@
             class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs">
             <i class="fa-solid fa-download text-xs"></i> Завантажити файл
           </button>
-          <button type="button" class="close-doc-preview px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold transition cursor-pointer">
+          <button type="button"
+            class="close-doc-preview px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold transition cursor-pointer">
             Закрити
           </button>
         </div>
@@ -1507,9 +1611,9 @@
             Назва підрядника / компанії <span class="text-rose-500">*</span>
           </label>
           <div class="relative group">
-            <i class="fa-solid fa-building absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-600 transition-colors text-xs"></i>
-            <input type="text" id="input-new-contractor-name" required
-              placeholder="Наприклад: ТОВ ТрансЛогістик Сервіс"
+            <i
+              class="fa-solid fa-building absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-600 transition-colors text-xs"></i>
+            <input type="text" id="input-new-contractor-name" required placeholder="Наприклад: ТОВ ТрансЛогістик Сервіс"
               class="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition shadow-2xs">
           </div>
         </div>
@@ -1534,9 +1638,9 @@
               Код ЄДРПОУ / Tax ID
             </label>
             <div class="relative group">
-              <i class="fa-solid fa-hashtag absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-600 transition-colors text-xs"></i>
-              <input type="text" id="input-new-contractor-tax-id"
-                placeholder="Наприклад: 40291847"
+              <i
+                class="fa-solid fa-hashtag absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-600 transition-colors text-xs"></i>
+              <input type="text" id="input-new-contractor-tax-id" placeholder="Наприклад: 40291847"
                 class="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition shadow-2xs">
             </div>
           </div>
@@ -1548,9 +1652,9 @@
               Контактна особа
             </label>
             <div class="relative group">
-              <i class="fa-regular fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-600 transition-colors text-xs"></i>
-              <input type="text" id="input-new-contractor-contact"
-                placeholder="ПІБ менеджера"
+              <i
+                class="fa-regular fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-600 transition-colors text-xs"></i>
+              <input type="text" id="input-new-contractor-contact" placeholder="ПІБ менеджера"
                 class="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition shadow-2xs">
             </div>
           </div>
@@ -1560,9 +1664,9 @@
               Телефон
             </label>
             <div class="relative group">
-              <i class="fa-solid fa-phone absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-600 transition-colors text-xs"></i>
-              <input type="text" id="input-new-contractor-phone"
-                placeholder="+380 ... або +86 ..."
+              <i
+                class="fa-solid fa-phone absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-600 transition-colors text-xs"></i>
+              <input type="text" id="input-new-contractor-phone" placeholder="+380 ... або +86 ..."
                 class="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition shadow-2xs">
             </div>
           </div>
@@ -1574,9 +1678,9 @@
               Email
             </label>
             <div class="relative group">
-              <i class="fa-regular fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-600 transition-colors text-xs"></i>
-              <input type="email" id="input-new-contractor-email"
-                placeholder="partner@company.com"
+              <i
+                class="fa-regular fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-600 transition-colors text-xs"></i>
+              <input type="email" id="input-new-contractor-email" placeholder="partner@company.com"
                 class="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition shadow-2xs">
             </div>
           </div>
@@ -1585,8 +1689,7 @@
             <label for="input-new-contractor-notes" class="block text-slate-700 text-xs font-semibold mb-1.5">
               Примітка
             </label>
-            <input type="text" id="input-new-contractor-notes"
-              placeholder="Спеціалізація або умови..."
+            <input type="text" id="input-new-contractor-notes" placeholder="Спеціалізація або умови..."
               class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition shadow-2xs">
           </div>
         </div>

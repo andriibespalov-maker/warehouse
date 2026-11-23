@@ -823,6 +823,7 @@ function openCreateArriveModal() {
 
   document.getElementById('modal-arrive')?.classList.remove('hidden');
 }
+window.openCreateArriveModal = openCreateArriveModal;
 
 // Збереження (Створення / Оновлення) вантажу
 function handleSaveArrive() {
@@ -880,6 +881,8 @@ function handleSaveArrive() {
     };
 
     cargoesData.unshift(newCargo);
+    window.cargoesData = cargoesData;
+    if (typeof window.refreshWorkspaceModes === 'function') window.refreshWorkspaceModes();
     showToast(`Створено новий вантаж ${newCode}!`);
   }
 
@@ -1767,6 +1770,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       subvoyagesData = data.subvoyagesData || [];
       cargoesData = data.cargoesData || [];
+      window.cargoesData = cargoesData;
     } catch (err) {
       console.error('Error loading voyages data:', err);
     }
@@ -1777,9 +1781,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadComponent('filters-container', 'filters.html'),
     loadComponent('cargo-registry-container', 'cargo-registry.html'),
     loadComponent('subvoyages-workspace-container', 'sub-voyages-workspace.html'),
+    loadComponent('workspace-modes-panels-container', 'workspace-modes.html'),
     loadComponent('subvoyages-modals-container', 'sub-voyages-modals.html'),
     loadVoyagesData()
   ]);
+
+  if (typeof window.initWorkspaceModes === 'function') {
+    window.initWorkspaceModes();
+  }
 
   if (typeof window.initSubvoyagesPlanner === 'function') {
     window.initSubvoyagesPlanner();

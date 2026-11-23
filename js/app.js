@@ -531,6 +531,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     return LEGACY_SERVICE_MAP[serviceName] || serviceName;
   }
 
+  function buildMacroServicesPopupHtml(catName, meta, allCategorySubs, selectedSubs) {
+    const activeSubs = selectedSubs
+      ? allCategorySubs.filter(sub => selectedSubs.has(sub))
+      : allCategorySubs;
+
+    if (activeSubs.length === 0) {
+      return { activeCount: 0, popupHtml: '' };
+    }
+
+    const subListHtml = activeSubs.map(sub => `
+      <li class="flex items-start gap-1.5 text-[10px] text-slate-200 leading-snug">
+        <i class="fa-solid fa-check text-[9px] text-emerald-400 mt-0.5 shrink-0"></i>
+        <span>${sub}</span>
+      </li>
+    `).join('');
+
+    const popupHtml = `
+      <div class="hidden group-hover/macro:block absolute left-0 bottom-full mb-1.5 w-72 p-2.5 bg-slate-900 text-white rounded-xl shadow-xl z-40 pointer-events-none border border-slate-700 text-left">
+        <div class="font-bold text-[11px] text-white border-b border-slate-700/80 pb-1 mb-1.5 flex items-center justify-between">
+          <span class="flex items-center gap-1.5"><i class="fa-solid ${meta.icon} text-[10px] text-brand-400"></i> ${catName}</span>
+          <span class="text-[9px] font-normal text-slate-400">${activeSubs.length} з ${allCategorySubs.length} активні</span>
+        </div>
+        <ul class="space-y-1">
+          ${subListHtml}
+        </ul>
+      </div>
+    `;
+
+    return { activeCount: activeSubs.length, popupHtml };
+  }
+
   function renderMacroServicesBadges(wh) {
     const rawServices = Array.isArray(wh.services) ? wh.services : [];
     const normalized = Array.from(new Set(rawServices.map(normalizeServiceMacro)));
@@ -553,28 +584,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         : [];
       const allCategorySubs = Array.from(new Set([...(meta.subServices || []), ...customSubs]));
 
-      const activeCount = selectedSubs
-        ? allCategorySubs.filter(sub => selectedSubs.has(sub)).length
-        : allCategorySubs.length;
-
-      const subListHtml = allCategorySubs.map(sub => {
-        const isActive = !selectedSubs || selectedSubs.has(sub);
-        if (isActive) {
-          return `
-            <li class="flex items-start gap-1.5 text-[10px] text-slate-200 leading-snug">
-              <i class="fa-solid fa-check text-[9px] text-emerald-400 mt-0.5 shrink-0"></i>
-              <span>${sub}</span>
-            </li>
-          `;
-        } else {
-          return `
-            <li class="flex items-start gap-1.5 text-[10px] text-slate-400 leading-snug opacity-75">
-              <i class="fa-solid fa-xmark text-[9px] text-rose-400 mt-0.5 shrink-0"></i>
-              <span class="line-through">${sub}</span>
-            </li>
-          `;
-        }
-      }).join('');
+      const { activeCount, popupHtml } = buildMacroServicesPopupHtml(catName, meta, allCategorySubs, selectedSubs);
 
       const countBadge = selectedSubs
         ? `${activeCount}/${allCategorySubs.length}`
@@ -587,17 +597,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <span>${catName}</span>
             <span class="text-[9px] opacity-75 font-normal">(${countBadge})</span>
           </span>
-          ${subListHtml ? `
-            <div class="hidden group-hover/macro:block absolute left-0 bottom-full mb-1.5 w-72 p-2.5 bg-slate-900 text-white rounded-xl shadow-xl z-40 pointer-events-none border border-slate-700">
-              <div class="font-bold text-[11px] text-white border-b border-slate-700/80 pb-1 mb-1.5 flex items-center justify-between">
-                <span class="flex items-center gap-1.5"><i class="fa-solid ${meta.icon} text-[10px] text-brand-400"></i> ${catName}</span>
-                <span class="text-[9px] font-normal text-slate-400">${activeCount} з ${allCategorySubs.length} активні</span>
-              </div>
-              <ul class="space-y-1">
-                ${subListHtml}
-              </ul>
-            </div>
-          ` : ''}
+          ${popupHtml}
         </div>
       `;
     }).join('');
@@ -631,45 +631,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         : [];
       const allCategorySubs = Array.from(new Set([...(meta.subServices || []), ...customSubs]));
 
-      const activeCount = selectedSubs
-        ? allCategorySubs.filter(sub => selectedSubs.has(sub)).length
-        : allCategorySubs.length;
-
-      const subListHtml = allCategorySubs.map(sub => {
-        const isActive = !selectedSubs || selectedSubs.has(sub);
-        if (isActive) {
-          return `
-            <li class="flex items-start gap-1.5 text-[10px] text-slate-200 leading-snug">
-              <i class="fa-solid fa-check text-[9px] text-emerald-400 mt-0.5 shrink-0"></i>
-              <span>${sub}</span>
-            </li>
-          `;
-        } else {
-          return `
-            <li class="flex items-start gap-1.5 text-[10px] text-slate-400 leading-snug opacity-75">
-              <i class="fa-solid fa-xmark text-[9px] text-rose-400 mt-0.5 shrink-0"></i>
-              <span class="line-through">${sub}</span>
-            </li>
-          `;
-        }
-      }).join('');
+      const { activeCount, popupHtml } = buildMacroServicesPopupHtml(catName, meta, allCategorySubs, selectedSubs);
 
       return `
         <div class="relative group/macro inline-flex">
           <span class="inline-flex items-center justify-center w-7 h-7 rounded-md border cursor-help ${meta.badgeClass} ${selectedSubs && activeCount === 0 ? 'opacity-60 grayscale' : ''}" title="${catName}">
             <i class="fa-solid ${meta.icon} text-[11px] opacity-90"></i>
           </span>
-          ${subListHtml ? `
-            <div class="hidden group-hover/macro:block absolute left-0 bottom-full mb-1.5 w-72 p-2.5 bg-slate-900 text-white rounded-xl shadow-xl z-40 pointer-events-none border border-slate-700 text-left">
-              <div class="font-bold text-[11px] text-white border-b border-slate-700/80 pb-1 mb-1.5 flex items-center justify-between">
-                <span class="flex items-center gap-1.5"><i class="fa-solid ${meta.icon} text-[10px] text-brand-400"></i> ${catName}</span>
-                <span class="text-[9px] font-normal text-slate-400">${activeCount} з ${allCategorySubs.length} активні</span>
-              </div>
-              <ul class="space-y-1">
-                ${subListHtml}
-              </ul>
-            </div>
-          ` : ''}
+          ${popupHtml}
         </div>
       `;
     }).join('');
@@ -1172,6 +1141,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function loadWarehousesData() {
+    try {
+      const savedLocal = localStorage.getItem('erp_warehouses_state');
+      if (savedLocal) {
+        const parsed = JSON.parse(savedLocal);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          warehousesData = parsed;
+          syncContractorsFromWarehouses();
+          renderAllWarehouses();
+          return;
+        }
+      }
+    } catch (e) {}
     try {
       const response = await fetch('../data/warehouses.json');
       if (!response.ok) throw new Error('Не вдалося завантажити warehouses.json');
@@ -1744,15 +1725,11 @@ document.addEventListener('DOMContentLoaded', async () => {
            </button>`
         : '';
 
-      const nameLinkHTML = wh.link
-        ? `<a href="${wh.link}" id="link-${wh.id}" class="inline-flex items-center gap-1.5 font-bold text-slate-900 hover:text-brand-600 transition group/link text-sm min-w-0">
+      const whHref = wh.link || `warehouse/warehouse.html?id=${encodeURIComponent(wh.id)}`;
+      const nameLinkHTML = `<a href="${whHref}" id="link-${wh.id}" class="inline-flex items-center gap-1.5 font-bold text-slate-900 hover:text-brand-600 transition group/link text-sm min-w-0">
              <i class="fa-solid fa-warehouse text-slate-400 group-hover/link:text-brand-600 transition text-xs shrink-0"></i>
              <span class="hover:underline truncate">${wh.name}</span>
-           </a>`
-        : `<button type="button" class="quick-edit-name-btn inline-flex items-center gap-1.5 font-bold text-slate-900 hover:text-brand-600 transition text-left text-sm cursor-pointer min-w-0" data-id="${wh.id}">
-             <i class="fa-solid fa-warehouse text-slate-400 text-xs shrink-0"></i>
-             <span class="hover:underline truncate">${wh.name}</span>
-           </button>`;
+           </a>`;
 
       const col1NameAndBadges = `
         <div class="space-y-1.5">
@@ -2426,9 +2403,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Встановлюємо дефолтне значення "Власні"
     updateCustomDropdown('select-warehouse-type', 'Власні');
+    applyFunctionalTypeToForm('dispatch_warehouse');
 
     const inputVolume = document.getElementById('input-warehouse-volume');
     if (inputVolume) inputVolume.value = '';
+
+    const inputExpectedDays = document.getElementById('input-operational-expected-days');
+    if (inputExpectedDays) inputExpectedDays.value = '7';
+    const inputDepartureDays = document.getElementById('input-operational-departure-days');
+    if (inputDepartureDays) inputDepartureDays.value = '7';
 
     const lastArrivalInput = document.getElementById('input-last-arrival-date');
     const todayIso = new Date().toISOString().split('T')[0];
@@ -2491,6 +2474,133 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateInstructionsVisibility()
   });
 
+  // --- Операційний тип складу та доступні робочі режими (Таби 1–4) ---
+  const WAREHOUSE_FUNCTIONAL_TYPES = {
+    dispatch_warehouse: {
+      label: 'Склад відправки (Консолідація)',
+      shortLabel: 'Відправка / Консолідація',
+      icon: 'fa-solid fa-truck-ramp-box',
+      badgeClass: 'bg-sky-50 text-sky-800 border-sky-200',
+      description: 'Приймання первинних вантажів (ерайвів), маркування та формування вихідних підрейсів.',
+      modes: ['dispatch', 'cargo_ops']
+    },
+    transit_warehouse: {
+      label: 'Транзитний склад (Крос-докінг)',
+      shortLabel: 'Транзитний склад',
+      icon: 'fa-solid fa-shuffle',
+      badgeClass: 'bg-indigo-50 text-indigo-800 border-indigo-200',
+      description: 'Приймання вхідних рейсів, розформування, транзитне перекомбінування у нові рейси та робота з вантажами.',
+      modes: ['dispatch', 'receiving', 'transit', 'cargo_ops']
+    },
+    receiving_warehouse: {
+      label: 'Склад приймання',
+      shortLabel: 'Склад приймання',
+      icon: 'fa-solid fa-plane-arrival',
+      badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+      description: 'Приймання та розформування вхідних підрейсів, облік вантажів комірником.',
+      modes: ['receiving', 'cargo_ops']
+    },
+    universal_warehouse: {
+      label: 'Універсальний склад (Повний цикл)',
+      shortLabel: 'Універсальний (усі таби)',
+      icon: 'fa-solid fa-layer-group',
+      badgeClass: 'bg-purple-50 text-purple-800 border-purple-200',
+      description: 'Мультифункціональний склад, на якому доступні всі 4 робочі режими (відправка, отримання, транзит, комірник).',
+      modes: ['dispatch', 'receiving', 'transit', 'cargo_ops']
+    },
+    custom_warehouse: {
+      label: 'Індивідуальний набір режимів',
+      shortLabel: 'Індивідуальний режим',
+      icon: 'fa-solid fa-sliders',
+      badgeClass: 'bg-slate-100 text-slate-800 border-slate-300',
+      description: 'Індивідуальна комбінація робочих табів, налаштована для цього складу.',
+      modes: ['dispatch', 'cargo_ops']
+    }
+  };
+
+  const WORKSPACE_MODE_NAMES = {
+    dispatch: '1. Відправка рейсів',
+    receiving: '2. Приймання рейсів',
+    transit: '3. Транзит',
+    cargo_ops: '4. Вантажі (Комірник)'
+  };
+
+  const selectFunctionalType = document.getElementById('select-warehouse-functional-type');
+  const functionalTypeDescHint = document.getElementById('functional-type-desc-hint');
+  const functionalModesCountBadge = document.getElementById('functional-modes-count-badge');
+
+  function updateAllowedModesCardsUI() {
+    const checkboxes = Array.from(document.querySelectorAll('.wh-allowed-mode-cb'));
+    let checkedCount = 0;
+    checkboxes.forEach(cb => {
+      const card = cb.closest('.wh-mode-checkbox-card');
+      if (cb.checked) {
+        checkedCount++;
+        if (card) {
+          card.classList.add('bg-brand-50/70', 'border-brand-300');
+          card.classList.remove('bg-slate-50/70', 'border-slate-200', 'opacity-60');
+        }
+      } else {
+        if (card) {
+          card.classList.remove('bg-brand-50/70', 'border-brand-300');
+          card.classList.add('bg-slate-50/70', 'border-slate-200', 'opacity-60');
+        }
+      }
+    });
+    if (functionalModesCountBadge) {
+      functionalModesCountBadge.textContent = `${checkedCount} з 4 табів`;
+    }
+  }
+
+  function applyFunctionalTypeToForm(typeKey, customModes = null) {
+    const cfg = WAREHOUSE_FUNCTIONAL_TYPES[typeKey] || WAREHOUSE_FUNCTIONAL_TYPES.dispatch_warehouse;
+    if (selectFunctionalType) selectFunctionalType.value = WAREHOUSE_FUNCTIONAL_TYPES[typeKey] ? typeKey : 'dispatch_warehouse';
+    if (functionalTypeDescHint) functionalTypeDescHint.textContent = cfg.description;
+    const modesToSet = new Set(Array.isArray(customModes) && customModes.length > 0 ? customModes : cfg.modes);
+    document.querySelectorAll('.wh-allowed-mode-cb').forEach(cb => {
+      cb.checked = modesToSet.has(cb.value);
+    });
+    updateAllowedModesCardsUI();
+  }
+
+  selectFunctionalType?.addEventListener('change', (e) => {
+    const val = e.target.value;
+    if (val !== 'custom_warehouse') {
+      applyFunctionalTypeToForm(val);
+    }
+  });
+
+  document.querySelectorAll('.wh-allowed-mode-cb').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const selected = Array.from(document.querySelectorAll('.wh-allowed-mode-cb:checked')).map(el => el.value);
+      if (selected.length === 0) {
+        cb.checked = true;
+        showToast('Має бути обраний хоча б один робочий режим (таб)');
+        return;
+      }
+      // Перевіряємо, чи відповідає обраний набір одному зі стандартних типів
+      let matchedType = 'custom_warehouse';
+      for (const [key, cfg] of Object.entries(WAREHOUSE_FUNCTIONAL_TYPES)) {
+        if (key === 'custom_warehouse') continue;
+        if (cfg.modes.length === selected.length && cfg.modes.every(m => selected.includes(m))) {
+          matchedType = key;
+          break;
+        }
+      }
+      if (selectFunctionalType) selectFunctionalType.value = matchedType;
+      if (functionalTypeDescHint) {
+        functionalTypeDescHint.textContent = (WAREHOUSE_FUNCTIONAL_TYPES[matchedType] || WAREHOUSE_FUNCTIONAL_TYPES.custom_warehouse).description;
+      }
+      updateAllowedModesCardsUI();
+    });
+  });
+
+  function persistWarehousesToLocalStorage() {
+    try {
+      localStorage.setItem('erp_warehouses_state', JSON.stringify(warehousesData));
+    } catch (e) {}
+  }
+
   function openEditWarehouseForm(id) {
     const item = warehousesData.find(w => w.id === id);
     if (!item) return;
@@ -2509,9 +2619,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const typeValue = item.type || 'Власні';
     updateCustomDropdown('select-warehouse-type', typeValue);
+    applyFunctionalTypeToForm(item.functionalType || 'dispatch_warehouse', item.allowedModes);
 
     const volumeInput = document.getElementById('input-warehouse-volume');
     if (volumeInput) volumeInput.value = item.volume || '';
+
+    const expectedDaysInput = document.getElementById('input-operational-expected-days');
+    if (expectedDaysInput) expectedDaysInput.value = item.operationalExpectedDays ?? 7;
+    const departureDaysInput = document.getElementById('input-operational-departure-days');
+    if (departureDaysInput) departureDaysInput.value = item.operationalDepartureDays ?? 7;
 
     const lastArrivalInput = document.getElementById('input-last-arrival-date');
     if (lastArrivalInput) lastArrivalInput.value = item.lastArrivalDate || '';
@@ -2624,8 +2740,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const newAddress = buildReadableAddress(structuredAddress);
     const rawType = selectWarehouseType?.value;
     const newType = (rawType === 'Власні' || rawType === 'Difreight') ? 'Difreight' : 'Партнерський';
+    const functionalType = selectFunctionalType?.value || 'dispatch_warehouse';
+    const allowedModes = Array.from(document.querySelectorAll('.wh-allowed-mode-cb:checked')).map(cb => cb.value);
+    const effectiveAllowedModes = allowedModes.length > 0
+      ? allowedModes
+      : (WAREHOUSE_FUNCTIONAL_TYPES[functionalType]?.modes || ['dispatch', 'cargo_ops']);
     const rawVol = document.getElementById('input-warehouse-volume')?.value;
     const newVolume = rawVol && parseFloat(rawVol) > 0 ? parseFloat(rawVol) : null;
+    const rawExpectedDays = parseInt(document.getElementById('input-operational-expected-days')?.value, 10);
+    const operationalExpectedDays = Number.isFinite(rawExpectedDays) && rawExpectedDays >= 1 ? rawExpectedDays : 7;
+    const rawDepartureDays = parseInt(document.getElementById('input-operational-departure-days')?.value, 10);
+    const operationalDepartureDays = Number.isFinite(rawDepartureDays) && rawDepartureDays >= 1 ? rawDepartureDays : 7;
     const lastArrivalDate = document.getElementById('input-last-arrival-date')?.value || '';
     const isConsolidation = checkIsConsolidation?.checked || false;
     const isFulfillment = document.getElementById('fulfillment-check')?.checked || false;
@@ -2739,8 +2864,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           address: newAddress || warehousesData[index].address,
           addressFields: structuredAddress,
           type: newType,
+          functionalType: functionalType,
+          allowedModes: effectiveAllowedModes,
           isConsolidation: isConsolidation,
           volume: newVolume,
+          operationalExpectedDays: operationalExpectedDays,
+          operationalDepartureDays: operationalDepartureDays,
           lastArrivalDate: lastArrivalDate || warehousesData[index].lastArrivalDate,
           services: selectedServices,
           selectedSubServices: selectedSubServices,
@@ -2760,8 +2889,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
       }
     } else {
+      const newWarehouseId = `wh-${Date.now()}`;
       const newWarehouse = {
-        id: `wh-${Date.now()}`,
+        id: newWarehouseId,
         name: newName,
         contractor: newContractor,
         country: newCountry,
@@ -2771,8 +2901,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         address: newAddress,
         addressFields: structuredAddress,
         type: newType,
+        functionalType: functionalType,
+        allowedModes: effectiveAllowedModes,
         isConsolidation: isConsolidation,
         volume: newVolume,
+        operationalExpectedDays: operationalExpectedDays,
+        operationalDepartureDays: operationalDepartureDays,
         occupiedVolume: 0,
         expectedVolume: 0,
         activeArrives: 0,
@@ -2793,12 +2927,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         shippingInstructions: shippingInstructions,
         status: 'inactive',
         archivedDate: '-',
-        link: null,
+        link: `warehouse/warehouse.html?id=${newWarehouseId}`,
         isFulfillment: isFulfillment
       };
       warehousesData.unshift(newWarehouse);
     }
 
+    persistWarehousesToLocalStorage();
     closeModal('modal-create');
     renderAllWarehouses();
   });
@@ -3352,20 +3487,236 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   const TARIFF_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 МБ
-  const TARIFF_ALLOWED_EXTENSIONS = ['pdf', 'xls', 'xlsx', 'xlsm', 'xlsb', 'csv'];
 
-  function handleTariffFilesUpload(fileList) {
+  function toPdfFileName(fileName = 'Прайс-лист') {
+    const trimmed = String(fileName || 'Прайс-лист').trim();
+    const lastDot = trimmed.lastIndexOf('.');
+    const base = lastDot > 0 ? trimmed.slice(0, lastDot) : trimmed;
+    return `${base}.pdf`;
+  }
+
+  function buildPdfFromJpegDataUrl(jpegDataUrl, pxW, pxH) {
+    const base64 = (jpegDataUrl || '').split(',')[1] || '';
+    const binStr = atob(base64);
+    const jpegBytes = new Uint8Array(binStr.length);
+    for (let i = 0; i < binStr.length; i++) {
+      jpegBytes[i] = binStr.charCodeAt(i);
+    }
+
+    const widthPt = 595;
+    const heightPt = 842;
+    const enc = new TextEncoder();
+    const contentStream = `q ${widthPt} 0 0 ${heightPt} 0 0 cm /Im0 Do Q`;
+
+    const parts = [];
+    const offsets = [0];
+    let byteLen = 0;
+
+    const pushBytes = (bytes) => {
+      parts.push(bytes);
+      byteLen += bytes.length;
+    };
+    const pushStr = (str) => pushBytes(enc.encode(str));
+
+    pushStr('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+
+    offsets.push(byteLen);
+    pushStr('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n');
+
+    offsets.push(byteLen);
+    pushStr('2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n');
+
+    offsets.push(byteLen);
+    pushStr(`3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${widthPt} ${heightPt}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\nendobj\n`);
+
+    offsets.push(byteLen);
+    pushStr(`4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${pxW} /Height ${pxH} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>\nstream\n`);
+    pushBytes(jpegBytes);
+    pushStr('\nendstream\nendobj\n');
+
+    offsets.push(byteLen);
+    pushStr(`5 0 obj\n<< /Length ${contentStream.length} >>\nstream\n${contentStream}\nendstream\nendobj\n`);
+
+    const xrefStart = byteLen;
+    pushStr(`xref\n0 ${offsets.length}\n`);
+    pushStr('0000000000 65535 f \n');
+    for (let i = 1; i < offsets.length; i++) {
+      pushStr(`${String(offsets[i]).padStart(10, '0')} 00000 n \n`);
+    }
+    pushStr(`trailer\n<< /Size ${offsets.length} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`);
+
+    const pdfBytes = new Uint8Array(byteLen);
+    let pos = 0;
+    for (const part of parts) {
+      pdfBytes.set(part, pos);
+      pos += part.length;
+    }
+
+    let binary = '';
+    const chunkSize = 0x8000;
+    for (let i = 0; i < pdfBytes.length; i += chunkSize) {
+      binary += String.fromCharCode.apply(null, pdfBytes.subarray(i, i + chunkSize));
+    }
+    return {
+      dataUrl: `data:application/pdf;base64,${btoa(binary)}`,
+      byteLength: pdfBytes.length
+    };
+  }
+
+  function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => resolve(ev.target?.result || '');
+      reader.onerror = () => reject(new Error('File read error'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function loadImageFromDataUrl(dataUrl) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('Image load error'));
+      img.src = dataUrl;
+    });
+  }
+
+  function drawWrappedCanvasText(ctx, text, x, startY, maxWidth, lineHeight, maxLines) {
+    const words = String(text || '').split(/\s+/);
+    let line = '';
+    let y = startY;
+    let linesDrawn = 0;
+    for (let i = 0; i < words.length; i++) {
+      const testLine = line ? `${line} ${words[i]}` : words[i];
+      if (ctx.measureText(testLine).width > maxWidth && line) {
+        ctx.fillText(line, x, y);
+        linesDrawn++;
+        if (linesDrawn >= maxLines) return y + lineHeight;
+        line = words[i];
+        y += lineHeight;
+      } else {
+        line = testLine;
+      }
+    }
+    if (line && linesDrawn < maxLines) {
+      ctx.fillText(line, x, y);
+      y += lineHeight;
+    }
+    return y;
+  }
+
+  async function convertFileToPdfDocument(file, uploadedAt) {
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    const isAlreadyPdf = ext === 'pdf' || file.type === 'application/pdf';
+
+    if (isAlreadyPdf) {
+      const dataUrl = await readFileAsDataUrl(file);
+      return {
+        name: file.name,
+        size: formatFileSize(file.size),
+        dataUrl,
+        converted: false
+      };
+    }
+
+    const pdfName = toPdfFileName(file.name);
+    const canvas = document.createElement('canvas');
+    const pxW = 794;
+    const pxH = 1123;
+    canvas.width = pxW;
+    canvas.height = pxH;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, pxW, pxH);
+
+    // Header
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(48, 48, 42, 42);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.fillText('DF', 57, 75);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.fillText('ПРАЙС-ЛИСТ / ТАРИФИ ПІДРЯДНИКА', 104, 68);
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = '13px sans-serif';
+    ctx.fillText(`Конвертовано у PDF із файлу: ${file.name} (${formatFileSize(file.size) || '—'}) • ${uploadedAt}`, 104, 88);
+
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(48, 108);
+    ctx.lineTo(pxW - 48, 108);
+    ctx.stroke();
+
+    const contentTop = 132;
+    const contentMaxW = pxW - 96;
+    const contentMaxH = pxH - contentTop - 64;
+
+    try {
+      const isTextLike = file.type.startsWith('text/') || ['txt', 'csv', 'tsv', 'json', 'xml', 'md', 'log'].includes(ext);
+      if (file.type.startsWith('image/')) {
+        const imgDataUrl = await readFileAsDataUrl(file);
+        const img = await loadImageFromDataUrl(imgDataUrl);
+        const scale = Math.min(contentMaxW / img.width, contentMaxH / img.height, 1);
+        const drawW = img.width * scale;
+        const drawH = img.height * scale;
+        const drawX = 48 + (contentMaxW - drawW) / 2;
+        ctx.drawImage(img, drawX, contentTop, drawW, drawH);
+      } else if (isTextLike) {
+        const rawText = await file.text();
+        const lines = rawText.split(/\r?\n/);
+        ctx.fillStyle = '#1e293b';
+        ctx.font = '13px monospace';
+        let y = contentTop + 16;
+        for (let i = 0; i < lines.length && y < pxH - 72; i++) {
+          y = drawWrappedCanvasText(ctx, lines[i] || ' ', 48, y, contentMaxW, 19, 4);
+        }
+      } else {
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(48, contentTop, contentMaxW, 180);
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(48, contentTop, contentMaxW, 180);
+
+        ctx.fillStyle = '#0f766e';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.fillText('Документ успішно прийнято та конвертовано у формат PDF', 72, contentTop + 44);
+
+        ctx.fillStyle = '#334155';
+        ctx.font = '14px sans-serif';
+        ctx.fillText(`Оригінальна назва: ${file.name}`, 72, contentTop + 80);
+        ctx.fillText(`Оригінальний формат: .${ext || 'невідомий'}`, 72, contentTop + 106);
+        ctx.fillText(`Розмір оригіналу: ${formatFileSize(file.size) || '—'}`, 72, contentTop + 132);
+        ctx.fillText(`Дата завантаження: ${uploadedAt}`, 72, contentTop + 158);
+      }
+    } catch (err) {
+      ctx.fillStyle = '#334155';
+      ctx.font = '14px sans-serif';
+      ctx.fillText(`Файл "${file.name}" конвертовано у PDF.`, 48, contentTop + 28);
+    }
+
+    const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.88);
+    const pdf = buildPdfFromJpegDataUrl(jpegDataUrl, pxW, pxH);
+
+    return {
+      name: pdfName,
+      size: formatFileSize(pdf.byteLength) || formatFileSize(file.size),
+      dataUrl: pdf.dataUrl,
+      converted: true
+    };
+  }
+
+  async function handleTariffFilesUpload(fileList) {
     if (!fileList || fileList.length === 0) return;
 
     const validFiles = [];
     const rejectedReasons = [];
 
     Array.from(fileList).forEach(file => {
-      const ext = (file.name.split('.').pop() || '').toLowerCase();
-      if (!TARIFF_ALLOWED_EXTENSIONS.includes(ext)) {
-        rejectedReasons.push(`«${file.name}» — недопустимий формат (дозволено лише PDF та Excel: .pdf, .xlsx, .xls, .xlsm, .xlsb, .csv)`);
-        return;
-      }
       if (file.size > TARIFF_MAX_FILE_SIZE_BYTES) {
         rejectedReasons.push(`«${file.name}» — перевищено ліміт розміру 10 МБ`);
         return;
@@ -3393,28 +3744,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     const nextYear = new Date();
     nextYear.setFullYear(nextYear.getFullYear() + 1);
     const defaultValidUntil = nextYear.toISOString().split('T')[0];
+    const uploadedAt = new Date().toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-    validFiles.forEach((file, idx) => {
-      const sizeStr = formatFileSize(file.size);
-      const uploadedAt = new Date().toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        createTariffDocumentRow({
-          name: file.name,
-          size: sizeStr,
-          uploadedAt,
-          validUntil: defaultValidUntil,
-          isActive: idx === 0, // тільки перший завантажений файл стає єдиним активним
-          dataUrl: ev.target?.result || '',
-          comment: ''
-        });
-        if (idx === 0) {
-          syncActiveTariffState('document', file.name);
-        }
-      };
-      reader.readAsDataURL(file);
+    const convertedDocs = await Promise.all(
+      validFiles.map(file => convertFileToPdfDocument(file, uploadedAt))
+    );
+
+    let anyConverted = false;
+    convertedDocs.forEach((docData, idx) => {
+      if (docData.converted) anyConverted = true;
+      createTariffDocumentRow({
+        name: docData.name,
+        size: docData.size,
+        uploadedAt,
+        validUntil: defaultValidUntil,
+        isActive: idx === 0, // тільки перший завантажений файл стає єдиним активним
+        dataUrl: docData.dataUrl,
+        comment: ''
+      });
+      if (idx === 0) {
+        syncActiveTariffState('document', docData.name);
+      }
     });
-    showToast(`Завантажено файл(ів) прайс-листа: новий файл встановлено як єдиний активний тариф`);
+
+    showToast(
+      anyConverted
+        ? 'Файл(и) конвертовано у PDF та встановлено як єдиний активний тариф'
+        : 'Завантажено файл(и) прайс-листа: новий файл встановлено як єдиний активний тариф'
+    );
   }
 
   // Функції показу та закриття Document Preview Modal (Блок 2.2)

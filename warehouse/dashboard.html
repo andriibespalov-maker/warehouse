@@ -41,8 +41,8 @@
               <!-- Назва Складу -->
               <h1 class="text-2xl font-bold text-slate-900 tracking-tight" id="wh-display-name">New FOSHAN</h1>
 
-              <!-- Тип Складу -->
-              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+              <!-- Тип Складу (Належність) -->
+              <span id="wh-display-ownership-type" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
                 Difreight
               </span>
 
@@ -358,7 +358,7 @@
                   </div>
                 </div>
 
-                <!-- Очікуємо (7 днів) -->
+                <!-- Очікуємо -->
                 <div class="bg-slate-50 border border-slate-200/70 rounded-xl p-2.5 flex flex-col justify-between">
                   <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
                     <span>Очікуємо</span>
@@ -368,12 +368,12 @@
                     0.0 <span class="text-xs font-normal text-slate-500">м³</span>
                   </div>
                   <div class="text-[9px] text-slate-500 font-semibold mt-1 flex items-center justify-between">
-                    <span>План (7 днів)</span>
+                    <span id="stat-expected-arrival-days-label">План (7 днів)</span>
                     <span id="stat-expected-arrival-3days-sv" class="font-mono text-indigo-600 font-bold">0 підрейсів</span>
                   </div>
                 </div>
 
-                <!-- Відправка (План 7 днів) -->
+                <!-- План виїзду -->
                 <div class="bg-slate-50 border border-slate-200/70 rounded-xl p-2.5 flex flex-col justify-between">
                   <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
                     <span>План виїзду</span>
@@ -383,7 +383,7 @@
                     0.0 <span class="text-xs font-normal text-slate-500">м³</span>
                   </div>
                   <div class="text-[9px] text-slate-500 font-semibold mt-1 flex items-center justify-between">
-                    <span>План (7 днів)</span>
+                    <span id="stat-expected-shipment-days-label">План (7 днів)</span>
                     <span id="stat-expected-shipment-3days-sv" class="font-mono text-rose-600 font-bold">0 підрейсів</span>
                   </div>
                 </div>
@@ -418,6 +418,11 @@
 
       <!-- Modal Content -->
       <div class="p-6 space-y-6 bg-white overflow-y-auto custom-scrollbar flex-1">
+        <!-- Блок Операційного типу складу та доступних робочих режимів (Табів) -->
+        <div id="wh-modal-functional-type-card" class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+          <!-- Генерується з dashboard.js -->
+        </div>
+
         <!-- Структурована адреса складу з офіційним копіюванням для підрядника / документів -->
         <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3">
           <div class="flex items-start gap-2.5 min-w-0">
@@ -849,6 +854,84 @@
       </div>
     </div>
   </div>
+
+  <!-- МОДАЛЬНЕ ВІКНО: Редагування складу (Робочі режими / Таби) -->
+  <div id="modal-edit-warehouse-type" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl border border-slate-200 flex flex-col max-h-[90vh]">
+      <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center">
+            <i class="fa-solid fa-sliders text-base"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-base">Налаштування робочих режимів складу</h3>
+            <p class="text-[11px] text-slate-400">Оберіть, які робочі таби відображаються на цьому складі</p>
+          </div>
+        </div>
+        <button type="button" onclick="DashboardModule.closeEditWarehouseModal()" class="w-8 h-8 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer text-xl leading-none">
+          &times;
+        </button>
+      </div>
+
+      <div class="p-6 space-y-5 overflow-y-auto custom-scrollbar flex-1 text-xs">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 font-bold mb-1">Назва складу</label>
+            <input type="text" id="edit-wh-name-input" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-slate-700 font-bold mb-1">Тип складу</label>
+            <select id="edit-wh-ownership-select" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none cursor-pointer">
+              <option value="Difreight">Difreight (Власний)</option>
+              <option value="Партнерський">Партнерський</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-slate-800">Робочі режими складу (Активні таби):</span>
+            <span id="edit-wh-modes-count-badge" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-200">2 з 4 табів</span>
+          </div>
+          <div id="edit-wh-modes-checkboxes" class="grid grid-cols-1 gap-2">
+            <!-- Чекбокси генеруються з dashboard.js -->
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-200 space-y-2">
+          <div class="font-bold text-slate-800 flex items-center gap-1.5">
+            <i class="fa-solid fa-arrows-rotate text-violet-600"></i>
+            <span>Оперативний рух (горизонт планування, днів):</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label for="edit-wh-expected-days-input" class="block text-slate-700 font-bold mb-1">Очікуємо (днів)</label>
+              <input type="number" id="edit-wh-expected-days-input" min="1" max="365" step="1" value="7"
+                class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            </div>
+            <div>
+              <label for="edit-wh-departure-days-input" class="block text-slate-700 font-bold mb-1">План виїзду (днів)</label>
+              <input type="number" id="edit-wh-departure-days-input" min="1" max="365" step="1" value="7"
+                class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex items-center justify-end gap-2.5 shrink-0">
+        <button type="button" onclick="DashboardModule.closeEditWarehouseModal()"
+          class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold transition cursor-pointer">
+          Скасувати
+        </button>
+        <button type="button" onclick="DashboardModule.saveEditWarehouseModal()"
+          class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-xs flex items-center gap-1.5">
+          <i class="fa-solid fa-check"></i>
+          <span>Зберегти зміни складу</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
 
 
 

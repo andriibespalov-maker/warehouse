@@ -2,12 +2,76 @@
  * dashboard.js - Модуль управління дашбордом та інформацією про склад
  */
 
+// Довідник операційних типів складу та 4 робочих режимів (Табів)
+const WAREHOUSE_FUNCTIONAL_TYPES_CATALOG = {
+  dispatch_warehouse: {
+    key: 'dispatch_warehouse',
+    label: 'Склад відправки (Консолідація)',
+    shortLabel: 'Склад відправки',
+    icon: 'fa-solid fa-truck-ramp-box',
+    badgeClass: 'bg-sky-50 text-sky-800 border-sky-200',
+    description: 'Склад первинної консолідації та відправки: приймає вантажі (ерайви) від постачальників, проводить маркування/обробку комірником та формує вихідні підрейси.',
+    defaultModes: ['dispatch', 'cargo_ops']
+  },
+  transit_warehouse: {
+    key: 'transit_warehouse',
+    label: 'Транзитний склад (Крос-докінг / Хаб)',
+    shortLabel: 'Транзитний склад',
+    icon: 'fa-solid fa-shuffle',
+    badgeClass: 'bg-indigo-50 text-indigo-800 border-indigo-200',
+    description: 'Транзитний крос-докінг хаб: приймає та розформовує вхідні рейси, перекомбіновує транзитні перевезення між попередніми і новими вихідними рейсами та веде складський облік.',
+    defaultModes: ['dispatch', 'receiving', 'transit', 'cargo_ops']
+  },
+  receiving_warehouse: {
+    key: 'receiving_warehouse',
+    label: 'Склад приймання',
+    shortLabel: 'Склад приймання',
+    icon: 'fa-solid fa-plane-arrival',
+    badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+    description: 'Термінал призначення: приймає та розформовує вхідні підрейси, виконує складську роботу з вантажами.',
+    defaultModes: ['receiving', 'cargo_ops']
+  },
+  universal_warehouse: {
+    key: 'universal_warehouse',
+    label: 'Універсальний склад (Повний цикл)',
+    shortLabel: 'Універсальний склад',
+    icon: 'fa-solid fa-layer-group',
+    badgeClass: 'bg-purple-50 text-purple-800 border-purple-200',
+    description: 'Мультифункціональний хаб повного циклу: підтримує всі 4 робочі режими (відправка, приймання, транзитний склад, робота комірника).',
+    defaultModes: ['dispatch', 'receiving', 'transit', 'cargo_ops']
+  },
+  custom_warehouse: {
+    key: 'custom_warehouse',
+    label: 'Індивідуальна конфігурація режимів',
+    shortLabel: 'Індивідуальний тип',
+    icon: 'fa-solid fa-sliders',
+    badgeClass: 'bg-slate-100 text-slate-800 border-slate-300',
+    description: 'Склад з індивідуально налаштованим переліком активних робочих табів.',
+    defaultModes: ['dispatch', 'cargo_ops']
+  }
+};
+
+const WAREHOUSE_WORKSPACE_MODES_CATALOG = [
+  { key: 'dispatch', num: 1, label: '1. Відправка рейсів', shortLabel: 'Відправка рейсів', icon: 'fa-solid fa-truck-ramp-box', colorClass: 'text-brand-600' },
+  { key: 'receiving', num: 2, label: '2. Приймання рейсів', shortLabel: 'Приймання рейсів', icon: 'fa-solid fa-plane-arrival', colorClass: 'text-amber-600' },
+  { key: 'transit', num: 3, label: '3. Транзит', shortLabel: 'Транзит', icon: 'fa-solid fa-shuffle', colorClass: 'text-indigo-600' },
+  { key: 'cargo_ops', num: 4, label: '4. Вантажі (Комірник)', shortLabel: 'Вантажі (Комірник)', icon: 'fa-solid fa-boxes-stacked', colorClass: 'text-emerald-600' }
+];
+
+window.WAREHOUSE_FUNCTIONAL_TYPES_CATALOG = WAREHOUSE_FUNCTIONAL_TYPES_CATALOG;
+window.WAREHOUSE_WORKSPACE_MODES_CATALOG = WAREHOUSE_WORKSPACE_MODES_CATALOG;
+
 // Структура даних складу
 const warehouseInfoData = {
+  id: "foshan",
   // 1. Назва Складу
   name: "New FOSHAN",
   code: "WH-FOSHAN-01",
   type: "Difreight", // 'Difreight' (Власний) або 'Партнерський'
+  functionalType: "dispatch_warehouse",
+  allowedModes: ["dispatch", "cargo_ops"],
+  operationalExpectedDays: 7,
+  operationalDepartureDays: 7,
   volumeLimit: 400.0,
 
   // 2. Повна Адреса (єдиний структурований формат у рядок: Індекс, Країна, Область/Регіон, Місто, Вулиця, Офіс/Корпус)
@@ -295,14 +359,17 @@ function updateDashboardStats(cargoes = [], subvoyages = []) {
   );
   const todayStr = hasRealTodayEvents ? realTodayStr : '2026-09-24';
 
-  const baseDate = new Date(todayStr + 'T00:00:00');
-  const sevenDaysLater = new Date(baseDate);
-  sevenDaysLater.setDate(baseDate.getDate() + 7);
-  const sevenDaysStr = sevenDaysLater.toISOString().split('T')[0];
+  const expectedDays = Math.max(1, parseInt(warehouseInfoData.operationalExpectedDays, 10) || 7);
+  const departureDays = Math.max(1, parseInt(warehouseInfoData.operationalDepartureDays, 10) || 7);
 
-  const expectedSevenDaysLater = new Date(realTodayStr + 'T00:00:00');
-  expectedSevenDaysLater.setDate(expectedSevenDaysLater.getDate() + 7);
-  const expectedSevenDaysStr = expectedSevenDaysLater.toISOString().split('T')[0];
+  const baseDate = new Date(todayStr + 'T00:00:00');
+  const departureDaysLater = new Date(baseDate);
+  departureDaysLater.setDate(baseDate.getDate() + departureDays);
+  const departureDaysStr = departureDaysLater.toISOString().split('T')[0];
+
+  const expectedDaysLater = new Date(realTodayStr + 'T00:00:00');
+  expectedDaysLater.setDate(expectedDaysLater.getDate() + expectedDays);
+  const expectedDaysStr = expectedDaysLater.toISOString().split('T')[0];
 
   // 4. Отримано сьогодні (об'єм м³ та кількість підрейсів)
   const receivedTodayCargoes = cargoes.filter(c =>
@@ -321,7 +388,11 @@ function updateDashboardStats(cargoes = [], subvoyages = []) {
   }
 
   // 5. Планова відправка (те, що планується виїхати зі складу, щоб бачити майбутнє вивільнення місця)
-  const plannedDepartureSubvoyages = svSubvoyages.filter(s => s.status === 'Формування' || s.status === 'Завантажений');
+  const plannedDepartureSubvoyages = svSubvoyages.filter(s => {
+    if (s.status !== 'Формування' && s.status !== 'Завантажений') return false;
+    const planDep = (s.plannedDeparture || '').slice(0, 10);
+    return !planDep || planDep <= departureDaysStr;
+  });
   const plannedDepartureSvIds = new Set(plannedDepartureSubvoyages.map(s => s.id));
   let shippedTodayVolume = allocatedVolume;
   let shippedTodaySvCount = plannedDepartureSvIds.size;
@@ -334,32 +405,32 @@ function updateDashboardStats(cargoes = [], subvoyages = []) {
     shippedTodaySvCount = shippedTodaySvSet.size;
   }
 
-  // 6. Очікуємо (7 днів) — об'єм м³ та кількість підрейсів в дорозі за плановою датою прибуття (незалежно від фактичної)
+  // 6. Очікуємо (N днів) — об'єм м³ та кількість підрейсів в дорозі за плановою датою прибуття (незалежно від фактичної)
   const expectedArrivalCargoes = cargoes.filter(c => {
     const arrDate = (c.expectedArrivalDate || c.arrivalDate || '').slice(0, 10);
-    return (arrDate && arrDate <= expectedSevenDaysStr && c.statusCode === 'in_transit') || c.statusCode === 'in_transit';
+    return (arrDate && arrDate <= expectedDaysStr && c.statusCode === 'in_transit') || c.statusCode === 'in_transit';
   });
   let expectedArrival3DaysVolume = expectedArrivalCargoes.reduce((sum, c) => sum + (parseFloat(c.volume) || 0), 0);
-  const inTransitWithin7Days = svSubvoyages.filter(s => {
+  const inTransitWithinDays = svSubvoyages.filter(s => {
     if (s.status !== 'В дорозі') return false;
     const planArr = (s.plannedArrival || '').slice(0, 10);
-    return !planArr || planArr <= expectedSevenDaysStr;
+    return !planArr || planArr <= expectedDaysStr;
   });
   const expectedArrivalSvSet = new Set([
     ...expectedArrivalCargoes.map(c => c.subvoyage).filter(Boolean),
-    ...inTransitWithin7Days.map(s => s.id)
+    ...inTransitWithinDays.map(s => s.id)
   ]);
   let expectedArrival3DaysSvCount = expectedArrivalSvSet.size;
 
   if (svShipments) {
-    const inTransitSvIds = new Set(inTransitWithin7Days.map(s => s.id));
+    const inTransitSvIds = new Set(inTransitWithinDays.map(s => s.id));
     const inTransitVol = svShipments
       .filter(s => s.subvoyageId && inTransitSvIds.has(s.subvoyageId))
       .reduce((sum, s) => sum + (parseFloat(s.totalVolume ?? s.volume) || 0), 0);
     expectedArrival3DaysVolume = inTransitVol + plannedPromisesVolume;
   }
 
-  // 7. План виїзду (7 днів) — об'єм м³ та кількість підрейсів на формуванні/завантаженні
+  // 7. План виїзду (N днів) — об'єм м³ та кількість підрейсів на формуванні/завантаженні
   let expectedShipment3DaysVolume = allocatedVolume;
   const expectedShipmentSvSet = new Set(plannedDepartureSvIds);
   const expectedShipment3DaysSvCount = expectedShipmentSvSet.size;
@@ -472,6 +543,19 @@ function updateDashboardStats(cargoes = [], subvoyages = []) {
   if (shippedTodaySvElem) shippedTodaySvElem.innerText = pluralizeSubvoyages(shippedTodaySvCount);
   if (expectedArrival3DaysSvElem) expectedArrival3DaysSvElem.innerText = pluralizeSubvoyages(expectedArrival3DaysSvCount);
   if (expectedShipment3DaysSvElem) expectedShipment3DaysSvElem.innerText = pluralizeSubvoyages(expectedShipment3DaysSvCount);
+
+  const pluralizeDays = (n) => {
+    const mod100 = n % 100;
+    const mod10 = n % 10;
+    if (mod100 >= 11 && mod100 <= 14) return `${n} днів`;
+    if (mod10 === 1) return `${n} день`;
+    if (mod10 >= 2 && mod10 <= 4) return `${n} дні`;
+    return `${n} днів`;
+  };
+  const expectedDaysLabelEl = document.getElementById('stat-expected-arrival-days-label');
+  if (expectedDaysLabelEl) expectedDaysLabelEl.textContent = `План (${pluralizeDays(expectedDays)})`;
+  const departureDaysLabelEl = document.getElementById('stat-expected-shipment-days-label');
+  if (departureDaysLabelEl) departureDaysLabelEl.textContent = `План (${pluralizeDays(departureDays)})`;
 
   // Також оновлюємо блок вхідних рейсів в дорозі (Блок 3.2)
   renderIncomingVoyages();
@@ -783,6 +867,77 @@ function evaluateDashboardValidity(dateStr) {
   }
 }
 
+function renderWarehouseFunctionalTypeInfo(data = warehouseInfoData) {
+  const fnKey = data.functionalType || 'dispatch_warehouse';
+  const fnCfg = WAREHOUSE_FUNCTIONAL_TYPES_CATALOG[fnKey] || WAREHOUSE_FUNCTIONAL_TYPES_CATALOG.dispatch_warehouse;
+  const allowedSet = new Set(Array.isArray(data.allowedModes) && data.allowedModes.length > 0 ? data.allowedModes : fnCfg.defaultModes);
+
+  // Оновлення бейджа належності складу (Difreight / Партнерський)
+  const ownershipBadge = document.getElementById('wh-display-ownership-type');
+  if (ownershipBadge) {
+    ownershipBadge.textContent = data.type || 'Difreight';
+  }
+
+  // Картка у модальному вікні «Детальна інформація та правила складу»
+  const modalCard = document.getElementById('wh-modal-functional-type-card');
+  if (modalCard) {
+    const modesPillsHtml = WAREHOUSE_WORKSPACE_MODES_CATALOG.map(m => {
+      const isAllowed = allowedSet.has(m.key);
+      if (isAllowed) {
+        return `
+          <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-white border border-emerald-300 shadow-2xs">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center text-xs shrink-0">
+                <i class="${m.icon}"></i>
+              </span>
+              <span class="text-xs font-bold text-slate-900 truncate">${m.label}</span>
+            </div>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0 inline-flex items-center gap-1">
+              <i class="fa-solid fa-check text-[9px]"></i> Активний
+            </span>
+          </div>
+        `;
+      } else {
+        return `
+          <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-100/70 border border-slate-200 opacity-65">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="w-6 h-6 rounded-lg bg-slate-200/70 text-slate-500 flex items-center justify-center text-xs shrink-0">
+                <i class="${m.icon}"></i>
+              </span>
+              <span class="text-xs font-medium text-slate-500 line-through truncate">${m.label}</span>
+            </div>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-200 text-slate-600 shrink-0 inline-flex items-center gap-1">
+              <i class="fa-solid fa-eye-slash text-[9px]"></i> Приховано
+            </span>
+          </div>
+        `;
+      }
+    }).join('');
+
+    modalCard.innerHTML = `
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-2.5 border-b border-slate-200/80">
+        <div class="flex items-center gap-2.5 flex-wrap">
+          <div class="w-8 h-8 rounded-lg bg-brand-50 border border-brand-200 text-brand-600 flex items-center justify-center text-xs shrink-0">
+            <i class="fa-solid fa-layer-group"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-700">Робочі режими складу (Доступні таби)</span>
+              <span class="text-[11px] font-mono font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-md border border-brand-200">
+                Активно ${WAREHOUSE_WORKSPACE_MODES_CATALOG.filter(m => allowedSet.has(m.key)).length} з 4 табів
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        ${modesPillsHtml}
+      </div>
+    `;
+  }
+}
+
 /**
  * Рендеринг детальної інформації про склад у дашборд
  */
@@ -790,6 +945,9 @@ function renderWarehouseInfo(data = warehouseInfoData) {
   // 1. Назва
   const nameElem = document.getElementById('wh-display-name');
   if (nameElem) nameElem.innerText = data.name;
+
+  // 1.1 Операційний тип складу та робочі режими (Таби)
+  renderWarehouseFunctionalTypeInfo(data);
 
   // 2. Повна Адреса (у єдиному структурованому рядку: індекс, країна, область/регіон, місто, вулиця)
   const addressElem = document.getElementById('wh-display-address');
@@ -2818,13 +2976,42 @@ async function initWarehouseDataSync() {
     const urlParams = new URLSearchParams(window.location.search);
     const whId = urlParams.get('id') || 'foshan';
 
-    const res = await fetch('../data/warehouses.json').catch(() => fetch('data/warehouses.json')).catch(() => null);
-    if (res && res.ok) {
-      const warehouses = await res.json();
+    let warehouses = null;
+    try {
+      const savedLocal = localStorage.getItem('erp_warehouses_state');
+      if (savedLocal) {
+        const parsed = JSON.parse(savedLocal);
+        if (Array.isArray(parsed) && parsed.length > 0) warehouses = parsed;
+      }
+    } catch (e) {}
+
+    if (!warehouses) {
+      const res = await fetch('../data/warehouses.json').catch(() => fetch('data/warehouses.json')).catch(() => null);
+      if (res && res.ok) {
+        warehouses = await res.json();
+      }
+    }
+
+    if (Array.isArray(warehouses) && warehouses.length > 0) {
       const currentWh = warehouses.find(w => w.id === whId) || warehouses.find(w => w.name === warehouseInfoData.name) || warehouses[0];
       if (currentWh) {
+        warehouseInfoData.id = currentWh.id || whId;
         if (currentWh.name) warehouseInfoData.name = currentWh.name;
         if (currentWh.type) warehouseInfoData.type = currentWh.type;
+        const defaultFnType = (currentWh.id === 'chelm' || currentWh.id === 'poland')
+          ? 'transit_warehouse'
+          : (currentWh.id === 'kyiv' ? 'receiving_warehouse' : 'dispatch_warehouse');
+        warehouseInfoData.functionalType = currentWh.functionalType || defaultFnType;
+        const fnCfg = WAREHOUSE_FUNCTIONAL_TYPES_CATALOG[warehouseInfoData.functionalType] || WAREHOUSE_FUNCTIONAL_TYPES_CATALOG.dispatch_warehouse;
+        warehouseInfoData.allowedModes = Array.isArray(currentWh.allowedModes) && currentWh.allowedModes.length > 0
+          ? [...currentWh.allowedModes]
+          : [...fnCfg.defaultModes];
+        warehouseInfoData.operationalExpectedDays = Number.isFinite(Number(currentWh.operationalExpectedDays)) && Number(currentWh.operationalExpectedDays) >= 1
+          ? Math.floor(Number(currentWh.operationalExpectedDays))
+          : 7;
+        warehouseInfoData.operationalDepartureDays = Number.isFinite(Number(currentWh.operationalDepartureDays)) && Number(currentWh.operationalDepartureDays) >= 1
+          ? Math.floor(Number(currentWh.operationalDepartureDays))
+          : 7;
         if (currentWh.volume !== undefined) {
           warehouseInfoData.volumeLimit = currentWh.volume && Number(currentWh.volume) > 0 ? Number(currentWh.volume) : null;
         }
@@ -2884,10 +3071,156 @@ async function initWarehouseDataSync() {
           warehouseInfoData.tariffTextValidUntil = currentWh.tariffTextValidUntil || '';
         }
         renderWarehouseInfo(warehouseInfoData);
+        updateDashboardStats();
+        if (typeof window.refreshWorkspaceModes === 'function') {
+          window.refreshWorkspaceModes();
+        }
       }
     }
   } catch (err) {
     // Тихо використовуємо локальні дані warehouseInfoData
+  }
+}
+
+function persistCurrentWarehouseTypeToLocalStorage() {
+  try {
+    const raw = localStorage.getItem('erp_warehouses_state');
+    if (!raw) return;
+    const list = JSON.parse(raw);
+    if (!Array.isArray(list)) return;
+    const idx = list.findIndex(w => w.id === warehouseInfoData.id || w.name === warehouseInfoData.name);
+    if (idx !== -1) {
+      list[idx].name = warehouseInfoData.name;
+      list[idx].type = warehouseInfoData.type;
+      list[idx].functionalType = warehouseInfoData.functionalType;
+      list[idx].allowedModes = [...warehouseInfoData.allowedModes];
+      list[idx].operationalExpectedDays = warehouseInfoData.operationalExpectedDays || 7;
+      list[idx].operationalDepartureDays = warehouseInfoData.operationalDepartureDays || 7;
+      localStorage.setItem('erp_warehouses_state', JSON.stringify(list));
+    }
+  } catch (e) {}
+}
+
+function setWarehouseFunctionalType(typeKey, customModes = null) {
+  const cfg = WAREHOUSE_FUNCTIONAL_TYPES_CATALOG[typeKey] || WAREHOUSE_FUNCTIONAL_TYPES_CATALOG.dispatch_warehouse;
+  warehouseInfoData.functionalType = cfg.key;
+  warehouseInfoData.allowedModes = Array.isArray(customModes) && customModes.length > 0
+    ? [...customModes]
+    : [...cfg.defaultModes];
+  persistCurrentWarehouseTypeToLocalStorage();
+  renderWarehouseInfo(warehouseInfoData);
+  if (typeof window.refreshWorkspaceModes === 'function') {
+    window.refreshWorkspaceModes();
+  }
+}
+
+function renderEditWarehouseModesCheckboxes(selectedModes = []) {
+  const container = document.getElementById('edit-wh-modes-checkboxes');
+  if (!container) return;
+  const selSet = new Set(selectedModes);
+  container.innerHTML = WAREHOUSE_WORKSPACE_MODES_CATALOG.map(m => {
+    const checked = selSet.has(m.key);
+    return `
+      <label class="flex items-center justify-between gap-2 p-2.5 rounded-xl border ${checked ? 'bg-brand-50/70 border-brand-300' : 'bg-slate-50 border-slate-200 opacity-70'} cursor-pointer transition select-none">
+        <div class="flex items-center gap-2.5">
+          <input type="checkbox" value="${m.key}" ${checked ? 'checked' : ''} onchange="DashboardModule.onEditModeCheckboxChange(this)"
+            class="edit-wh-mode-cb rounded text-brand-600 focus:ring-brand-500 cursor-pointer">
+          <i class="${m.icon} ${m.colorClass} text-xs w-4 text-center"></i>
+          <span class="font-bold text-slate-800 text-xs">${m.label}</span>
+        </div>
+        ${m.isSoon ? '<span class="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 font-bold">Скоро</span>' : ''}
+      </label>
+    `;
+  }).join('');
+  const badge = document.getElementById('edit-wh-modes-count-badge');
+  if (badge) badge.textContent = `${selSet.size} з 4 табів`;
+}
+
+function openEditWarehouseModal() {
+  const modal = document.getElementById('modal-edit-warehouse-type');
+  if (!modal) return;
+  const nameInp = document.getElementById('edit-wh-name-input');
+  const ownSel = document.getElementById('edit-wh-ownership-select');
+  const fnSel = document.getElementById('edit-wh-functional-type-select');
+  const descEl = document.getElementById('edit-wh-functional-type-desc');
+
+  const fnKey = warehouseInfoData.functionalType || 'dispatch_warehouse';
+  const fnCfg = WAREHOUSE_FUNCTIONAL_TYPES_CATALOG[fnKey] || WAREHOUSE_FUNCTIONAL_TYPES_CATALOG.dispatch_warehouse;
+  const modes = Array.isArray(warehouseInfoData.allowedModes) && warehouseInfoData.allowedModes.length > 0
+    ? warehouseInfoData.allowedModes
+    : fnCfg.defaultModes;
+
+  if (nameInp) nameInp.value = warehouseInfoData.name || '';
+  if (ownSel) ownSel.value = (warehouseInfoData.type === 'Партнерський' ? 'Партнерський' : 'Difreight');
+  if (fnSel) fnSel.value = fnCfg.key;
+  if (descEl) descEl.textContent = fnCfg.description;
+
+  const expDaysInp = document.getElementById('edit-wh-expected-days-input');
+  if (expDaysInp) expDaysInp.value = warehouseInfoData.operationalExpectedDays ?? 7;
+  const depDaysInp = document.getElementById('edit-wh-departure-days-input');
+  if (depDaysInp) depDaysInp.value = warehouseInfoData.operationalDepartureDays ?? 7;
+
+  renderEditWarehouseModesCheckboxes(modes);
+  modal.classList.remove('hidden');
+}
+
+function closeEditWarehouseModal() {
+  const modal = document.getElementById('modal-edit-warehouse-type');
+  if (modal) modal.classList.add('hidden');
+}
+
+function onEditFunctionalTypeChange(typeKey) {
+  const cfg = WAREHOUSE_FUNCTIONAL_TYPES_CATALOG[typeKey] || WAREHOUSE_FUNCTIONAL_TYPES_CATALOG.dispatch_warehouse;
+  const descEl = document.getElementById('edit-wh-functional-type-desc');
+  if (descEl) descEl.textContent = cfg.description;
+  if (typeKey !== 'custom_warehouse') {
+    renderEditWarehouseModesCheckboxes(cfg.defaultModes);
+  }
+}
+
+function onEditModeCheckboxChange(cb) {
+  const checked = Array.from(document.querySelectorAll('.edit-wh-mode-cb:checked')).map(el => el.value);
+  if (checked.length === 0) {
+    cb.checked = true;
+    if (typeof showToast === 'function') showToast('На складі має бути активний хоча б 1 робочий таб');
+    return;
+  }
+  let matched = 'custom_warehouse';
+  for (const [k, cfg] of Object.entries(WAREHOUSE_FUNCTIONAL_TYPES_CATALOG)) {
+    if (k === 'custom_warehouse') continue;
+    if (cfg.defaultModes.length === checked.length && cfg.defaultModes.every(m => checked.includes(m))) {
+      matched = k;
+      break;
+    }
+  }
+  const fnSel = document.getElementById('edit-wh-functional-type-select');
+  const descEl = document.getElementById('edit-wh-functional-type-desc');
+  if (fnSel) fnSel.value = matched;
+  if (descEl) descEl.textContent = (WAREHOUSE_FUNCTIONAL_TYPES_CATALOG[matched] || WAREHOUSE_FUNCTIONAL_TYPES_CATALOG.custom_warehouse).description;
+  renderEditWarehouseModesCheckboxes(checked);
+}
+
+function saveEditWarehouseModal() {
+  const nameInp = document.getElementById('edit-wh-name-input');
+  const ownSel = document.getElementById('edit-wh-ownership-select');
+  const fnSel = document.getElementById('edit-wh-functional-type-select');
+  const checked = Array.from(document.querySelectorAll('.edit-wh-mode-cb:checked')).map(el => el.value);
+
+  if (nameInp && nameInp.value.trim()) warehouseInfoData.name = nameInp.value.trim();
+  if (ownSel && ownSel.value) warehouseInfoData.type = ownSel.value;
+  const fnKey = fnSel?.value || 'dispatch_warehouse';
+
+  const expDaysVal = parseInt(document.getElementById('edit-wh-expected-days-input')?.value, 10);
+  warehouseInfoData.operationalExpectedDays = Number.isFinite(expDaysVal) && expDaysVal >= 1 ? expDaysVal : 7;
+  const depDaysVal = parseInt(document.getElementById('edit-wh-departure-days-input')?.value, 10);
+  warehouseInfoData.operationalDepartureDays = Number.isFinite(depDaysVal) && depDaysVal >= 1 ? depDaysVal : 7;
+
+  setWarehouseFunctionalType(fnKey, checked);
+  updateDashboardStats();
+  closeEditWarehouseModal();
+  if (typeof showToast === 'function') {
+    const cfg = WAREHOUSE_FUNCTIONAL_TYPES_CATALOG[fnKey] || WAREHOUSE_FUNCTIONAL_TYPES_CATALOG.dispatch_warehouse;
+    showToast(`Оновлено тип складу: «${cfg.label}» (${checked.length} з 4 табів)`);
   }
 }
 
@@ -2935,9 +3268,12 @@ window.DashboardModule = {
   submitAcceptVoyageReport: submitAcceptVoyageReport,
   openInfoModal: openWarehouseInfoModal,
   closeInfoModal: closeWarehouseInfoModal,
-  editWarehouse: function () {
-    // Дія редагування складу — фактично нічого не відкриваємо, щоб не дублювати логіку
-  },
+  editWarehouse: openEditWarehouseModal,
+  closeEditWarehouseModal: closeEditWarehouseModal,
+  onEditFunctionalTypeChange: onEditFunctionalTypeChange,
+  onEditModeCheckboxChange: onEditModeCheckboxChange,
+  saveEditWarehouseModal: saveEditWarehouseModal,
+  setWarehouseFunctionalType: setWarehouseFunctionalType,
   switchPricingTab: switchPricingTab,
   downloadTariffDocument: downloadTariffDocument,
   previewTariffDocument: previewTariffDocument,

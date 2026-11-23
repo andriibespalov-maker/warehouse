@@ -168,7 +168,7 @@
             <button type="button" id="btn-quick-filter-all" data-readiness="all"
               class="sv-readiness-tab px-3 py-1 rounded-lg transition text-slate-600 hover:text-slate-900 font-medium cursor-pointer inline-flex items-center gap-1.5">
               <span class="w-2 h-2 rounded-full bg-slate-500"></span>
-              <span>Всі</span>
+              <span>Усі</span>
               <span id="badge-readiness-all"
                 class="text-[10px] font-mono bg-slate-200/70 text-slate-700 px-1.5 py-0.2 rounded-full">0</span>
             </button>
@@ -320,7 +320,7 @@
               <div class="relative inline-block text-left">
                 <button id="sv-status-multiselect-btn" type="button"
                   class="bg-slate-900 border border-slate-700 text-sky-300 font-mono text-[10px] rounded px-2 py-0.5 flex items-center gap-1 cursor-pointer">
-                  <span id="sv-status-multiselect-label">Усі статуси</span>
+                  <span id="sv-status-multiselect-label">Формування</span>
                   <i class="fa-solid fa-chevron-down text-[8px] text-slate-400"></i>
                 </button>
                 <div id="sv-status-multiselect-menu"
@@ -369,10 +369,9 @@
               <select id="sv-sort-select"
                 class="bg-slate-900 border border-slate-700 text-sky-300 font-mono text-[10px] rounded px-2 py-0.5 focus:ring-1 focus:ring-sky-400 cursor-pointer"
                 title="Сортування списку підрейсів">
-                <option value="plannedArrival_asc" selected>Прибуття: найближчі ↑</option>
-                <option value="plannedArrival_desc">Прибуття: пізніші ↓</option>
-                <option value="plannedDeparture_asc">Відправлення: найближчі ↑</option>
-                <option value="status_priority">За станом та відпр.</option>
+                <option value="plannedDeparture_asc" selected>Відбуття: найближчі ↑</option>
+                <option value="plannedDeparture_desc">Відбуття: пізніші ↓</option>
+                <option value="status_priority">За станом та відбуттям</option>
               </select>
             </div>
           </div>

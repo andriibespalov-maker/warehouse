@@ -134,8 +134,8 @@ function initSubvoyagesPlannerModule() {
   let sortField = 'dateReady';
   let sortDirection = 'asc';
 
-  // Сортування списку підрейсів: за замовчуванням — за плановою датою прибуття (від найближчих зверху до пізніших знизу)
-  let subvoyageSortMode = 'plannedArrival_asc';
+  // Сортування списку підрейсів: за замовчуванням — за плановою датою відбуття (від найближчих зверху до пізніших знизу)
+  let subvoyageSortMode = 'plannedDeparture_asc';
 
   // Довідник шаблонів підрейсів із кастомними статусами, прив'язаними до 8 системних станів (Блок 4.5)
   const SUBVOYAGE_TEMPLATES_CATALOG = {
@@ -597,23 +597,15 @@ function initSubvoyagesPlannerModule() {
 
   function getSortedSubvoyages() {
     return [...subVoyagesData].sort((a, b) => {
-      if (subvoyageSortMode === 'plannedArrival_asc') {
-        const arrA = a.plannedArrival || '9999-12-31';
-        const arrB = b.plannedArrival || '9999-12-31';
-        if (arrA !== arrB) return arrA.localeCompare(arrB);
-        return (a.plannedDeparture || '9999-12-31').localeCompare(b.plannedDeparture || '9999-12-31');
-      }
-      if (subvoyageSortMode === 'plannedArrival_desc') {
-        const arrA = a.plannedArrival || '0000-01-01';
-        const arrB = b.plannedArrival || '0000-01-01';
-        if (arrA !== arrB) return arrB.localeCompare(arrA);
-        return (a.plannedDeparture || '9999-12-31').localeCompare(b.plannedDeparture || '9999-12-31');
-      }
       if (subvoyageSortMode === 'plannedDeparture_asc') {
         const depA = a.plannedDeparture || '9999-12-31';
         const depB = b.plannedDeparture || '9999-12-31';
-        if (depA !== depB) return depA.localeCompare(depB);
-        return (a.plannedArrival || '9999-12-31').localeCompare(b.plannedArrival || '9999-12-31');
+        return depA.localeCompare(depB);
+      }
+      if (subvoyageSortMode === 'plannedDeparture_desc') {
+        const depA = a.plannedDeparture || '0000-01-01';
+        const depB = b.plannedDeparture || '0000-01-01';
+        return depB.localeCompare(depA);
       }
       const pA = getSubvoyageStatusPriority(a.status);
       const pB = getSubvoyageStatusPriority(b.status);
@@ -654,6 +646,23 @@ function initSubvoyagesPlannerModule() {
         const sv = subVoyagesData.find(s => s.id === tr.subvoyageId);
         if (sv) {
           if (sv.status === 'Вивантажений' || (tr.acceptance && tr.acceptance.subvoyageId === sv.id)) {
+            const unloadDate = tr.acceptance?.receiveDate || sv.receivedAt || sv.actualArrival || sv.plannedArrival || tr.dateArrivalExpected || '2026-10-05 14:20';
+            if (!sv.receivedAt) sv.receivedAt = unloadDate;
+            if (!sv.actualArrival) sv.actualArrival = unloadDate;
+            tr.receivedAt = unloadDate;
+            if (!tr.previousSubvoyageId) tr.previousSubvoyageId = sv.id;
+            if (!tr.acceptance) {
+              tr.acceptance = {
+                subvoyageId: sv.id,
+                receiveDate: unloadDate,
+                acceptanceMode: 'standard',
+                damageLevel: 'green',
+                shortage: false,
+                shortagePlaces: 0
+              };
+            } else if (!tr.acceptance.receiveDate) {
+              tr.acceptance.receiveDate = unloadDate;
+            }
             tr.status = (tr.acceptance && tr.acceptance.acceptanceMode === 'adjusted')
               ? 'Прийнято з коригуванням / уточненням'
               : 'Отримано на складі';
@@ -1739,6 +1748,8 @@ function initSubvoyagesPlannerModule() {
         tr.status = (isAdjusted || hasDiscrepancy) ? 'Прийнято з коригуванням / уточненням' : 'Отримано на складі';
         tr.readinessCategory = 'ready';
         tr.acceptedToday = true;
+        tr.receivedAt = receiveDate;
+        if (!tr.previousSubvoyageId) tr.previousSubvoyageId = sv.id;
         if (rep.manager && !tr.manager) tr.manager = rep.manager;
         if (rep.actualPlaces !== undefined && !isNaN(rep.actualPlaces)) tr.places = rep.actualPlaces;
         if (rep.actualVolume !== undefined && !isNaN(rep.actualVolume)) tr.volume = rep.actualVolume;
@@ -2401,13 +2412,19 @@ function initSubvoyagesPlannerModule() {
   }
 
   // Налаштування multiselect фільтрів Дошки Підрейсів: Статуси та Логісти
+  const DISPATCH_ALLOWED_STATUSES = new Set(['Формування', 'Формується', 'Завантажений']);
+
   function setupSubvoyageBoardFilters() {
-    const allStatuses = Array.from(new Set(subVoyagesData.map(s => s.status))).filter(Boolean);
+    const allStatuses = Array.from(new Set(subVoyagesData.map(s => s.status)))
+      .filter(st => st && DISPATCH_ALLOWED_STATUSES.has(st));
+    if (!allStatuses.includes('Формування')) allStatuses.unshift('Формування');
+    if (!allStatuses.includes('Завантажений')) allStatuses.push('Завантажений');
+
     const allLogists = Array.from(new Set(subVoyagesData.map(s => s.logist))).filter(Boolean);
 
-    // По дефолту на Дошці Підрейсів відображаємо підрейси зі статусом «Формування» та «В дорозі» (у межах 14 днів до планового прибуття)
-    const defaultBoardStatuses = allStatuses.filter(st => st === 'Формування' || st === 'В дорозі');
-    selectedSubvoyageStatuses = new Set(defaultBoardStatuses.length > 0 ? defaultBoardStatuses : allStatuses);
+    // За замовчуванням у Дошці Підрейсів обрано статус «Формування»
+    const defaultFormationStatuses = allStatuses.filter(st => st === 'Формування');
+    selectedSubvoyageStatuses = new Set(defaultFormationStatuses.length > 0 ? defaultFormationStatuses : allStatuses);
     selectedSubvoyageLogists = new Set(allLogists);
 
     // 1. Статуси
@@ -2540,7 +2557,7 @@ function initSubvoyagesPlannerModule() {
     if (svSortSelect) {
       svSortSelect.value = subvoyageSortMode;
       svSortSelect.addEventListener('change', (e) => {
-        subvoyageSortMode = e.target.value || 'plannedArrival_asc';
+        subvoyageSortMode = e.target.value || 'plannedDeparture_asc';
         renderSubvoyagesTimeline();
       });
     }
@@ -2626,6 +2643,12 @@ function initSubvoyagesPlannerModule() {
 
   function getFilteredSubvoyagesList() {
     return getSortedSubvoyages().filter(sv => {
+      if (sv.isTransitOutbound) {
+        return false;
+      }
+      if (!DISPATCH_ALLOWED_STATUSES.has(sv.status)) {
+        return false;
+      }
       if (selectedDestinationHub !== 'all' && sv.hub !== selectedDestinationHub && sv.receivingWarehouse !== selectedDestinationHub) return false;
       if (selectedSubvoyageUrgency !== 'all') {
         const u = getSubvoyageUrgencyInfo(sv);
@@ -2996,6 +3019,8 @@ function initSubvoyagesPlannerModule() {
       special: all.filter(m => getMarkerGroup(m.key) === 'special')
     };
   }
+  window.getShipmentMarkerGroups = getShipmentMarkerGroups;
+  window.renderMarkerListBadges = renderMarkerListBadges;
 
   // Спосіб перевезення: тільки іконка без бейджа та тексту (п.1)
   function renderCompactTransportTypeBadge(tr) {
@@ -3163,6 +3188,246 @@ function initSubvoyagesPlannerModule() {
   // - Активний підрейс піднімається наверх і розгортається
   // - Усі інші підрейси при активному виборі максимально згортаються в один компактний рядок
   // - У рядках перевезень всередині підрейсу маркери прибрано (залишаються лише до додавання в рейс)
+  function buildSubvoyageCardHtml(sv, options = {}) {
+    const {
+      isActive = false,
+      hasActiveInList = false,
+      isExpanded = false,
+      isTransitMode = false,
+      onSelectFnName = 'selectActiveSubvoyage',
+      onToggleAccordionFnName = 'window.toggleSubvoyageAccordion'
+    } = options;
+
+    const cap = calculateSubvoyageCapacity(sv.id);
+    const themeVol = getCapacityColorTheme(cap.projPctVol);
+
+    // Якщо є активний підрейс, усі інші підрейси максимально згортаються в один компактний рядок
+    if (hasActiveInList && !isActive) {
+      const tIcon = getTransportIcon(sv.transport);
+      return `
+        <div onclick="${onSelectFnName}('${sv.id}')"
+             class="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:border-brand-300 hover:bg-brand-50/40 transition cursor-pointer select-none flex items-center justify-between gap-2 text-[11px]"
+             title="Натисніть, щоб зробити підрейс ${sv.name} (${sv.id}) активним та розгорнути зверху">
+          <div class="flex items-center gap-1.5 min-w-0 flex-1">
+            <i class="${tIcon.icon} ${tIcon.color} text-[10px] shrink-0"></i>
+            <span class="font-bold text-slate-800 truncate">${sv.name}</span>
+            <span class="text-[9px] font-mono font-bold text-brand-700 bg-brand-50 border border-brand-200 px-1 py-0.2 rounded shrink-0">${sv.id}</span>
+            ${renderStatusBadge(sv.status)}
+            ${cap.blockingCount > 0 ? `<span class="text-rose-600 text-[9px] shrink-0" title="Блокують відправку: ${cap.blockingCount}"><i class="fa-solid fa-lock"></i></span>` : ''}
+          </div>
+          <div class="flex items-center gap-2 shrink-0 text-[10px] font-mono text-slate-600">
+            <span class="hidden sm:inline text-slate-500">${sv.plannedDeparture || '—'}</span>
+            <span title="Заповненість: ${cap.vol.toFixed(1)} / ${sv.maxVolume} м³">${cap.vol.toFixed(1)}/${sv.maxVolume}м³</span>
+            <span class="px-1 py-0.2 rounded text-[9px] border font-bold ${themeVol.badge}">${cap.projPctVol}%</span>
+            <span class="text-slate-500 font-semibold" title="Перевезень у підрейсі">
+              <i class="fa-solid fa-boxes-stacked text-[9px] mr-0.5 text-slate-400"></i>${cap.assignedCount}
+            </span>
+            <button type="button" onclick="openSubvoyageDrawer('${sv.id}', event)"
+                    class="w-5 h-5 rounded hover:bg-slate-100 text-slate-400 hover:text-brand-600 inline-flex items-center justify-center transition cursor-pointer"
+                    title="Інформація про підрейс">
+              <i class="fa-solid fa-circle-info text-[10px]"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    const assignedList = transportsData
+      .filter(t => t.subvoyageId === sv.id)
+      .sort((a, b) => (a.dateReady || '9999-12-31').localeCompare(b.dateReady || '9999-12-31'));
+
+    const deltaVolText = cap.deltaVol > 0 ? `<span class="text-brand-600 font-bold ml-1">(+${cap.deltaVol.toFixed(1)} м³)</span>` : '';
+    const specialAttributesHtml = renderSubvoyageSpecialAttributesBadges(sv.id);
+
+    const maxVol = Number(sv.maxVolume) || 1;
+    const isVolOverloaded = cap.projPctVol > 100 || cap.isOverloaded;
+
+    const actualPct = Math.round((cap.actualVol / maxVol) * 100);
+    const plannedPct = Math.round((cap.plannedVol / maxVol) * 100);
+    const deltaPct = cap.deltaVol > 0 ? Math.round((cap.deltaVol / maxVol) * 100) : 0;
+
+    const actualBarWidth = Math.min(100, actualPct);
+    const plannedBarWidth = Math.min(100 - actualBarWidth, plannedPct);
+    const deltaBarWidth = Math.min(100 - actualBarWidth - plannedBarWidth, deltaPct);
+
+    const accordionHtml = isExpanded ? `
+      <div class="mt-2 pt-2 border-t border-slate-200/90 space-y-1.5" onclick="event.stopPropagation()">
+        ${assignedList.length === 0 ? `
+          <div class="p-2.5 text-center text-slate-400 italic text-[11px] bg-slate-50 rounded-lg border border-dashed border-slate-200">
+            У підрейсі ще немає перевезень. Натисніть «+ У ${sv.id}» у таблиці ліворуч для додавання.
+          </div>
+        ` : `
+          <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+            <table class="w-full text-left border-collapse text-[10px]">
+              <thead>
+                <tr class="bg-slate-100 text-slate-600 uppercase text-[9px] border-b border-slate-200">
+                  <th class="py-1 px-1.5">DF номер</th>
+                  <th class="py-1 px-1.5">Готовність</th>
+                  <th class="py-1 px-1.5">Габарити</th>
+                  <th class="py-1 px-1.5 text-center">Дія</th>
+                  <th class="py-1 px-1.5 text-right">Інфо</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                ${assignedList.map(tr => {
+      const isNonReady = tr.readinessCategory && tr.readinessCategory !== 'ready';
+      return `
+                    <tr class="hover:bg-slate-50 transition ${isNonReady ? 'bg-rose-50/40' : ''}" onclick="openContextDrawer('${tr.id}')">
+                      <td class="py-1 px-1.5 whitespace-nowrap">
+                        <div class="flex items-center gap-1 flex-nowrap">
+                          ${isUnmarkedCargo(tr) ? `<span class="px-1 py-0.2 rounded text-[8px] font-bold bg-slate-800 text-white shrink-0" title="Вантаж">📦</span>` : ''}
+                          <span class="font-mono font-bold text-brand-700 text-[10px]">${tr.dfShipment || tr.cargoNumber || tr.id}</span>
+                          ${renderCompactTransportTypeBadge(tr)}
+                          ${renderReadinessMicroBadge(tr)}
+                          ${renderAcceptanceBadges(tr)}
+                        </div>
+                      </td>
+                      <td class="py-1 px-1.5 font-mono text-[10px] text-slate-600 whitespace-nowrap">
+                        ${tr.dateReady || '—'}
+                      </td>
+                      <td class="py-1 px-1.5 font-mono text-[10px] text-slate-800 whitespace-nowrap">
+                        <strong>${tr.volume}</strong> м³ · <strong>${tr.weight}</strong> кг · ${tr.places} шт
+                      </td>
+                      <td class="py-1 px-1.5 text-center whitespace-nowrap" onclick="event.stopPropagation()">
+                        <button type="button" onclick="detachShipmentFromSubvoyage('${tr.id}')"
+                          class="px-1.5 py-0.5 bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 rounded text-[9px] font-bold transition cursor-pointer"
+                          title="Відкріпити з підрейсу назад у пул (мінус)">
+                          − В пул
+                        </button>
+                      </td>
+                      <td class="py-1 px-1.5 text-right whitespace-nowrap" onclick="event.stopPropagation()">
+                        <button type="button" onclick="openContextDrawer('${tr.id}')"
+                          class="px-1.5 py-0.5 text-slate-500 hover:text-brand-600 rounded border border-slate-200 hover:bg-slate-100 text-[10px] cursor-pointer"
+                          title="Інформація про перевезення">
+                          <i class="fa-solid fa-circle-info"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  `;
+    }).join('')}
+              </tbody>
+            </table>
+          </div>
+        `}
+      </div>
+    ` : '';
+
+    return `
+      <div onclick="${onSelectFnName}('${sv.id}')"
+           class="p-2.5 rounded-xl border transition cursor-pointer select-none space-y-2 ${isActive
+        ? 'bg-brand-50/90 border-brand-500 ring-2 ring-brand-500/20 shadow-xs'
+        : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/80'
+      }">
+        
+        <!-- Рядок 1: Назва, ID, Системний стан + Кількість перевезень та Інфо -->
+        <div class="flex justify-between items-start gap-2">
+          <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+            <span class="font-bold text-xs text-slate-900 truncate">${sv.name}</span>
+            <span class="text-[10px] font-mono font-bold text-brand-700 bg-brand-100 px-1.5 py-0.2 rounded">${sv.id}</span>
+            ${renderStatusBadge(sv.status)}
+            ${cap.blockingCount > 0 ? `
+              <span class="px-1.5 py-0.2 rounded-md bg-rose-100 text-rose-800 border border-rose-300 font-bold text-[9px] inline-flex items-center gap-1 shadow-2xs" title="Блокує відправку підрейсу: ${cap.blockingCount} позицій ще не готові або є обіцянками">
+                <i class="fa-solid fa-lock text-[8px]"></i>
+                <span>Блокують відправку: ${cap.blockingCount}</span>
+              </span>
+            ` : (cap.assignedCount > 0 ? `
+              <span class="px-1.5 py-0.2 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-[9px] inline-flex items-center gap-1" title="Усі додані вантажі готові до відправки">
+                <i class="fa-solid fa-check text-[8px]"></i>
+                <span>Готовий до виходу</span>
+              </span>
+            ` : '')}
+          </div>
+          <div class="flex items-center gap-1 shrink-0" onclick="event.stopPropagation()">
+            ${sv.status === 'В дорозі' ? `
+              <button type="button" onclick="window.DashboardModule && window.DashboardModule.openAcceptVoyageModal('${sv.id}', event)"
+                      class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-700 transition flex items-center gap-1 cursor-pointer shadow-2xs"
+                      title="Прийняти підрейс на склад з обов'язковим заповненням звіту («Захист від дурня»)">
+                <i class="fa-solid fa-clipboard-check text-[9px]"></i>
+                <span>Прийняти на склад</span>
+              </button>
+            ` : ''}
+            <button type="button" onclick="${onToggleAccordionFnName}('${sv.id}', event)"
+                    class="px-2 py-0.5 rounded-lg text-[10px] font-bold border transition flex items-center gap-1 cursor-pointer ${isExpanded
+        ? 'bg-brand-600 text-white border-brand-700 shadow-2xs'
+        : 'bg-slate-100 hover:bg-brand-50 text-slate-700 hover:text-brand-700 border-slate-200'}"
+                    title="Розгорнути / згорнути список перевезень цього підрейсу всередині картки">
+              <i class="fa-solid fa-boxes-stacked text-[9px]"></i>
+              <span>Перевезень: ${cap.assignedCount}</span>
+              <i class="fa-solid fa-chevron-down text-[8px] transition-transform ${isExpanded ? 'rotate-180' : ''}"></i>
+            </button>
+            <button type="button" onclick="openSubvoyageDrawer('${sv.id}', event)"
+                    class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition flex items-center gap-1 cursor-pointer shadow-2xs"
+                    title="Подивитись усю інформацію про підрейс">
+              <i class="fa-solid fa-circle-info text-brand-600"></i>
+              <span>Інфо</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Рядок 2: Спосіб перевезення, Маршрут підрейсу, Спец. маркери, Дата відправлення -->
+        <div class="flex items-center justify-between gap-1.5 flex-wrap text-[10px]">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="inline-flex items-center text-xs mr-0.5" title="Спосіб перевезення: ${sv.transport || '—'}"><i class="${getTransportIcon(sv.transport).icon} ${getTransportIcon(sv.transport).color}"></i></span>
+            <span class="inline-flex items-center gap-1 bg-sky-50 text-sky-900 border border-sky-200 px-2 py-0.5 rounded-md font-bold text-[10px]" title="Маршрут підрейсу: ${sv.originCountry} ➔ ${sv.destinationCountry}">
+              <i class="fa-solid fa-arrows-left-right text-sky-600"></i>
+              <span>${sv.originCountry || 'Китай'} ➔ ${sv.destinationCountry || 'Польща'}</span>
+            </span>
+            <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-900 border border-amber-200 px-1.5 py-0.5 rounded font-bold text-[10px]" title="Склад отримання: ${sv.receivingWarehouse || sv.hub || '—'}">
+              <i class="fa-solid fa-warehouse text-amber-700"></i>
+              <span>${sv.receivingWarehouse || sv.hub || '—'}</span>
+            </span>
+            ${sv.cargoMode && sv.cargoMode !== 'all' ? `<span class="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-200 font-bold text-[10px]">${sv.cargoMode}</span>` : ''}
+            ${Array.isArray(sv.keyMarkers) && sv.keyMarkers.length > 0 ? sv.keyMarkers.map(k => `<span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200 font-bold text-[10px]">${SUBVOYAGE_KEY_MARKER_LABELS[k] || k}</span>`).join('') : ''}
+            ${specialAttributesHtml}
+          </div>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="bg-brand-50 text-brand-900 border border-brand-200 px-2 py-0.5 rounded font-mono font-bold text-[10px] inline-flex items-center gap-1" title="Планова дата відправлення (ETD)">
+              <i class="fa-regular fa-calendar-check text-brand-600"></i>
+              <span>Відпр: ${sv.plannedDeparture || '—'}</span>
+            </span>
+            ${sv.receivedAt ? `<span class="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded font-mono font-bold text-[10px] inline-flex items-center gap-1" title="Фактична дата отримання на складі"><i class="fa-solid fa-check-double text-emerald-600"></i><span>Отримано: ${sv.receivedAt}</span></span>` : ''}
+          </div>
+        </div>
+
+        <!-- Рядок 3: Поділ на Фактичні куби та Планові куби + комбінований прогрес-бар (Блок 4.3) -->
+        <div class="pt-1 border-t border-slate-100 space-y-1">
+          <div class="flex justify-between items-center text-[10px] font-mono text-slate-600 flex-wrap gap-1">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              ${isTransitMode ? `
+                <span class="text-emerald-700 font-bold" title="Завантажений об'єм">Об'єм: ${cap.vol.toFixed(1)}</span>
+                <span class="text-slate-400">/ ${sv.maxVolume} м³ ${deltaVolText}</span>
+              ` : `
+                <span class="text-emerald-700 font-bold" title="Фактичні куби на складі">Факт: ${cap.actualVol.toFixed(1)} м³</span>
+                <span class="text-slate-300">+</span>
+                <span class="text-purple-700 font-bold" title="Планові куби (обіцянки клієнтів)">План: ${cap.plannedVol.toFixed(1)} м³</span>
+                <span class="text-slate-400">/ ${sv.maxVolume} м³ ${deltaVolText}</span>
+              `}
+              <span class="text-slate-300">•</span>
+              <span title="Вага"><strong>${Math.round(cap.weight)}</strong>/${sv.maxWeight} кг</span>
+              <span class="text-slate-300">•</span>
+              <span title="Кількість вантажних місць"><strong>${cap.places}</strong>${sv.maxPlaces ? `/${sv.maxPlaces}` : ''} місць${cap.deltaPlaces > 0 ? ` <span class="text-brand-600 font-bold">(+${cap.deltaPlaces})</span>` : ''}</span>
+            </div>
+            <span class="px-1.5 py-0.2 rounded text-[10px] border ${themeVol.badge}">
+              ${cap.projPctVol}% ${cap.isOverloaded ? '⚠️' : ''}
+            </span>
+          </div>
+          <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden flex border border-slate-300/40 ${isVolOverloaded ? 'ring-1 ring-rose-400' : ''}" title="Заповненість об'єму: ${cap.projPctVol}% (${cap.vol.toFixed(1)}${cap.deltaVol > 0 ? ` +${cap.deltaVol.toFixed(1)}` : ''} / ${sv.maxVolume} м³)">
+            ${isVolOverloaded ? `
+              <div class="bg-rose-500 h-2 w-full transition-all duration-300 animate-pulse" title="Переліміт завантаження: ${cap.projPctVol}% (${cap.vol.toFixed(1)} / ${sv.maxVolume} м³)"></div>
+            ` : `
+              ${actualBarWidth > 0 ? `<div class="bg-emerald-500 h-2 transition-all duration-300" style="width: ${actualBarWidth}%" title="Фактичні куби на складі: ${cap.actualVol.toFixed(1)} м³ (${actualBarWidth}%)"></div>` : ''}
+              ${plannedBarWidth > 0 ? `<div class="bg-purple-500 h-2 transition-all duration-300" style="width: ${plannedBarWidth}%" title="Планові куби (обіцянки): ${cap.plannedVol.toFixed(1)} м³ (${plannedBarWidth}%)"></div>` : ''}
+              ${deltaBarWidth > 0 ? `<div class="bg-brand-500 h-2 transition-all duration-300 animate-pulse" style="width: ${deltaBarWidth}%" title="Проєкція обраних перевезень: +${cap.deltaVol.toFixed(1)} м³ (+${deltaBarWidth}%)"></div>` : ''}
+            `}
+          </div>
+        </div>
+
+        ${accordionHtml}
+
+      </div>
+    `;
+  }
+
   function renderSubvoyagesTimeline() {
     if (!subvoyagesTimelineCards) return;
 
@@ -3186,234 +3451,13 @@ function initSubvoyagesPlannerModule() {
       orderedSubvoyages = [activeSvObj, ...otherSvs];
     }
 
-    subvoyagesTimelineCards.innerHTML = orderedSubvoyages.map(sv => {
-      const cap = calculateSubvoyageCapacity(sv.id);
-      const themeVol = getCapacityColorTheme(cap.projPctVol);
-      const isActive = sv.id === activeSubvoyageId;
-      const isExpanded = expandedSubvoyageIds.has(sv.id);
-
-      // Якщо є активний підрейс, усі інші підрейси максимально згортаються в один компактний рядок
-      if (hasActiveInList && !isActive) {
-        const tIcon = getTransportIcon(sv.transport);
-        return `
-          <div onclick="selectActiveSubvoyage('${sv.id}')"
-               class="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:border-brand-300 hover:bg-brand-50/40 transition cursor-pointer select-none flex items-center justify-between gap-2 text-[11px]"
-               title="Натисніть, щоб зробити підрейс ${sv.name} (${sv.id}) активним та розгорнути зверху">
-            <div class="flex items-center gap-1.5 min-w-0 flex-1">
-              <i class="${tIcon.icon} ${tIcon.color} text-[10px] shrink-0"></i>
-              <span class="font-bold text-slate-800 truncate">${sv.name}</span>
-              <span class="text-[9px] font-mono font-bold text-brand-700 bg-brand-50 border border-brand-200 px-1 py-0.2 rounded shrink-0">${sv.id}</span>
-              ${renderStatusBadge(sv.status)}
-              ${cap.blockingCount > 0 ? `<span class="text-rose-600 text-[9px] shrink-0" title="Блокують відправку: ${cap.blockingCount}"><i class="fa-solid fa-lock"></i></span>` : ''}
-            </div>
-            <div class="flex items-center gap-2 shrink-0 text-[10px] font-mono text-slate-600">
-              <span class="hidden sm:inline text-slate-500">${sv.plannedDeparture || '—'}</span>
-              <span title="Заповненість: ${cap.vol.toFixed(1)} / ${sv.maxVolume} м³">${cap.vol.toFixed(1)}/${sv.maxVolume}м³</span>
-              <span class="px-1 py-0.2 rounded text-[9px] border font-bold ${themeVol.badge}">${cap.projPctVol}%</span>
-              <span class="text-slate-500 font-semibold" title="Перевезень у підрейсі">
-                <i class="fa-solid fa-boxes-stacked text-[9px] mr-0.5 text-slate-400"></i>${cap.assignedCount}
-              </span>
-              <button type="button" onclick="openSubvoyageDrawer('${sv.id}', event)"
-                      class="w-5 h-5 rounded hover:bg-slate-100 text-slate-400 hover:text-brand-600 inline-flex items-center justify-center transition cursor-pointer"
-                      title="Інформація про підрейс">
-                <i class="fa-solid fa-circle-info text-[10px]"></i>
-              </button>
-            </div>
-          </div>
-        `;
-      }
-
-      const assignedList = transportsData
-        .filter(t => t.subvoyageId === sv.id)
-        .sort((a, b) => (a.dateReady || '9999-12-31').localeCompare(b.dateReady || '9999-12-31'));
-
-      const deltaVolText = cap.deltaVol > 0 ? `<span class="text-brand-600 font-bold ml-1">(+${cap.deltaVol.toFixed(1)} м³)</span>` : '';
-      const specialAttributesHtml = renderSubvoyageSpecialAttributesBadges(sv.id);
-
-      const maxVol = Number(sv.maxVolume) || 1;
-      const isVolOverloaded = cap.projPctVol > 100 || cap.isOverloaded;
-
-      const actualPct = Math.round((cap.actualVol / maxVol) * 100);
-      const plannedPct = Math.round((cap.plannedVol / maxVol) * 100);
-      const deltaPct = cap.deltaVol > 0 ? Math.round((cap.deltaVol / maxVol) * 100) : 0;
-
-      const actualBarWidth = Math.min(100, actualPct);
-      const plannedBarWidth = Math.min(100 - actualBarWidth, plannedPct);
-      const deltaBarWidth = Math.min(100 - actualBarWidth - plannedBarWidth, deltaPct);
-
-      // Вкладений список перевезень підрейсу — БЕЗ маркерів у рядках окремих перевезень, компактний 1-рядковий формат
-      const accordionHtml = isExpanded ? `
-        <div class="mt-2 pt-2 border-t border-slate-200/90 space-y-1.5" onclick="event.stopPropagation()">
-          ${assignedList.length === 0 ? `
-            <div class="p-2.5 text-center text-slate-400 italic text-[11px] bg-slate-50 rounded-lg border border-dashed border-slate-200">
-              У підрейсі ще немає перевезень. Натисніть «+ У ${sv.id}» у таблиці ліворуч для додавання.
-            </div>
-          ` : `
-            <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-              <table class="w-full text-left border-collapse text-[10px]">
-                <thead>
-                  <tr class="bg-slate-100 text-slate-600 uppercase text-[9px] border-b border-slate-200">
-                    <th class="py-1 px-1.5">DF номер</th>
-                    <th class="py-1 px-1.5">Готовність</th>
-                    <th class="py-1 px-1.5">Габарити</th>
-                    <th class="py-1 px-1.5 text-center">Дія</th>
-                    <th class="py-1 px-1.5 text-right">Інфо</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                  ${assignedList.map(tr => {
-        const isNonReady = tr.readinessCategory && tr.readinessCategory !== 'ready';
-        return `
-                      <tr class="hover:bg-slate-50 transition ${isNonReady ? 'bg-rose-50/40' : ''}" onclick="openContextDrawer('${tr.id}')">
-                        <td class="py-1 px-1.5 whitespace-nowrap">
-                          <div class="flex items-center gap-1 flex-nowrap">
-                            ${isUnmarkedCargo(tr) ? `<span class="px-1 py-0.2 rounded text-[8px] font-bold bg-slate-800 text-white shrink-0" title="Вантаж">📦</span>` : ''}
-                            <span class="font-mono font-bold text-brand-700 text-[10px]">${tr.dfShipment || tr.cargoNumber || tr.id}</span>
-                            ${renderCompactTransportTypeBadge(tr)}
-                            ${renderReadinessMicroBadge(tr)}
-                            ${renderAcceptanceBadges(tr)}
-                          </div>
-                        </td>
-                        <td class="py-1 px-1.5 font-mono text-[10px] text-slate-600 whitespace-nowrap">
-                          ${tr.dateReady || '—'}
-                        </td>
-                        <td class="py-1 px-1.5 font-mono text-[10px] text-slate-800 whitespace-nowrap">
-                          <strong>${tr.volume}</strong> м³ · <strong>${tr.weight}</strong> кг · ${tr.places} шт
-                        </td>
-                        <td class="py-1 px-1.5 text-center whitespace-nowrap" onclick="event.stopPropagation()">
-                          <button type="button" onclick="detachShipmentFromSubvoyage('${tr.id}')"
-                            class="px-1.5 py-0.5 bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 rounded text-[9px] font-bold transition cursor-pointer"
-                            title="Відкріпити з підрейсу назад у пул (мінус)">
-                            − В пул
-                          </button>
-                        </td>
-                        <td class="py-1 px-1.5 text-right whitespace-nowrap" onclick="event.stopPropagation()">
-                          <button type="button" onclick="openContextDrawer('${tr.id}')"
-                            class="px-1.5 py-0.5 text-slate-500 hover:text-brand-600 rounded border border-slate-200 hover:bg-slate-100 text-[10px] cursor-pointer"
-                            title="Інформація про перевезення">
-                            <i class="fa-solid fa-circle-info"></i>
-                          </button>
-                        </td>
-                      </tr>
-                    `;
-      }).join('')}
-                </tbody>
-              </table>
-            </div>
-          `}
-        </div>
-      ` : '';
-
-      return `
-        <div onclick="selectActiveSubvoyage('${sv.id}')"
-             class="p-2.5 rounded-xl border transition cursor-pointer select-none space-y-2 ${isActive
-          ? 'bg-brand-50/90 border-brand-500 ring-2 ring-brand-500/20 shadow-xs'
-          : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/80'
-        }">
-          
-          <!-- Рядок 1: Назва, ID, Системний стан + Кількість перевезень та Інфо -->
-          <div class="flex justify-between items-start gap-2">
-            <div class="flex items-center gap-1.5 flex-wrap min-w-0">
-              <span class="font-bold text-xs text-slate-900 truncate">${sv.name}</span>
-              <span class="text-[10px] font-mono font-bold text-brand-700 bg-brand-100 px-1.5 py-0.2 rounded">${sv.id}</span>
-              ${renderStatusBadge(sv.status)}
-              ${cap.blockingCount > 0 ? `
-                <span class="px-1.5 py-0.2 rounded-md bg-rose-100 text-rose-800 border border-rose-300 font-bold text-[9px] inline-flex items-center gap-1 shadow-2xs" title="Блокує відправку підрейсу: ${cap.blockingCount} позицій ще не готові або є обіцянками">
-                  <i class="fa-solid fa-lock text-[8px]"></i>
-                  <span>Блокують відправку: ${cap.blockingCount}</span>
-                </span>
-              ` : (cap.assignedCount > 0 ? `
-                <span class="px-1.5 py-0.2 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-[9px] inline-flex items-center gap-1" title="Усі додані вантажі готові до відправки">
-                  <i class="fa-solid fa-check text-[8px]"></i>
-                  <span>Готовий до виходу</span>
-                </span>
-              ` : '')}
-            </div>
-            <div class="flex items-center gap-1 shrink-0" onclick="event.stopPropagation()">
-              ${sv.status === 'В дорозі' ? `
-                <button type="button" onclick="window.DashboardModule && window.DashboardModule.openAcceptVoyageModal('${sv.id}', event)"
-                        class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-700 transition flex items-center gap-1 cursor-pointer shadow-2xs"
-                        title="Прийняти підрейс на склад з обов'язковим заповненням звіту («Захист від дурня»)">
-                  <i class="fa-solid fa-clipboard-check text-[9px]"></i>
-                  <span>Прийняти на склад</span>
-                </button>
-              ` : ''}
-              <button type="button" onclick="window.toggleSubvoyageAccordion('${sv.id}', event)"
-                      class="px-2 py-0.5 rounded-lg text-[10px] font-bold border transition flex items-center gap-1 cursor-pointer ${isExpanded
-          ? 'bg-brand-600 text-white border-brand-700 shadow-2xs'
-          : 'bg-slate-100 hover:bg-brand-50 text-slate-700 hover:text-brand-700 border-slate-200'}"
-                      title="Розгорнути / згорнути список перевезень цього підрейсу всередині картки">
-                <i class="fa-solid fa-boxes-stacked text-[9px]"></i>
-                <span>Перевезень: ${cap.assignedCount}</span>
-                <i class="fa-solid fa-chevron-down text-[8px] transition-transform ${isExpanded ? 'rotate-180' : ''}"></i>
-              </button>
-              <button type="button" onclick="openSubvoyageDrawer('${sv.id}', event)"
-                      class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition flex items-center gap-1 cursor-pointer shadow-2xs"
-                      title="Подивитись усю інформацію про підрейс">
-                <i class="fa-solid fa-circle-info text-brand-600"></i>
-                <span>Інфо</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Рядок 2: Спосіб перевезення, Маршрут підрейсу, Спец. маркери, Дата відправлення -->
-          <div class="flex items-center justify-between gap-1.5 flex-wrap text-[10px]">
-            <div class="flex items-center gap-1.5 flex-wrap">
-              <span class="inline-flex items-center text-xs mr-0.5" title="Спосіб перевезення: ${sv.transport || '—'}"><i class="${getTransportIcon(sv.transport).icon} ${getTransportIcon(sv.transport).color}"></i></span>
-              <span class="inline-flex items-center gap-1 bg-sky-50 text-sky-900 border border-sky-200 px-2 py-0.5 rounded-md font-bold text-[10px]" title="Маршрут підрейсу: ${sv.originCountry} ➔ ${sv.destinationCountry}">
-                <i class="fa-solid fa-arrows-left-right text-sky-600"></i>
-                <span>${sv.originCountry || 'Китай'} ➔ ${sv.destinationCountry || 'Польща'}</span>
-              </span>
-              <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-900 border border-amber-200 px-1.5 py-0.5 rounded font-bold text-[10px]" title="Склад отримання: ${sv.receivingWarehouse || sv.hub || '—'}">
-                <i class="fa-solid fa-warehouse text-amber-700"></i>
-                <span>${sv.receivingWarehouse || sv.hub || '—'}</span>
-              </span>
-              ${sv.cargoMode && sv.cargoMode !== 'all' ? `<span class="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-200 font-bold text-[10px]">${sv.cargoMode}</span>` : ''}
-              ${Array.isArray(sv.keyMarkers) && sv.keyMarkers.length > 0 ? sv.keyMarkers.map(k => `<span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200 font-bold text-[10px]">${SUBVOYAGE_KEY_MARKER_LABELS[k] || k}</span>`).join('') : ''}
-              ${specialAttributesHtml}
-            </div>
-            <div class="flex items-center gap-1.5 flex-wrap">
-              <span class="bg-brand-50 text-brand-900 border border-brand-200 px-2 py-0.5 rounded font-mono font-bold text-[10px] inline-flex items-center gap-1" title="Планова дата відправлення (ETD)">
-                <i class="fa-regular fa-calendar-check text-brand-600"></i>
-                <span>Відпр: ${sv.plannedDeparture || '—'}</span>
-              </span>
-              ${sv.receivedAt ? `<span class="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded font-mono font-bold text-[10px] inline-flex items-center gap-1" title="Фактична дата отримання на складі"><i class="fa-solid fa-check-double text-emerald-600"></i><span>Отримано: ${sv.receivedAt}</span></span>` : ''}
-            </div>
-          </div>
-
-          <!-- Рядок 3: Поділ на Фактичні куби та Планові куби + комбінований прогрес-бар (Блок 4.3) -->
-          <div class="pt-1 border-t border-slate-100 space-y-1">
-            <div class="flex justify-between items-center text-[10px] font-mono text-slate-600 flex-wrap gap-1">
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <span class="text-emerald-700 font-bold" title="Фактичні куби на складі">Факт: ${cap.actualVol.toFixed(1)} м³</span>
-                <span class="text-slate-300">+</span>
-                <span class="text-purple-700 font-bold" title="Планові куби (обіцянки клієнтів)">План: ${cap.plannedVol.toFixed(1)} м³</span>
-                <span class="text-slate-400">/ ${sv.maxVolume} м³ ${deltaVolText}</span>
-                <span class="text-slate-300">•</span>
-                <span title="Вага"><strong>${Math.round(cap.weight)}</strong>/${sv.maxWeight} кг</span>
-                <span class="text-slate-300">•</span>
-                <span title="Кількість вантажних місць"><strong>${cap.places}</strong>${sv.maxPlaces ? `/${sv.maxPlaces}` : ''} місць${cap.deltaPlaces > 0 ? ` <span class="text-brand-600 font-bold">(+${cap.deltaPlaces})</span>` : ''}</span>
-              </div>
-              <span class="px-1.5 py-0.2 rounded text-[10px] border ${themeVol.badge}">
-                ${cap.projPctVol}% ${cap.isOverloaded ? '⚠️' : ''}
-              </span>
-            </div>
-            <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden flex border border-slate-300/40 ${isVolOverloaded ? 'ring-1 ring-rose-400' : ''}" title="Заповненість об'єму: ${cap.projPctVol}% (${cap.vol.toFixed(1)}${cap.deltaVol > 0 ? ` +${cap.deltaVol.toFixed(1)}` : ''} / ${sv.maxVolume} м³)">
-              ${isVolOverloaded ? `
-                <div class="bg-rose-500 h-2 w-full transition-all duration-300 animate-pulse" title="Переліміт завантаження: ${cap.projPctVol}% (${cap.vol.toFixed(1)} / ${sv.maxVolume} м³)"></div>
-              ` : `
-                ${actualBarWidth > 0 ? `<div class="bg-emerald-500 h-2 transition-all duration-300" style="width: ${actualBarWidth}%" title="Фактичні куби на складі: ${cap.actualVol.toFixed(1)} м³ (${actualBarWidth}%)"></div>` : ''}
-                ${plannedBarWidth > 0 ? `<div class="bg-purple-500 h-2 transition-all duration-300" style="width: ${plannedBarWidth}%" title="Планові куби (обіцянки): ${cap.plannedVol.toFixed(1)} м³ (${plannedBarWidth}%)"></div>` : ''}
-                ${deltaBarWidth > 0 ? `<div class="bg-brand-500 h-2 transition-all duration-300 animate-pulse" style="width: ${deltaBarWidth}%" title="Проєкція обраних перевезень: +${cap.deltaVol.toFixed(1)} м³ (+${deltaBarWidth}%)"></div>` : ''}
-              `}
-            </div>
-          </div>
-
-          ${accordionHtml}
-
-        </div>
-      `;
-    }).join('');
+    subvoyagesTimelineCards.innerHTML = orderedSubvoyages.map(sv => buildSubvoyageCardHtml(sv, {
+      isActive: sv.id === activeSubvoyageId,
+      hasActiveInList,
+      isExpanded: expandedSubvoyageIds.has(sv.id),
+      onSelectFnName: 'selectActiveSubvoyage',
+      onToggleAccordionFnName: 'window.toggleSubvoyageAccordion'
+    })).join('');
   }
 
   window.selectActiveSubvoyage = function (svId) {
@@ -3978,7 +4022,7 @@ function initSubvoyagesPlannerModule() {
                 <div class="flex items-center gap-1.5 flex-wrap">
                   <span class="px-1 py-0.2 rounded text-[9px] font-bold bg-slate-800 text-white">📦 Вантаж</span>
                   <span class="font-mono font-bold text-brand-700 text-xs">${c.cargoNumber || c.id}</span>
-                  ${renderReadinessMicroBadge(c)}
+                  ${c.readinessCategory !== 'unlinked_on_warehouse' ? renderReadinessMicroBadge(c) : ''}
                 </div>
                 <div class="text-[10px] text-slate-500 font-mono">Трек: ${c.trackNumber || '—'}</div>
               </div>
@@ -4051,7 +4095,39 @@ function initSubvoyagesPlannerModule() {
     host.classList.add('flex');
   }
 
-  // Картка ВАНТАЖУ (не перевезення): номер, трек, габарити, пакування, склад, маркери, історія переміщень, редагування
+  const CARGO_OPS_STATUS_LABELS = {
+    new: 'Новий',
+    at_origin_warehouse: 'На складі відправки',
+    received_unmarked: 'Отримано непромаркованим',
+    transferred_to_logistician: 'Передано',
+    transfered_to_logistician_for_marking: 'Передано логісту на маркування',
+    storaging_in_warehouse: 'Зберігання на складі',
+    waiting_for_other_parts: 'Очікує інші частини',
+    awaiting_readiness: 'Очікує готовності',
+    ready_for_loading: 'Готовий до завантаження',
+    in_transit: 'В дорозі',
+    at_destination_warehouse: 'На складі призначення',
+    issued: 'Виданий',
+    returned_to_customer: 'Повернено клієнту',
+    waiting_for_task_execution: 'Очікує виконання завдання по вантажу'
+  };
+
+  function getCargoPhotoCountForTable(c) {
+    let count = Array.isArray(c.photos) ? c.photos.length : 0;
+    if (Array.isArray(c.photoStages)) {
+      c.photoStages.forEach(st => {
+        if (Array.isArray(st.photos)) count += st.photos.length;
+      });
+    }
+    return count;
+  }
+
+  function getCargoCanonicalStatusForTable(c) {
+    const raw = c.statusCode || c.status || (c.readinessCategory === 'unmarked' ? 'received_unmarked' : 'at_origin_warehouse');
+    return CARGO_OPS_STATUS_LABELS[raw] || c.status || raw;
+  }
+
+  // Картка ВАНТАЖУ (не перевезення): усі поля з «Вантажі (Комірник)», маркери, історія переміщень, редагування
   function openCargoInfoModal(cargoId) {
     const c = transportsData.find(t => t.id === cargoId);
     if (!c) return;
@@ -4060,41 +4136,115 @@ function initSubvoyagesPlannerModule() {
     const row = (label, value) => `
       <div class="p-2 bg-slate-50 rounded-lg border border-slate-200">
         <div class="text-[10px] uppercase text-slate-500 font-bold">${label}</div>
-        <div class="text-xs text-slate-900 font-semibold">${value ?? '—'}</div>
+        <div class="text-xs text-slate-900 font-semibold break-words">${value ?? '—'}</div>
       </div>`;
+
+    const code = c.cargoNumber || c.cargoCode || c.dfShipment || c.id || '—';
+    const track = c.trackNumber || c.trackingNumber || '—';
+    const dfShipment = c.dfShipment || c.related_transportation || '—';
+    const dfPromise = c.dfPromise || c.df_promise || '—';
+    const client = c.client || '—';
+    const warehouse = c.warehouse || c.hub || '—';
+    const location = c.warehouseLocation || '—';
+    const mode = c.mode || c.transportMode || c.transport_mode || c.transport || '—';
+    const origin = c.origin || c.originCountry || '—';
+    const destination = c.destination || c.destinationCountry || '—';
+    const arrivalDate = c.arrivalDate || c.arrival_date || '—';
+    const receiveDate = c.receiveDate || c.receive_date || c.dateReady || '—';
+    const titleUa = c.titleUa || c.name_ua || c.cargoName || '—';
+    const titleEn = c.titleEn || c.nameEn || c.name_en || '—';
+    const titleCn = c.titleCn || c.nameCn || c.name_zh || '—';
+    const contentDesc = c.contentDescription || '—';
+    const places = c.places ?? c.places_count ?? 0;
+    const weight = c.weight ?? c.grossWeight ?? c.gross_weight ?? 0;
+    const volume = c.volume ?? 0;
+    const dimsObj = c.dimensions || {};
+    const dimL = c.length ?? dimsObj.length;
+    const dimW = c.width ?? dimsObj.width;
+    const dimH = c.height ?? dimsObj.height;
+    const dims = (dimL || dimW || dimH) ? `${dimL || 0}×${dimW || 0}×${dimH || 0} см` : formatCargoDimensions(c);
+    const pkgType = c.packageType || c.packagingType || c.packaging_type || '—';
+    const oversized = (c.isOversized || c.is_oversized) ? `Так${c.oversizeComment ? ` (${c.oversizeComment})` : ''}` : 'Ні';
+    const cargoTypeLabel = (c.isCargo === true || c.cargo_type === 'Карго' || c.cargoType === 'Карго')
+      ? 'Карго'
+      : (c.isCargo === false || c.cargo_type === 'Не Карго' || c.cargoType === 'Не Карго') ? 'Не Карго' : '—';
+    const closeDocs = (c.closeDocsExporter || c.close_docs_exporter || c.closeExporterDocs) ? 'Так' : 'Ні';
+    const extraRaw = c.extraServices || c.additionalServices || c.additional_services;
+    const extraServices = Array.isArray(extraRaw) ? (extraRaw.join(', ') || '—') : (extraRaw || '—');
+    const manager = c.manager || c.responsible_manager || '—';
+    const logist = c.logist || c.responsible_logist || '—';
+    const logistNote = c.logistNote || c.logist_note || '—';
+    const statusLabel = getCargoCanonicalStatusForTable(c);
+    const photosCount = getCargoPhotoCountForTable(c);
+    const tasks = Array.isArray(c.tasks) ? c.tasks : [];
+    const tasksHtml = tasks.length === 0
+      ? '—'
+      : `<div class="flex flex-wrap gap-1 mt-0.5">${tasks.map(t => {
+          const done = t.status === 'done';
+          return `<span class="text-[10px] px-1.5 py-0.5 rounded border ${done ? 'bg-emerald-50 text-emerald-700 border-emerald-200 line-through' : 'bg-amber-50 text-amber-800 border-amber-200 font-semibold'}">${t.title || t.text || 'Задача'}</span>`;
+        }).join('')}</div>`;
 
     showCargoModal(`
       <div class="p-4 border-b border-slate-200 flex items-start justify-between gap-3 bg-slate-900 text-white rounded-t-2xl">
         <div>
           <div class="flex items-center gap-2 flex-wrap">
             <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-brand-600 text-white">📦 Картка вантажу (Ерайв)</span>
-            <span class="font-mono font-extrabold text-brand-300 text-sm">${c.cargoNumber || c.id}</span>
-            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-200 border border-rose-400/30">${c.status || 'Непромаркований'}</span>
+            <span class="font-mono font-extrabold text-brand-300 text-sm">${code}</span>
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-200 border border-rose-400/30">${statusLabel}</span>
           </div>
-          <div class="text-[11px] text-slate-400 mt-1">Спеціалізована картка вантажу: фізичні параметри, складська локація та історія переміщень між складами.</div>
+          <div class="text-[11px] text-slate-400 mt-1">Повна картка вантажу (усі поля «Вантажі (Комірник)»), складська локація та історія переміщень.</div>
         </div>
         <button onclick="closeCargoModal()" class="text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
       </div>
       <div class="p-4 space-y-3 text-xs">
+        <div class="text-[11px] font-bold text-slate-700 uppercase">Ідентифікація та зв'язки</div>
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          ${row('Номер вантажу (DF)', `<span class="font-mono">${c.cargoNumber || c.id}</span>`)}
-          ${row('Трек-номер', `<span class="font-mono">${c.trackNumber || '—'}</span>`)}
-          ${row('Дата отримання', c.receiveDate || c.dateReady)}
-          ${row('Склад', c.hub || c.warehouse)}
-          ${row('Локація на складі', c.warehouseLocation)}
-          ${row('Підрейс', sv ? `${sv.name} (${sv.id})` : 'Не призначено')}
+          ${row('DF-номер ерайва', `<span class="font-mono">${code}</span>`)}
+          ${row('Трек-номер', `<span class="font-mono">${track}</span>`)}
+          ${row('DF Перевезення', `<span class="font-mono">${dfShipment}</span>`)}
+          ${row('DF Обіцянки', `<span class="font-mono text-purple-700">${dfPromise}</span>`)}
+          ${row('Клієнт', client)}
+          ${row('Підрейс', sv ? `${sv.name} (${sv.id})` : (c.subvoyageId || c.subvoyage || 'Не призначено'))}
+          ${row('Статус', statusLabel)}
+          ${row('Менеджер', manager)}
+          ${row('Логіст', logist)}
         </div>
-        <div class="text-[11px] font-bold text-slate-700 uppercase">Фізичні показники та пакування</div>
+
+        <div class="text-[11px] font-bold text-slate-700 uppercase">Склад, маршрут та дати</div>
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          ${row('Габарити місця (Д×Ш×В)', formatCargoDimensions(c))}
-          ${row('Тип пакування', c.packagingType)}
-          ${row('Кількість місць', `${c.places} шт`)}
-          ${row('Вага брутто', `${c.weight} кг`)}
-          ${row("Об'єм", `${c.volume} м³`)}
-          ${row('Негабарит', c.isOversized ? 'Так' : 'Ні')}
+          ${row('Склад приймання', warehouse)}
+          ${row('Локація на складі', location)}
+          ${row('Спосіб перевез.', mode)}
+          ${row('Пункт відправлення', origin)}
+          ${row('Пункт призначення', destination)}
+          ${row('Дата прибуття', `<span class="font-mono">${arrivalDate}</span>`)}
+          ${row('Дата отримання', `<span class="font-mono">${receiveDate}</span>`)}
+          ${row('Фотофіксація', `<span class="font-mono text-brand-700">${photosCount} фото</span>`)}
+          ${row('Закриття експорту', closeDocs)}
         </div>
-        ${row('Опис вмісту / Товар', c.contentDescription || c.titleUa)}
-        ${c.logistNote ? row('Примітка логіста', c.logistNote) : ''}
+
+        <div class="text-[11px] font-bold text-slate-700 uppercase">Товар та фізичні параметри</div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          ${row('Назва товару (UA)', titleUa)}
+          ${row('Назва товару (EN)', titleEn)}
+          ${row('Назва товару (CN)', titleCn)}
+          ${row('Місць (шт)', `<span class="font-mono">${places} шт</span>`)}
+          ${row('Вага (кг)', `<span class="font-mono">${weight} кг</span>`)}
+          ${row("Об'єм (м³)", `<span class="font-mono">${volume} м³</span>`)}
+          ${row('Габарити (Д×Ш×В)', `<span class="font-mono">${dims}</span>`)}
+          ${row('Тип пакування', pkgType)}
+          ${row('Негабарит', oversized)}
+          ${row('Карго / Не Карго', cargoTypeLabel)}
+          ${row('Додаткові послуги', extraServices)}
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          ${row('Опис вмісту', contentDesc)}
+          ${row('Примітка логіста', logistNote)}
+        </div>
+
+        ${row('Задачі', tasksHtml)}
+
         <div>
           <div class="text-[11px] font-bold text-slate-700 uppercase mb-1">Маркери вантажу</div>
           ${renderCargoMarkerBadges(c)}
@@ -4879,163 +5029,250 @@ function initSubvoyagesPlannerModule() {
     }
 
     drawerCargoesList.innerHTML = filtered.map(c => {
-      const dims = (c.length && c.width && c.height) ? `${c.length}×${c.width}×${c.height} см` : 'Стандарт';
+      const dimsObj = c.dimensions || {};
+      const dimL = c.length ?? dimsObj.length;
+      const dimW = c.width ?? dimsObj.width;
+      const dimH = c.height ?? dimsObj.height;
+      const dims = (dimL || dimW || dimH) ? `${dimL || 0}×${dimW || 0}×${dimH || 0} см` : '—';
+
+      const cargoCode = c.cargoId || c.cargoNumber || c.cargoCode || '—';
+      const trackNum = c.trackingNumber || c.trackNumber || '—';
+      const dfShipment = c.dfShipment || c.related_transportation || tr.dfShipment || tr.id || '—';
+      const dfPromise = c.dfPromise || c.df_promise || tr.dfPromise || '—';
+      const client = c.client || tr.client || '—';
+      const subvoyageText = c.subvoyageId || c.subvoyage || tr.subvoyageId || '—';
+      const warehouseText = c.warehouse || tr.hub || '—';
+      const locationText = c.warehouseLocation || '—';
+      const transportModeText = c.mode || c.transportMode || c.transport_mode || tr.transportMode || tr.transport || '—';
+      const originText = c.origin || c.originCountry || tr.originCountry || '—';
+      const destinationText = c.destination || c.destinationCountry || tr.destinationCountry || '—';
+      const arrivalDateText = c.arrivalDate || c.arrival_date || tr.dateArrivalExpected || '—';
+      const receiveDateText = c.receiveDate || c.receive_date || '—';
+      const titleUa = c.titleUa || c.name_ua || c.cargoName || '—';
+      const titleEn = c.titleEn || c.nameEn || c.name_en || '—';
+      const titleCn = c.titleCn || c.nameCn || c.name_zh || '—';
+      const contentDesc = c.contentDescription || '—';
+      const places = c.places ?? c.places_count ?? 0;
+      const weight = c.grossWeight ?? c.weight ?? c.gross_weight ?? 0;
+      const volume = c.volume ?? 0;
+      const pkgType = c.packageType || c.packagingType || c.packaging_type || '—';
+      const oversizedText = (c.isOversized || c.is_oversized) ? `Так${c.oversizeComment ? ` (${c.oversizeComment})` : ''}` : 'Ні';
+      const isCargoVal = c.isCargo !== undefined ? Boolean(c.isCargo) : (c.cargo_type ? c.cargo_type === 'Карго' : tr.cargoType !== 'Фрахт');
+      const cargoTypeText = isCargoVal ? 'Карго' : 'Не Карго';
+      const closeDocsText = (c.closeDocsExporter ?? c.close_docs_exporter ?? tr.closeExporterDocs) ? 'Так' : 'Ні';
+      const extraRaw = c.extraServices || c.additionalServices || c.additional_services;
+      const extraServicesText = Array.isArray(extraRaw) ? (extraRaw.join(', ') || '—') : (extraRaw || '—');
+      const managerText = c.manager || c.responsible_manager || tr.manager || '—';
+      const logistText = c.logist || c.responsible_logist || tr.logist || '—';
+      const logistNoteText = c.logistNote || c.logist_note || '—';
+      const photosCount = getCargoPhotoCountForTable(c);
+      const tasks = Array.isArray(c.tasks) ? c.tasks : [];
+      const tasksHtml = tasks.length === 0
+        ? '<span class="text-slate-400">—</span>'
+        : `<div class="flex flex-wrap gap-1 mt-0.5">${tasks.map(t => {
+            const done = t.status === 'done';
+            return `<span class="text-[10px] px-1.5 py-0.5 rounded border ${done ? 'bg-emerald-50 text-emerald-700 border-emerald-200 line-through' : 'bg-amber-50 text-amber-800 border-amber-200 font-semibold'}">${t.title || t.text || 'Задача'}</span>`;
+          }).join('')}</div>`;
+
+      const titleText = c.titleUa || c.contentDescription || 'Вантаж';
       return `
-        <div class="bg-white p-3.5 rounded-xl border border-slate-200 hover:border-brand-300 shadow-2xs transition space-y-3">
-          <!-- Шапка вантажу: DF номер, трек, статус, дата отримання та 2 дії: "Історія переміщень між складами" і "Редагувати" -->
-          <div class="flex items-start justify-between gap-2.5 flex-wrap">
-            <div class="flex items-center gap-1.5 flex-wrap">
-              <span class="font-mono font-extrabold text-xs text-brand-700 bg-brand-50 border border-brand-200 px-2 py-0.5 rounded-md">
-                <i class="fa-solid fa-cube text-[10px] mr-1"></i>${c.cargoId}
+        <details class="group bg-white rounded-xl border border-slate-200 hover:border-brand-300 shadow-2xs transition">
+          <summary class="list-none cursor-pointer px-3 py-2 flex items-center justify-between gap-2 text-xs select-none [&::-webkit-details-marker]:hidden">
+            <div class="flex items-center gap-2 min-w-0 flex-1">
+              <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 transition-transform group-open:rotate-90 shrink-0"></i>
+              <span class="font-mono font-extrabold text-[11px] text-brand-700 bg-brand-50 border border-brand-200 px-1.5 py-0.5 rounded shrink-0">
+                <i class="fa-solid fa-cube text-[9px] mr-1"></i>${cargoCode}
               </span>
-              ${c.trackingNumber ? `<span class="font-mono text-[11px] bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded-md" title="Трек-номер"><i class="fa-solid fa-barcode text-slate-400 mr-1"></i>${c.trackingNumber}</span>` : ''}
+              <span class="font-semibold text-slate-900 truncate" title="${titleText}">${titleText}</span>
+            </div>
+
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="font-mono text-[11px] text-slate-600 hidden sm:inline whitespace-nowrap">
+                <strong>${places}</strong> шт · <strong>${weight}</strong> кг · <strong>${volume}</strong> м³
+              </span>
               ${renderCargoStatusBadge(c.status)}
-              ${c.receiveDate ? `<span class="font-mono text-[10px] text-slate-500 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded" title="Дата отримання на складі"><i class="fa-regular fa-calendar-check text-slate-400 mr-1"></i>${c.receiveDate}</span>` : ''}
-            </div>
-
-            <div class="flex items-center gap-1.5 flex-wrap">
-              <button type="button" onclick="window.openCargoMovementHistoryModal('${tr.id}', '${c.cargoId}', event)"
-                class="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer transition shadow-2xs"
+              <button type="button" onclick="event.preventDefault(); event.stopPropagation(); window.openCargoMovementHistoryModal('${tr.id}', '${cargoCode}', event)"
+                class="p-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-[11px] cursor-pointer transition"
                 title="Історія переміщень">
-                <i class="fa-solid fa-route text-sky-600"></i>
-                <span>Історія переміщень</span>
+                <i class="fa-solid fa-route"></i>
               </button>
-              <button type="button" onclick="window.openEditCargoModal('${tr.id}', '${c.cargoId}', event)"
-                class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer transition shadow-2xs"
+              <button type="button" onclick="event.preventDefault(); event.stopPropagation(); window.openEditCargoModal('${tr.id}', '${cargoCode}', event)"
+                class="p-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[11px] cursor-pointer transition"
                 title="Редагувати вантаж">
-                <i class="fa-regular fa-pen-to-square text-indigo-600"></i>
-                <span>Редагувати</span>
+                <i class="fa-regular fa-pen-to-square"></i>
               </button>
             </div>
-          </div>
+          </summary>
 
-          <!-- Повні дані про товар: UA, EN, CN та опис вмісту прямо в картці -->
-          <div>
-            <div class="text-sm font-bold text-slate-900">${c.titleUa || c.contentDescription || 'Вантаж'}</div>
-            ${(c.nameEn || c.nameCn) ? `
-              <div class="text-xs text-slate-500 flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-0.5">
-                ${c.nameEn ? `<span><strong class="text-slate-600">EN:</strong> ${c.nameEn}</span>` : ''}
-                ${(c.nameEn && c.nameCn) ? `<span class="text-slate-300">•</span>` : ''}
-                ${c.nameCn ? `<span><strong class="text-slate-600">CN:</strong> ${c.nameCn}</span>` : ''}
-              </div>
-            ` : ''}
-            ${(c.contentDescription && c.contentDescription !== c.titleUa) ? `
-              <div class="text-xs text-slate-600 mt-1.5 bg-slate-50 p-2 rounded-lg border border-slate-200/80">
-                <span class="text-[10px] font-bold text-slate-400 uppercase block mb-0.5">Опис вмісту:</span>
-                ${c.contentDescription}
-              </div>
-            ` : ''}
-          </div>
-
-          <!-- Повна сітка параметрів вантажу + окрема колонка Фотофіксація за специфікацією (Блок 2.1 та 2.4) -->
-          <div class="flex flex-col sm:flex-row gap-2 bg-slate-50/80 p-2.5 rounded-xl border border-slate-200 text-xs">
-            <div class="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <div>
-                <span class="text-[10px] text-slate-400 uppercase font-bold block">Поточний склад</span>
-                <span class="font-bold text-slate-800 flex items-center gap-1 mt-0.5">
-                  <i class="fa-solid fa-warehouse text-amber-600 text-[11px]"></i>
-                  <span>${c.warehouse || tr.hub || 'Склад відправки'}</span>
-                </span>
-              </div>
-              <div>
-                <span class="text-[10px] text-slate-400 uppercase font-bold block">Локація на складі</span>
-                <span class="font-semibold text-slate-800 mt-0.5 block">${c.warehouseLocation || 'Зона A • Стелаж 01'}</span>
-              </div>
-              <div>
-                <span class="text-[10px] text-slate-400 uppercase font-bold block">Спосіб / Маршрут</span>
-                <span class="font-semibold text-slate-800 mt-0.5 block">${c.transportMode || tr.transport || '—'} · ${c.origin || tr.originCountry || 'Китай'} ➔ ${c.destination || tr.destinationCountry || 'Україна'}</span>
-              </div>
-              <div>
-                <span class="text-[10px] text-slate-400 uppercase font-bold block">Дата прибуття</span>
-                <span class="font-mono font-semibold text-slate-800 mt-0.5 block">${c.arrivalDate || c.receiveDate || '—'}</span>
-              </div>
-              <div>
-                <span class="text-[10px] text-slate-400 uppercase font-bold block">К-сть місць</span>
-                <span class="font-mono font-bold text-slate-900 mt-0.5 block">${c.places || 0} шт</span>
-              </div>
-              <div>
-                <span class="text-[10px] text-slate-400 uppercase font-bold block">Вага брутто</span>
-                <span class="font-mono font-bold text-slate-900 mt-0.5 block">${c.grossWeight || 0} кг</span>
-              </div>
-              <div>
-                <span class="text-[10px] text-slate-400 uppercase font-bold block">Об'єм</span>
-                <span class="font-mono font-bold text-slate-900 mt-0.5 block">${c.volume || 0} м³</span>
-              </div>
-              <div>
-                <span class="text-[10px] text-slate-400 uppercase font-bold block">Габарити (Д×Ш×В)</span>
-                <span class="font-mono font-semibold text-slate-800 mt-0.5 block">${dims}</span>
-              </div>
-              <div>
-                <span class="text-[10px] text-slate-400 uppercase font-bold block">Тип пакування</span>
-                <span class="font-semibold text-slate-800 mt-0.5 block">${c.packageType || 'Палети'}</span>
-              </div>
-              <div>
-                <span class="text-[10px] text-slate-400 uppercase font-bold block">Ознака Карго / Експорт</span>
-                <span class="font-semibold text-slate-800 mt-0.5 block">${(c.isCargo ?? (tr.cargoType !== 'Фрахт')) ? 'Карго' : 'Не Карго (Фрахт)'}${(c.closeDocsExporter ?? tr.closeExporterDocs) ? ' • Закрити експорт' : ''}</span>
-              </div>
-              <div>
-                <span class="text-[10px] text-slate-400 uppercase font-bold block">Відповідальні</span>
-                <span class="font-semibold text-slate-800 mt-0.5 block truncate" title="Менеджер: ${c.manager || tr.manager || '—'} | Логіст: ${c.logist || tr.logist || '—'}">${c.manager || tr.manager || '—'} / ${c.logist || tr.logist || '—'}</span>
-              </div>
-              <div>
-                <span class="text-[10px] text-slate-400 uppercase font-bold block">Негабарит / Специфіка</span>
-                <span class="font-bold mt-0.5 block ${c.isOversized ? 'text-rose-600' : 'text-slate-600'}">
-                  ${c.isOversized ? `Негабарит${c.oversizeComment ? ` (${c.oversizeComment})` : ''}` : 'Стандарт'}
-                </span>
-              </div>
-            </div>
-
-            <!-- Окрема колонка: Фотофіксація (1 фото) -->
-            <div class="sm:w-28 shrink-0 sm:border-l sm:border-slate-200 sm:pl-2.5 flex flex-col">
-              <span class="text-[10px] text-slate-400 uppercase font-bold block mb-1">Фотофіксація</span>
-              ${(() => {
-                const stagePhoto = Array.isArray(c.photoStages) && c.photoStages.length > 0
-                  ? (c.photoStages[0].url || (Array.isArray(c.photoStages[0].photos) ? c.photoStages[0].photos[0] : null))
-                  : null;
-                const photoSrc = c.photoUrl || stagePhoto || `data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120"><rect width="160" height="120" rx="8" fill="#e2e8f0"/><rect x="28" y="30" width="104" height="68" rx="6" fill="#cbd5e1" stroke="#94a3b8" stroke-width="2"/><path d="M28 52h104M80 30v68" stroke="#94a3b8" stroke-width="2"/><rect x="64" y="22" width="32" height="12" rx="3" fill="#64748b"/><circle cx="122" cy="84" r="14" fill="#0ea5e9"/><path d="M116 84l4 4 8-8" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>')}`;
-                return `
-                  <button type="button" onclick="window.openCargoPhotoModal && window.openCargoPhotoModal('${tr.id}', '${c.cargoId}', event)"
-                    class="group relative w-full h-20 sm:flex-1 rounded-lg overflow-hidden border border-slate-200 bg-white hover:border-brand-400 transition cursor-pointer shadow-2xs"
-                    title="Переглянути фотофіксацію вантажу ${c.cargoId}">
-                    <img src="${photoSrc}" alt="Фотофіксація ${c.cargoId}" class="w-full h-full object-cover group-hover:scale-105 transition duration-200">
-                    <span class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-slate-900/70 text-white text-[9px] font-semibold backdrop-blur-xs">
-                      <i class="fa-solid fa-camera mr-0.5"></i>1
-                    </span>
-                  </button>
-                `;
-              })()}
-            </div>
-          </div>
-
-          <!-- Зв'язки, митний код, бренд та прапорці безпеки (п. 2.1 / 2.4) -->
-          <div class="flex flex-wrap items-center gap-1.5 text-[10px]">
-            ${(c.dfPromise || tr.dfPromise) ? `<span class="px-2 py-0.5 rounded bg-purple-50 text-purple-800 border border-purple-200 font-mono font-semibold">Обіцянка: ${c.dfPromise || tr.dfPromise}</span>` : ''}
-            ${(c.subvoyageId || tr.subvoyageId) ? `<span class="px-2 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200 font-mono font-semibold">Підрейс: ${c.subvoyageId || tr.subvoyageId}</span>` : ''}
-            ${c.hsCode ? `<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-mono font-semibold">УКТЗЕД: ${c.hsCode}</span>` : ''}
-            ${c.brand ? `<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-semibold">Бренд: ${c.brand}</span>` : ''}
-            ${(c.isHazardous || c.hazardousDetails?.isHazardous) ? `<span class="px-2 py-0.5 rounded bg-rose-50 text-rose-800 border border-rose-200 font-bold">☢️ ADR / Небезпечний</span>` : ''}
-            ${c.hasBatteries ? `<span class="px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-bold">🔋 Батареї</span>` : ''}
-            ${c.isFragile ? `<span class="px-2 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200 font-bold">🍷 Крихке</span>` : ''}
-          </div>
-
-          <!-- Додаткові послуги та примітка логіста -->
-          ${(c.additionalServices || c.logistNote) ? `
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-              ${c.additionalServices ? `
-                <div class="bg-indigo-50/50 p-2 rounded-lg border border-indigo-100 text-indigo-900">
-                  <span class="text-[10px] font-bold uppercase text-indigo-600 block mb-0.5"><i class="fa-solid fa-screwdriver-wrench mr-1"></i>Додаткові послуги на складі:</span>
-                  <span>${c.additionalServices}</span>
+          <div class="px-3.5 pb-3.5 pt-2.5 border-t border-slate-100 space-y-3">
+            <!-- Усі поля з «Вантажі (Комірник)» + Фотофіксація -->
+            <div class="flex flex-col sm:flex-row gap-2.5 bg-slate-50/80 p-2.5 rounded-xl border border-slate-200 text-xs">
+              <div class="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">DF-номер ерайва</span>
+                  <span class="font-mono font-bold text-slate-900 mt-0.5 block">${cargoCode}</span>
                 </div>
-              ` : ''}
-              ${c.logistNote ? `
-                <div class="bg-amber-50/70 p-2 rounded-lg border border-amber-200 text-amber-900">
-                  <span class="text-[10px] font-bold uppercase text-amber-700 block mb-0.5"><i class="fa-regular fa-comment-dots mr-1"></i>Примітка логіста:</span>
-                  <span>${c.logistNote}</span>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Трек-номер</span>
+                  <span class="font-mono font-semibold text-slate-800 mt-0.5 block">${trackNum}</span>
                 </div>
-              ` : ''}
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">DF Перевезення</span>
+                  <span class="font-mono font-semibold text-slate-800 mt-0.5 block">${dfShipment}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">DF Обіцянки</span>
+                  <span class="font-mono font-semibold text-purple-700 mt-0.5 block">${dfPromise}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Клієнт</span>
+                  <span class="font-semibold text-slate-800 mt-0.5 block truncate" title="${client}">${client}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Підрейс</span>
+                  <span class="font-mono font-semibold text-brand-700 mt-0.5 block">${subvoyageText}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Склад приймання</span>
+                  <span class="font-bold text-slate-800 flex items-center gap-1 mt-0.5">
+                    <i class="fa-solid fa-warehouse text-amber-600 text-[11px]"></i>
+                    <span class="truncate" title="${warehouseText}">${warehouseText}</span>
+                  </span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Локація на складі</span>
+                  <span class="font-semibold text-slate-800 mt-0.5 block">${locationText}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Спосіб перевез.</span>
+                  <span class="font-semibold text-slate-800 mt-0.5 block">${transportModeText}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Пункт відправлення</span>
+                  <span class="font-semibold text-slate-800 mt-0.5 block">${originText}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Пункт призначення</span>
+                  <span class="font-semibold text-slate-800 mt-0.5 block">${destinationText}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Дата прибуття</span>
+                  <span class="font-mono font-semibold text-slate-800 mt-0.5 block">${arrivalDateText}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Дата отримання</span>
+                  <span class="font-mono font-semibold text-slate-800 mt-0.5 block">${receiveDateText}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Назва товару (UA)</span>
+                  <span class="font-semibold text-slate-800 mt-0.5 block truncate" title="${titleUa}">${titleUa}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Назва товару (EN)</span>
+                  <span class="text-slate-700 mt-0.5 block truncate" title="${titleEn}">${titleEn}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Назва товару (CN)</span>
+                  <span class="text-slate-700 mt-0.5 block truncate" title="${titleCn}">${titleCn}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Місць (шт)</span>
+                  <span class="font-mono font-bold text-slate-900 mt-0.5 block">${places} шт</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Вага (кг)</span>
+                  <span class="font-mono font-bold text-slate-900 mt-0.5 block">${weight} кг</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Об'єм (м³)</span>
+                  <span class="font-mono font-bold text-slate-900 mt-0.5 block">${volume} м³</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Габарити (Д×Ш×В)</span>
+                  <span class="font-mono font-semibold text-slate-800 mt-0.5 block">${dims}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Тип пакування</span>
+                  <span class="font-semibold text-slate-800 mt-0.5 block">${pkgType}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Негабарит</span>
+                  <span class="font-bold mt-0.5 block ${(c.isOversized || c.is_oversized) ? 'text-rose-600' : 'text-slate-700'}">${oversizedText}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Карго / Не Карго</span>
+                  <span class="font-semibold text-slate-800 mt-0.5 block">${cargoTypeText}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Закриття експорту</span>
+                  <span class="font-semibold text-slate-800 mt-0.5 block">${closeDocsText}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Менеджер</span>
+                  <span class="font-semibold text-slate-800 mt-0.5 block truncate" title="${managerText}">${managerText}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Логіст</span>
+                  <span class="font-semibold text-slate-800 mt-0.5 block truncate" title="${logistText}">${logistText}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Додаткові послуги</span>
+                  <span class="text-slate-700 mt-0.5 block truncate" title="${extraServicesText}">${extraServicesText}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Фотофіксація</span>
+                  <span class="font-mono font-semibold text-brand-700 mt-0.5 block">${photosCount} фото</span>
+                </div>
+              </div>
+
+              <!-- Окрема колонка: Фотофіксація -->
+              <div class="sm:w-28 shrink-0 sm:border-l sm:border-slate-200 sm:pl-2.5 flex flex-col">
+                <span class="text-[10px] text-slate-400 uppercase font-bold block mb-1">Фото</span>
+                ${(() => {
+          const stagePhoto = Array.isArray(c.photoStages) && c.photoStages.length > 0
+            ? (c.photoStages[0].url || (Array.isArray(c.photoStages[0].photos) ? c.photoStages[0].photos[0] : null))
+            : null;
+          const photoSrc = c.photoUrl || stagePhoto || `data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120"><rect width="160" height="120" rx="8" fill="#e2e8f0"/><rect x="28" y="30" width="104" height="68" rx="6" fill="#cbd5e1" stroke="#94a3b8" stroke-width="2"/><path d="M28 52h104M80 30v68" stroke="#94a3b8" stroke-width="2"/><rect x="64" y="22" width="32" height="12" rx="3" fill="#64748b"/><circle cx="122" cy="84" r="14" fill="#0ea5e9"/><path d="M116 84l4 4 8-8" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>')}`;
+          return `
+                    <button type="button" onclick="window.openCargoPhotoModal && window.openCargoPhotoModal('${tr.id}', '${cargoCode}', event)"
+                      class="group relative w-full h-20 sm:flex-1 rounded-lg overflow-hidden border border-slate-200 bg-white hover:border-brand-400 transition cursor-pointer shadow-2xs"
+                      title="Переглянути фотофіксацію вантажу ${cargoCode}">
+                      <img src="${photoSrc}" alt="Фотофіксація ${cargoCode}" class="w-full h-full object-cover group-hover:scale-105 transition duration-200">
+                      <span class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-slate-900/70 text-white text-[9px] font-semibold backdrop-blur-xs">
+                        <i class="fa-solid fa-camera mr-0.5"></i>${photosCount || 1}
+                      </span>
+                    </button>
+                  `;
+        })()}
+              </div>
             </div>
-          ` : ''}
-        </div>
+
+            <!-- Опис вмісту, примітка логіста та задачі -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+              <div class="bg-slate-50 p-2 rounded-lg border border-slate-200 text-slate-700">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block mb-0.5">Опис вмісту:</span>
+                <span>${contentDesc}</span>
+              </div>
+              <div class="bg-amber-50/70 p-2 rounded-lg border border-amber-200 text-amber-900">
+                <span class="text-[10px] font-bold uppercase text-amber-700 block mb-0.5"><i class="fa-regular fa-comment-dots mr-1"></i>Примітка логіста:</span>
+                <span>${logistNoteText}</span>
+              </div>
+              <div class="bg-slate-50 p-2 rounded-lg border border-slate-200 text-slate-700">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block mb-0.5">Задачі:</span>
+                ${tasksHtml}
+              </div>
+            </div>
+
+            <!-- Зв'язки, митний код, бренд та прапорці безпеки -->
+            <div class="flex flex-wrap items-center gap-1.5 text-[10px]">
+              ${c.hsCode ? `<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-mono font-semibold">УКТЗЕД: ${c.hsCode}</span>` : ''}
+              ${c.brand ? `<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-semibold">Бренд: ${c.brand}</span>` : ''}
+              ${(c.isHazardous || c.hazardousDetails?.isHazardous) ? `<span class="px-2 py-0.5 rounded bg-rose-50 text-rose-800 border border-rose-200 font-bold">☢️ ADR / Небезпечний</span>` : ''}
+              ${c.hasBatteries ? `<span class="px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-bold">🔋 Батареї</span>` : ''}
+              ${c.isFragile ? `<span class="px-2 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200 font-bold">🍷 Крихке</span>` : ''}
+            </div>
+          </div>
+        </details>
       `;
     }).join('') + `
       <div class="pt-1 flex justify-end">
@@ -6688,6 +6925,16 @@ function initSubvoyagesPlannerModule() {
       filters.cargoType = 'all';
       filters.urgency = 'all';
       filters.hubs.clear();
+      filters.logists.clear();
+      filters.transports.clear();
+      document.querySelectorAll('#list-filter-logist input[type="checkbox"], #list-filter-transport input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+      });
+      const activeBadge = document.getElementById('active-filters-badge');
+      if (activeBadge) {
+        activeBadge.textContent = '0';
+        activeBadge.classList.add('hidden');
+      }
       activeSubvoyageId = null;
       expandedSubvoyageIds.clear();
       leftTableSubvoyageMode = 'pool';
@@ -6702,7 +6949,10 @@ function initSubvoyagesPlannerModule() {
 
       applyQuickFiltersUIState();
 
-      const allStatuses = Array.from(new Set(subVoyagesData.map(s => s.status))).filter(Boolean);
+      const allStatuses = Array.from(new Set(subVoyagesData.map(s => s.status)))
+        .filter(st => st && DISPATCH_ALLOWED_STATUSES.has(st));
+      if (!allStatuses.includes('Формування')) allStatuses.unshift('Формування');
+      if (!allStatuses.includes('Завантажений')) allStatuses.push('Завантажений');
       const allLogists = Array.from(new Set(subVoyagesData.map(s => s.logist))).filter(Boolean);
       const defaultFormationStatuses = allStatuses.filter(st => st === 'Формування');
       selectedSubvoyageStatuses = new Set(defaultFormationStatuses.length > 0 ? defaultFormationStatuses : allStatuses);
@@ -6740,6 +6990,67 @@ function initSubvoyagesPlannerModule() {
     }
   }
 
+  function updateAdvancedFiltersBadge() {
+    const badge = document.getElementById('active-filters-badge');
+    if (!badge) return;
+    const count = filters.logists.size + filters.transports.size;
+    badge.textContent = String(count);
+    badge.classList.toggle('hidden', count === 0);
+  }
+
+  if (btnToggleFilterPanel && filterModal) {
+    btnToggleFilterPanel.addEventListener('click', () => {
+      document.querySelectorAll('#list-filter-logist input[type="checkbox"]').forEach(cb => {
+        cb.checked = filters.logists.has(cb.value);
+      });
+      document.querySelectorAll('#list-filter-transport input[type="checkbox"]').forEach(cb => {
+        cb.checked = filters.transports.has(cb.value);
+      });
+      filterModal.classList.remove('hidden');
+    });
+  }
+
+  if (btnCloseFilterModal && filterModal) {
+    btnCloseFilterModal.addEventListener('click', () => {
+      filterModal.classList.add('hidden');
+    });
+    filterModal.addEventListener('click', (e) => {
+      if (e.target === filterModal) filterModal.classList.add('hidden');
+    });
+  }
+
+  if (btnApplyFilterModal && filterModal) {
+    btnApplyFilterModal.addEventListener('click', () => {
+      filters.logists.clear();
+      filters.transports.clear();
+      document.querySelectorAll('#list-filter-logist input[type="checkbox"]:checked').forEach(cb => {
+        filters.logists.add(cb.value);
+      });
+      document.querySelectorAll('#list-filter-transport input[type="checkbox"]:checked').forEach(cb => {
+        filters.transports.add(cb.value);
+      });
+      shipmentsCurrentPage = 1;
+      updateAdvancedFiltersBadge();
+      filterModal.classList.add('hidden');
+      renderAll();
+    });
+  }
+
+  const btnResetFilterModal = document.getElementById('btn-reset-filters-sv-modal');
+  if (btnResetFilterModal && filterModal) {
+    btnResetFilterModal.addEventListener('click', () => {
+      filters.logists.clear();
+      filters.transports.clear();
+      document.querySelectorAll('#list-filter-logist input[type="checkbox"], #list-filter-transport input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+      });
+      shipmentsCurrentPage = 1;
+      updateAdvancedFiltersBadge();
+      filterModal.classList.add('hidden');
+      renderAll();
+    });
+  }
+
   function renderAll() {
     const unassignedTotal = transportsData.filter(t => t.subvoyageId === null).length;
     if (headerUnassignedCount) headerUnassignedCount.textContent = unassignedTotal;
@@ -6750,6 +7061,7 @@ function initSubvoyagesPlannerModule() {
       totalWeight: t.weight,
       totalPlaces: t.places
     }));
+    window.svManagementTransportsRef = transportsData;
     window.svManagementSubvoyages = subVoyagesData;
 
     updateReadinessBadgesCounts();
@@ -6758,6 +7070,9 @@ function initSubvoyagesPlannerModule() {
     renderShipmentsTable();
     renderSubvoyageAssignedTable();
     updateBulkCounter();
+    if (typeof window.refreshWorkspaceModes === 'function') {
+      window.refreshWorkspaceModes();
+    }
     if (typeof window.refreshDashboardCargoStats === 'function') {
       window.refreshDashboardCargoStats();
     }
@@ -6765,6 +7080,24 @@ function initSubvoyagesPlannerModule() {
       window.DashboardModule.updateStats(window.cargoesData || [], subVoyagesData);
     }
   }
+
+  window.SubvoyageSharedUI = {
+    buildSubvoyageCardHtml,
+    calculateSubvoyageCapacity,
+    getCapacityColorTheme,
+    getTransportIcon,
+    renderStatusBadge,
+    renderSubvoyageSpecialAttributesBadges,
+    renderCompactTransportTypeBadge,
+    renderReadinessMicroBadge,
+    renderAcceptanceBadges,
+    renderMarkerListBadges,
+    getShipmentMarkerGroups,
+    evaluateShipmentFitForSubvoyage,
+    renderShipmentsDimensionsHeader,
+    isShipmentCompatibleWithSubvoyage,
+    isUnmarkedCargo
+  };
 
   window.refreshSubvoyagesWorkspace = function () {
     renderAll();

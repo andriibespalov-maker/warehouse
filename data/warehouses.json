@@ -8,6 +8,11 @@
     "city": "Foshan",
     "address": "м. Фошань (Foshan), No. 18 Logistics Park, Nanhai District",
     "type": "Difreight",
+    "functionalType": "dispatch_warehouse",
+    "allowedModes": [
+      "dispatch",
+      "cargo_ops"
+    ],
     "isConsolidation": true,
     "volume": 500,
     "occupiedVolume": 120,
@@ -126,6 +131,11 @@
     "city": "Shenzhen",
     "address": "м. Шеньчжень (Shenzhen), Building 4, Baoan Airport Logistics Center",
     "type": "Партнерський",
+    "functionalType": "dispatch_warehouse",
+    "allowedModes": [
+      "dispatch",
+      "cargo_ops"
+    ],
     "isConsolidation": true,
     "volume": null,
     "occupiedVolume": 85,
@@ -207,6 +217,11 @@
     "city": "Київ",
     "address": "м. Київ, вул. Академіка Заболотного, 150А, корпус 3, склад 12",
     "type": "Difreight",
+    "functionalType": "receiving_warehouse",
+    "allowedModes": [
+      "receiving",
+      "cargo_ops"
+    ],
     "isConsolidation": true,
     "volume": 300,
     "occupiedVolume": 245,
@@ -300,6 +315,13 @@
     "city": "Холм",
     "address": "м. Холм (Chełm), ul. Przemysłowa 24, 22-100",
     "type": "Партнерський",
+    "functionalType": "transit_warehouse",
+    "allowedModes": [
+      "dispatch",
+      "receiving",
+      "transit",
+      "cargo_ops"
+    ],
     "isConsolidation": false,
     "volume": null,
     "occupiedVolume": 0,
@@ -379,6 +401,13 @@
     "city": "Варшава",
     "address": "м. Варшава (Pruszków), ul. Magazynowa 5, 05-800",
     "type": "Партнерський",
+    "functionalType": "transit_warehouse",
+    "allowedModes": [
+      "dispatch",
+      "receiving",
+      "transit",
+      "cargo_ops"
+    ],
     "isConsolidation": true,
     "volume": 200,
     "occupiedVolume": 0,
