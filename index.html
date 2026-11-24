@@ -497,7 +497,7 @@
           </div>
         </div>
 
-        <!-- 2. Адреса (Структуровані поля) -->
+        <!-- 2. Адреса (Структуровані поля за стандартом DHL / UPU S42) -->
         <div class="bg-slate-50/60 border border-slate-200/70 rounded-xl p-4 space-y-3.5">
           <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/50">
             <div class="flex items-center gap-2">
@@ -508,12 +508,12 @@
             </div>
           </div>
 
-          <!-- Ряд 1: Країна, Індекс, Область/Штат -->
+          <!-- Ряд 1: Країна, Індекс, Область/Штат/Провінція -->
           <div class="bg-white/80 border border-slate-200/70 rounded-xl p-3 space-y-3">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <label for="select-warehouse-country" class="block text-slate-700 text-[11px] font-semibold mb-1">
-                  Країна <span class="text-rose-500">*</span>
+                  Країна (ISO) <span class="text-rose-500">*</span>
                 </label>
                 <select id="select-warehouse-country" required
                   class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
@@ -535,58 +535,106 @@
                 <label for="input-warehouse-postal-code" class="block text-slate-700 text-[11px] font-semibold mb-1">
                   Поштовий індекс <span class="text-rose-500">*</span>
                 </label>
-                <input type="text" id="input-warehouse-postal-code" required placeholder="03115 (UA), 00-001 (PL)"
+                <input type="text" id="input-warehouse-postal-code" required maxlength="12"
+                  placeholder="03115 (UA), 00-001 (PL), 528200 (CN)"
                   class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
                 <p id="postal-code-hint" class="text-[10px] text-slate-400 mt-1">Формат перевіряється під обрану країну
                 </p>
               </div>
 
-              <div>
+              <div id="field-warehouse-region" class="hidden">
                 <label for="input-warehouse-region" class="block text-slate-700 text-[11px] font-semibold mb-1">
-                  Область / Штат / Регіон
+                  Область / Штат / Провінція
                   <span id="region-required-star" class="text-rose-500 hidden">*</span>
                 </label>
-                <input type="text" id="input-warehouse-region" placeholder="Київська обл. або NY"
+                <input type="text" id="input-warehouse-region" maxlength="45" placeholder="Guangdong / NY"
                   class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
               </div>
             </div>
 
-            <!-- Ряд 2: Місто, Вулиця, Квартира/Офіс -->
+            <!-- Ряд 2: Місто, Район (District), Вулиця -->
             <div class="grid grid-cols-1 md:grid-cols-12 gap-3 pt-2.5 border-t border-slate-100">
-              <div class="md:col-span-4">
-                <label for="input-warehouse-city" class="block text-slate-700 text-[11px] font-semibold mb-1">
-                  Місто / Населений пункт <span class="text-rose-500">*</span>
-                </label>
-                <input type="text" id="input-warehouse-city" required placeholder="Київ"
+              <div id="field-warehouse-city" class="md:col-span-6">
+                <div class="flex items-center justify-between mb-1">
+                  <label for="input-warehouse-city" class="block text-slate-700 text-[11px] font-semibold">
+                    Місто / Населений пункт <span class="text-rose-500">*</span>
+                  </label>
+                  <span id="city-char-count" class="text-[10px] text-slate-400 font-mono">0/45</span>
+                </div>
+                <input type="text" id="input-warehouse-city" required maxlength="45" placeholder="Foshan / Київ / Chełm"
                   class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
               </div>
 
-              <div class="md:col-span-5">
-                <label for="input-warehouse-street" class="block text-slate-700 text-[11px] font-semibold mb-1">
-                  Вулиця <span class="text-rose-500">*</span>
+              <div id="field-warehouse-district" class="md:col-span-3 hidden">
+                <label for="input-warehouse-district" class="block text-slate-700 text-[11px] font-semibold mb-1">
+                  Район (District)
+                  <span id="district-required-star" class="text-rose-500 hidden">*</span>
                 </label>
-                <input type="text" id="input-warehouse-street" required placeholder="просп. Берестейський, 120"
+                <input type="text" id="input-warehouse-district" maxlength="45" placeholder="Nanhai District (для CN)"
                   class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
               </div>
 
-              <div class="md:col-span-3">
-                <label for="input-warehouse-address-line2" class="block text-slate-700 text-[11px] font-semibold mb-1">
-                  Квартира / Офіс / Корпус
-                </label>
-                <input type="text" id="input-warehouse-address-line2" placeholder="кв. 45 або офіс 302"
+              <div id="field-warehouse-street" class="md:col-span-6">
+                <div class="flex items-center justify-between mb-1">
+                  <label for="input-warehouse-street" class="block text-slate-700 text-[11px] font-semibold">
+                    Вулиця та № (Address Line 1) <span class="text-rose-500">*</span>
+                  </label>
+                  <span id="street-char-count" class="text-[10px] text-slate-400 font-mono">0/45</span>
+                </div>
+                <input type="text" id="input-warehouse-street" required maxlength="45"
+                  placeholder="ul. Przemysłowa 24 / No. 18 Logistics Park"
                   class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
               </div>
             </div>
 
-            <!-- Ряд 3: Коментар -->
-            <div class="pt-2.5 border-t border-slate-100">
-              <label for="input-warehouse-delivery-instructions"
-                class="block text-slate-700 text-[11px] font-semibold mb-1">
-                Коментар
-              </label>
-              <input type="text" id="input-warehouse-delivery-instructions"
-                placeholder="Код домофона 45К, поверх, ворота розвантаження..."
-                class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
+            <!-- Ряд 3: Address Line 2 та Address Line 3 (DHL-сумісні поля до 45 символів) -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 pt-2.5 border-t border-slate-100">
+              <div class="md:col-span-6">
+                <div class="flex items-center justify-between mb-1">
+                  <label for="input-warehouse-address-line2" class="block text-slate-700 text-[11px] font-semibold">
+                    Корпус / Офіс / Склад (Address Line 2)
+                  </label>
+                  <span id="line2-char-count" class="text-[10px] text-slate-400 font-mono">0/45</span>
+                </div>
+                <input type="text" id="input-warehouse-address-line2" maxlength="45"
+                  placeholder="корпус 3, склад 12 / Building 4"
+                  class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
+              </div>
+
+              <div class="md:col-span-6">
+                <div class="flex items-center justify-between mb-1">
+                  <label for="input-warehouse-address-line3" class="block text-slate-700 text-[11px] font-semibold">
+                    Додатково: Ворота / Рампа / Парк (Address Line 3)
+                  </label>
+                  <span id="line3-char-count" class="text-[10px] text-slate-400 font-mono">0/45</span>
+                </div>
+                <input type="text" id="input-warehouse-address-line3" maxlength="45"
+                  placeholder="Gate 3 / Ramp 2 / Baoan Logistics Center"
+                  class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
+              </div>
+            </div>
+
+            <!-- Ряд 4: Локальна адреса (ієрогліфами / для GPS) та Коментар -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2.5 border-t border-slate-100">
+              <div id="field-warehouse-local-address" class="hidden">
+                <label for="input-warehouse-local-address"
+                  class="block text-slate-700 text-[11px] font-semibold mb-1">
+                  Локальна адреса (ієрогліфами / для постачальника та GPS)
+                </label>
+                <input type="text" id="input-warehouse-local-address"
+                  placeholder="广东省佛山市南海区物流园18号"
+                  class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
+              </div>
+
+              <div id="field-warehouse-delivery-instructions" class="md:col-span-2">
+                <label for="input-warehouse-delivery-instructions"
+                  class="block text-slate-700 text-[11px] font-semibold mb-1">
+                  Коментар / Інструкція заїзду
+                </label>
+                <input type="text" id="input-warehouse-delivery-instructions"
+                  placeholder="Код домофона 45К, поверх, ворота розвантаження..."
+                  class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
+              </div>
             </div>
           </div>
         </div>

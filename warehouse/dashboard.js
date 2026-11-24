@@ -74,16 +74,19 @@ const warehouseInfoData = {
   operationalDepartureDays: 7,
   volumeLimit: 400.0,
 
-  // 2. Повна Адреса (єдиний структурований формат у рядок: Індекс, Країна, Область/Регіон, Місто, Вулиця, Офіс/Корпус)
+  // 2. Повна Адреса (структурований формат DHL / UPU S42)
   address: {
     zipCode: "528200",
+    countryIso: "CN",
     country: "Китай",
-    province: "провінція Гуандун",
-    city: "м. Фошань",
-    district: "р-н Наньхай",
-    street: "No. 88 Logistics Avenue",
-    addressLine2: "Gate 3",
-    fullAddress: "528200, Китай, провінція Гуандун, м. Фошань (р-н Наньхай), No. 88 Logistics Avenue, Gate 3"
+    province: "Guangdong",
+    city: "Foshan",
+    district: "Nanhai District",
+    street: "No. 18 Logistics Park",
+    addressLine2: "",
+    addressLine3: "",
+    localAddress: "广东省佛山市南海区物流园18号",
+    fullAddress: "528200, Китай, Guangdong, Foshan, Nanhai District, No. 18 Logistics Park"
   },
 
   // 3. Підрядник
@@ -219,19 +222,25 @@ const warehouseInfoData = {
 function formatStructuredAddressLine(addr = {}) {
   if (!addr) return '';
   const zip = (addr.postalCode || addr.zipCode || '').trim();
+  const countryIso = (addr.countryIso || '').trim().toUpperCase();
   const country = (addr.countryName || addr.country || '').trim();
   const region = (addr.region || addr.province || '').trim();
   const cityBase = (addr.city || '').trim();
   const district = (addr.district || '').trim();
-  const city = cityBase && district && !cityBase.includes(district)
-    ? `${cityBase} (${district})`
-    : (cityBase || district);
   const street = (addr.street || '').trim();
   const line2 = (addr.addressLine2 || '').trim();
+  const line3 = (addr.addressLine3 || '').trim();
 
-  const parts = [zip, country, region, city, street, line2].filter(Boolean);
-  if (parts.length >= 2) return parts.join(', ');
-  return (addr.fullAddress || addr.address || parts[0] || '').trim();
+  const isCn = countryIso === 'CN' || country.toLowerCase() === 'китай' || country.toLowerCase() === 'china';
+  if (isCn) {
+    const parts = [zip, country || countryIso, region, cityBase, district, street, line2, line3].filter(Boolean);
+    if (parts.length >= 2) return parts.join(', ');
+  } else {
+    const cityWithPostal = [zip, cityBase].filter(Boolean).join(' ');
+    const parts = [street, line2, line3, district, cityWithPostal, region, country || countryIso].filter(Boolean);
+    if (parts.length >= 2) return parts.join(', ');
+  }
+  return (addr.fullAddress || addr.address || '').trim();
 }
 
 /**
@@ -952,10 +961,21 @@ function renderWarehouseInfo(data = warehouseInfoData) {
   // 2. Повна Адреса (у єдиному структурованому рядку: індекс, країна, область/регіон, місто, вулиця)
   const addressElem = document.getElementById('wh-display-address');
   const modalAddressElem = document.getElementById('wh-modal-display-address');
+  const modalLocalAddressElem = document.getElementById('wh-modal-display-local-address');
   const formattedAddressLine = formatStructuredAddressLine(data.address);
   if (data.address) data.address.fullAddress = formattedAddressLine;
   if (addressElem) addressElem.innerText = formattedAddressLine;
   if (modalAddressElem) modalAddressElem.innerText = formattedAddressLine;
+  if (modalLocalAddressElem) {
+    const localAddr = (data.address?.localAddress || '').trim();
+    if (localAddr) {
+      modalLocalAddressElem.innerText = `Локальна адреса: ${localAddr}`;
+      modalLocalAddressElem.classList.remove('hidden');
+    } else {
+      modalLocalAddressElem.innerText = '';
+      modalLocalAddressElem.classList.add('hidden');
+    }
+  }
 
   // 3. Підрядник
   const contractorElem = document.getElementById('wh-display-contractor');
@@ -1751,11 +1771,14 @@ function toggleInstructionPreview() {
 }
 
 /**
- * Швидке копіювання адреси складу в один рядок у чіткому порядку полів (Індекс, Країна, Область/Регіон, Місто, Вулиця, Офіс/Корпус)
+ * Швидке копіювання структурованої адреси складу (за стандартом регіону + локальна адреса за наявності)
  */
 function copyWarehouseAddress() {
-  const addr = formatStructuredAddressLine(warehouseInfoData.address) || document.getElementById('wh-display-address')?.innerText || '';
-  copyTextWithToast(addr, 'Адресу складу скопійовано!');
+  const addrObj = warehouseInfoData.address || {};
+  const formatted = formatStructuredAddressLine(addrObj) || document.getElementById('wh-display-address')?.innerText || '';
+  const localAddr = (addrObj.localAddress || '').trim();
+  const textToCopy = localAddr ? `${formatted}\nЛокальна адреса: ${localAddr}` : formatted;
+  copyTextWithToast(textToCopy, localAddr ? 'Адресу та локальну адресу скопійовано!' : 'Адресу складу скопійовано!');
 }
 
 /**
@@ -3017,15 +3040,18 @@ async function initWarehouseDataSync() {
         }
         if (currentWh.addressFields || currentWh.country || currentWh.city || currentWh.address) {
           const af = currentWh.addressFields || {};
+          const hasAf = !!currentWh.addressFields;
           warehouseInfoData.address = {
-            ...warehouseInfoData.address,
-            zipCode: af.postalCode || currentWh.postalCode || warehouseInfoData.address.zipCode || '',
-            country: af.countryName || currentWh.country || warehouseInfoData.address.country || '',
-            province: af.region || currentWh.region || warehouseInfoData.address.province || '',
-            city: af.city || currentWh.city || warehouseInfoData.address.city || '',
-            district: af.city ? '' : warehouseInfoData.address.district,
-            street: af.street || currentWh.street || warehouseInfoData.address.street || currentWh.address || '',
-            addressLine2: af.addressLine2 || warehouseInfoData.address.addressLine2 || ''
+            zipCode: hasAf ? (af.postalCode || '') : (currentWh.postalCode || ''),
+            countryIso: hasAf ? (af.countryIso || '') : (currentWh.countryIso || ''),
+            country: af.countryName || currentWh.country || '',
+            province: hasAf ? (af.region || '') : (currentWh.region || ''),
+            city: af.city || currentWh.city || '',
+            district: hasAf ? (af.district || '') : (currentWh.district || ''),
+            street: af.street || currentWh.street || currentWh.address || '',
+            addressLine2: hasAf ? (af.addressLine2 || '') : (currentWh.addressLine2 || ''),
+            addressLine3: hasAf ? (af.addressLine3 || '') : (currentWh.addressLine3 || ''),
+            localAddress: hasAf ? (af.localAddress || '') : (currentWh.localAddress || '')
           };
           warehouseInfoData.address.fullAddress = formatStructuredAddressLine(warehouseInfoData.address);
         }

@@ -41,11 +41,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   const inputWarehousePostalCode = document.getElementById('input-warehouse-postal-code');
   const inputWarehouseRegion = document.getElementById('input-warehouse-region');
   const inputWarehouseCity = document.getElementById('input-warehouse-city');
+  const inputWarehouseDistrict = document.getElementById('input-warehouse-district');
   const inputWarehouseStreet = document.getElementById('input-warehouse-street');
   const inputWarehouseAddressLine2 = document.getElementById('input-warehouse-address-line2');
+  const inputWarehouseAddressLine3 = document.getElementById('input-warehouse-address-line3');
+  const inputWarehouseLocalAddress = document.getElementById('input-warehouse-local-address');
   const inputWarehouseDeliveryInstructions = document.getElementById('input-warehouse-delivery-instructions');
   const postalCodeHintEl = document.getElementById('postal-code-hint');
   const regionRequiredStarEl = document.getElementById('region-required-star');
+  const districtRequiredStarEl = document.getElementById('district-required-star');
+  const fieldWarehouseRegion = document.getElementById('field-warehouse-region');
+  const fieldWarehouseCity = document.getElementById('field-warehouse-city');
+  const fieldWarehouseDistrict = document.getElementById('field-warehouse-district');
+  const fieldWarehouseStreet = document.getElementById('field-warehouse-street');
+  const fieldWarehouseLocalAddress = document.getElementById('field-warehouse-local-address');
+  const fieldWarehouseDeliveryInstructions = document.getElementById('field-warehouse-delivery-instructions');
+  const cityCharCountEl = document.getElementById('city-char-count');
+  const streetCharCountEl = document.getElementById('street-char-count');
+  const line2CharCountEl = document.getElementById('line2-char-count');
+  const line3CharCountEl = document.getElementById('line3-char-count');
   const selectWarehouseType = document.getElementById('select-warehouse-type');
   const selectWarehouseStatus = document.getElementById('select-warehouse-status');
   const formBtnArchive = document.getElementById('form-btn-archive');
@@ -293,16 +307,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   let itemsPerPage = parseInt(itemsPerPageSelect?.value || '20', 10);
 
   const ISO_COUNTRIES = {
-    UA: { iso: 'UA', nameUa: 'Україна', nameEn: 'Ukraine', flag: '🇺🇦', postalRegex: /^\d{5}$/, postalExample: '03115', regionRequired: false },
-    PL: { iso: 'PL', nameUa: 'Польща', nameEn: 'Poland', flag: '🇵🇱', postalRegex: /^\d{2}-\d{3}$/, postalExample: '00-001', regionRequired: false },
-    CN: { iso: 'CN', nameUa: 'Китай', nameEn: 'China', flag: '🇨🇳', postalRegex: /^\d{6}$/, postalExample: '510000', regionRequired: false },
-    DE: { iso: 'DE', nameUa: 'Німеччина', nameEn: 'Germany', flag: '🇩🇪', postalRegex: /^\d{5}$/, postalExample: '20095', regionRequired: false },
-    US: { iso: 'US', nameUa: 'США', nameEn: 'United States', flag: '🇺🇸', postalRegex: /^\d{5}(-\d{4})?$/, postalExample: '10001', regionRequired: true },
-    CA: { iso: 'CA', nameUa: 'Канада', nameEn: 'Canada', flag: '🇨🇦', postalRegex: /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/, postalExample: 'M5V 2T6', regionRequired: true },
-    AU: { iso: 'AU', nameUa: 'Австралія', nameEn: 'Australia', flag: '🇦🇺', postalRegex: /^\d{4}$/, postalExample: '2000', regionRequired: true },
-    GB: { iso: 'GB', nameUa: 'Велика Британія', nameEn: 'United Kingdom', flag: '🇬🇧', postalRegex: /^[A-Za-z]{1,2}\d[A-Za-z\d]?\s?\d[A-Za-z]{2}$/, postalExample: 'SW1A 1AA', regionRequired: false },
-    NL: { iso: 'NL', nameUa: 'Нідерланди', nameEn: 'Netherlands', flag: '🇳🇱', postalRegex: /^\d{4}\s?[A-Za-z]{2}$/, postalExample: '1012 AB', regionRequired: false },
-    TR: { iso: 'TR', nameUa: 'Туреччина', nameEn: 'Turkey', flag: '🇹🇷', postalRegex: /^\d{5}$/, postalExample: '34000', regionRequired: false }
+    UA: { iso: 'UA', nameUa: 'Україна', nameEn: 'Ukraine', flag: '🇺🇦', postalRegex: /^\d{5}$/, postalExample: '03115', regionRequired: false, districtRequired: false, addressFormat: 'eu' },
+    PL: { iso: 'PL', nameUa: 'Польща', nameEn: 'Poland', flag: '🇵🇱', postalRegex: /^\d{2}-\d{3}$/, postalExample: '00-001', regionRequired: false, districtRequired: false, addressFormat: 'eu' },
+    CN: { iso: 'CN', nameUa: 'Китай', nameEn: 'China', flag: '🇨🇳', postalRegex: /^\d{6}$/, postalExample: '510000', regionRequired: true, districtRequired: true, addressFormat: 'cn' },
+    DE: { iso: 'DE', nameUa: 'Німеччина', nameEn: 'Germany', flag: '🇩🇪', postalRegex: /^\d{5}$/, postalExample: '20095', regionRequired: false, districtRequired: false, addressFormat: 'eu' },
+    US: { iso: 'US', nameUa: 'США', nameEn: 'United States', flag: '🇺🇸', postalRegex: /^\d{5}(-\d{4})?$/, postalExample: '10001', regionRequired: true, districtRequired: false, addressFormat: 'eu' },
+    CA: { iso: 'CA', nameUa: 'Канада', nameEn: 'Canada', flag: '🇨🇦', postalRegex: /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/, postalExample: 'M5V 2T6', regionRequired: true, districtRequired: false, addressFormat: 'eu' },
+    AU: { iso: 'AU', nameUa: 'Австралія', nameEn: 'Australia', flag: '🇦🇺', postalRegex: /^\d{4}$/, postalExample: '2000', regionRequired: true, districtRequired: false, addressFormat: 'eu' },
+    GB: { iso: 'GB', nameUa: 'Велика Британія', nameEn: 'United Kingdom', flag: '🇬🇧', postalRegex: /^[A-Za-z]{1,2}\d[A-Za-z\d]?\s?\d[A-Za-z]{2}$/, postalExample: 'SW1A 1AA', regionRequired: false, districtRequired: false, addressFormat: 'eu' },
+    NL: { iso: 'NL', nameUa: 'Нідерланди', nameEn: 'Netherlands', flag: '🇳🇱', postalRegex: /^\d{4}\s?[A-Za-z]{2}$/, postalExample: '1012 AB', regionRequired: false, districtRequired: false, addressFormat: 'eu' },
+    TR: { iso: 'TR', nameUa: 'Туреччина', nameEn: 'Turkey', flag: '🇹🇷', postalRegex: /^\d{5}$/, postalExample: '34000', regionRequired: false, districtRequired: false, addressFormat: 'eu' }
   };
 
   const countryFlags = {
@@ -330,11 +344,41 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function updateAddressCountryRules() {
     const meta = resolveCountryMeta(selectWarehouseCountry?.value);
-    if (inputWarehouseRegion) {
-      const isReq = !!meta?.regionRequired;
-      inputWarehouseRegion.required = isReq;
-      regionRequiredStarEl?.classList.toggle('hidden', !isReq);
+    const showRegion = !!meta?.regionRequired;
+    const showDistrict = !!meta?.districtRequired;
+    const showLocalAddress = meta?.iso === 'CN';
+
+    if (fieldWarehouseRegion) {
+      fieldWarehouseRegion.classList.toggle('hidden', !showRegion);
     }
+    if (inputWarehouseRegion) {
+      inputWarehouseRegion.required = showRegion;
+      regionRequiredStarEl?.classList.toggle('hidden', !showRegion);
+    }
+
+    if (fieldWarehouseDistrict) {
+      fieldWarehouseDistrict.classList.toggle('hidden', !showDistrict);
+    }
+    if (fieldWarehouseCity) {
+      fieldWarehouseCity.classList.toggle('md:col-span-4', showDistrict);
+      fieldWarehouseCity.classList.toggle('md:col-span-6', !showDistrict);
+    }
+    if (fieldWarehouseStreet) {
+      fieldWarehouseStreet.classList.toggle('md:col-span-5', showDistrict);
+      fieldWarehouseStreet.classList.toggle('md:col-span-6', !showDistrict);
+    }
+    if (inputWarehouseDistrict) {
+      inputWarehouseDistrict.required = showDistrict;
+      districtRequiredStarEl?.classList.toggle('hidden', !showDistrict);
+    }
+
+    if (fieldWarehouseLocalAddress) {
+      fieldWarehouseLocalAddress.classList.toggle('hidden', !showLocalAddress);
+    }
+    if (fieldWarehouseDeliveryInstructions) {
+      fieldWarehouseDeliveryInstructions.classList.toggle('md:col-span-2', !showLocalAddress);
+    }
+
     if (postalCodeHintEl) {
       if (meta) {
         postalCodeHintEl.textContent = `Очікуваний формат (${meta.iso}): напр. ${meta.postalExample}`;
@@ -346,6 +390,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     validatePostalCodeField();
   }
+
+  function updateAddressCharCounters() {
+    const pairs = [
+      [inputWarehouseCity, cityCharCountEl],
+      [inputWarehouseStreet, streetCharCountEl],
+      [inputWarehouseAddressLine2, line2CharCountEl],
+      [inputWarehouseAddressLine3, line3CharCountEl]
+    ];
+    pairs.forEach(([inputEl, countEl]) => {
+      if (!inputEl || !countEl) return;
+      const len = inputEl.value.length;
+      countEl.textContent = `${len}/45`;
+      countEl.className = len >= 45
+        ? 'text-[10px] text-rose-600 font-bold font-mono'
+        : len >= 38
+          ? 'text-[10px] text-amber-600 font-semibold font-mono'
+          : 'text-[10px] text-slate-400 font-mono';
+    });
+  }
+
+  [inputWarehouseCity, inputWarehouseStreet, inputWarehouseAddressLine2, inputWarehouseAddressLine3].forEach(el => {
+    el?.addEventListener('input', updateAddressCharCounters);
+  });
 
   function validatePostalCodeField() {
     if (!inputWarehousePostalCode) return true;
@@ -379,24 +446,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     const meta = resolveCountryMeta(selectWarehouseCountry?.value);
     const countryIso = meta ? meta.iso : (selectWarehouseCountry?.value || '');
     const countryLabel = meta ? `${meta.iso} (${meta.nameUa} / ${meta.nameEn})` : countryIso;
+    const postalCode = inputWarehousePostalCode?.value.trim() || '';
+    const region = !fieldWarehouseRegion?.classList.contains('hidden') ? (inputWarehouseRegion?.value.trim() || '') : '';
+    const city = inputWarehouseCity?.value.trim() || '';
+    const district = !fieldWarehouseDistrict?.classList.contains('hidden') ? (inputWarehouseDistrict?.value.trim() || '') : '';
+    const street = inputWarehouseStreet?.value.trim() || '';
+    const addressLine2 = inputWarehouseAddressLine2?.value.trim() || '';
+    const addressLine3 = inputWarehouseAddressLine3?.value.trim() || '';
+    const localAddress = !fieldWarehouseLocalAddress?.classList.contains('hidden') ? (inputWarehouseLocalAddress?.value.trim() || '') : '';
+    const deliveryInstructions = inputWarehouseDeliveryInstructions?.value.trim() || '';
+
     return {
       countryIso,
       countryName: meta ? meta.nameUa : countryIso,
       countryDisplay: countryLabel,
-      postalCode: inputWarehousePostalCode?.value.trim() || '',
-      region: inputWarehouseRegion?.value.trim() || '',
-      city: inputWarehouseCity?.value.trim() || '',
-      street: inputWarehouseStreet?.value.trim() || '',
-      addressLine2: inputWarehouseAddressLine2?.value.trim() || '',
-      deliveryInstructions: inputWarehouseDeliveryInstructions?.value.trim() || '',
+      postalCode,
+      region,
+      city,
+      district,
+      street,
+      addressLine2,
+      addressLine3,
+      localAddress,
+      deliveryInstructions,
       labeledFields: [
         { label: 'Країна / Country', value: countryLabel },
-        { label: 'Поштовий індекс / Postal / ZIP Code', value: inputWarehousePostalCode?.value.trim() || '' },
-        { label: 'Область / Штат / Регіон / State / Province / Region', value: inputWarehouseRegion?.value.trim() || '' },
-        { label: 'Місто / Населений пункт / City / Locality', value: inputWarehouseCity?.value.trim() || '' },
-        { label: 'Вулиця / Street Name / Address Line 1', value: inputWarehouseStreet?.value.trim() || '' },
-        { label: 'Квартира / Офіс / Корпус / Apt / Suite / Unit / Address Line 2', value: inputWarehouseAddressLine2?.value.trim() || '' },
-        { label: 'Коментар / Delivery Instructions', value: inputWarehouseDeliveryInstructions?.value.trim() || '' }
+        { label: 'Поштовий індекс / Postal / ZIP Code', value: postalCode },
+        { label: 'Область / Штат / Провінція / State / Province', value: region },
+        { label: 'Місто / Населений пункт / City / Locality', value: city },
+        { label: 'Район / District', value: district },
+        { label: 'Вулиця / Street Name / Address Line 1', value: street },
+        { label: 'Корпус / Офіс / Склад / Address Line 2', value: addressLine2 },
+        { label: 'Ворота / Рампа / Парк / Address Line 3', value: addressLine3 },
+        { label: 'Локальна адреса / Local Script Address', value: localAddress },
+        { label: 'Коментар / Delivery Instructions', value: deliveryInstructions }
       ]
     };
   }
@@ -410,9 +493,31 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function buildReadableAddress(addr) {
-    return [addr.postalCode, addr.countryName || addr.countryIso, addr.region, addr.city, addr.street, addr.addressLine2]
-      .filter(Boolean)
-      .join(', ');
+    if (!addr) return '';
+    const meta = resolveCountryMeta(addr.countryIso || addr.countryName || addr.country);
+    const isCn = meta?.addressFormat === 'cn' || addr.countryIso === 'CN';
+    if (isCn) {
+      return [
+        addr.postalCode,
+        addr.countryName || addr.countryIso,
+        addr.region,
+        addr.city,
+        addr.district,
+        addr.street,
+        addr.addressLine2,
+        addr.addressLine3
+      ].filter(Boolean).join(', ');
+    }
+    const cityWithPostal = [addr.postalCode, addr.city].filter(Boolean).join(' ');
+    return [
+      addr.street,
+      addr.addressLine2,
+      addr.addressLine3,
+      addr.district,
+      cityWithPostal,
+      addr.region,
+      addr.countryName || addr.countryIso
+    ].filter(Boolean).join(', ');
   }
 
   function resetAddressForm() {
@@ -423,10 +528,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (inputWarehouseRegion) inputWarehouseRegion.value = '';
     if (inputWarehouseCity) inputWarehouseCity.value = '';
+    if (inputWarehouseDistrict) inputWarehouseDistrict.value = '';
     if (inputWarehouseStreet) inputWarehouseStreet.value = '';
     if (inputWarehouseAddressLine2) inputWarehouseAddressLine2.value = '';
+    if (inputWarehouseAddressLine3) inputWarehouseAddressLine3.value = '';
+    if (inputWarehouseLocalAddress) inputWarehouseLocalAddress.value = '';
     if (inputWarehouseDeliveryInstructions) inputWarehouseDeliveryInstructions.value = '';
     updateAddressCountryRules();
+    updateAddressCharCounters();
   }
 
   function populateAddressForm(item) {
@@ -436,10 +545,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (inputWarehousePostalCode) inputWarehousePostalCode.value = af.postalCode || item.postalCode || '';
     if (inputWarehouseRegion) inputWarehouseRegion.value = af.region || item.region || '';
     if (inputWarehouseCity) inputWarehouseCity.value = af.city || item.city || '';
+    if (inputWarehouseDistrict) inputWarehouseDistrict.value = af.district || item.district || '';
     if (inputWarehouseStreet) inputWarehouseStreet.value = af.street || item.street || item.address || '';
     if (inputWarehouseAddressLine2) inputWarehouseAddressLine2.value = af.addressLine2 || '';
+    if (inputWarehouseAddressLine3) inputWarehouseAddressLine3.value = af.addressLine3 || '';
+    if (inputWarehouseLocalAddress) inputWarehouseLocalAddress.value = af.localAddress || item.localAddress || '';
     if (inputWarehouseDeliveryInstructions) inputWarehouseDeliveryInstructions.value = af.deliveryInstructions || '';
     updateAddressCountryRules();
+    updateAddressCharCounters();
   }
 
   // --- 5 Макро-категорій послуг та мапінг старих назв ---
