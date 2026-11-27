@@ -1273,18 +1273,20 @@ function initSubvoyagesPlannerModule() {
       ...[
         {
           id: 'ARR-WH-512', trackNumber: 'SF-8824109', receiveDate: '2026-10-19', warehouseLocation: 'Зона B · Ряд 4 · Місце 11',
-          contentDescription: 'Електрофурнітура та розетки (промарковано DF512, очікує прив\'язки до обіцянки)', packagingType: 'Коробки',
+          contentDescription: 'Електрофурнітура та розетки (промарковано DF512)', packagingType: 'Коробки',
           places: 14, weight: 310, volume: 1.6, length: 55, width: 40, height: 42,
           originCountry: 'Китай', destinationCountry: 'Україна', transport: null, hub: 'Центральний Хаб Київ (Гостомель)', logist: 'І. Сидоренко',
           client: 'DF512 (ЕлектроДім)',
+          dfPromise: 'DF512-101TR',
           markers: ['pkg_boxes']
         },
         {
           id: 'ARR-WH-518', trackNumber: 'YT-9941205', receiveDate: '2026-10-21', warehouseLocation: 'Зона C · Ряд 2 · Палета 3',
-          contentDescription: 'Спортивний інвентар та килимки (промарковано DF518, без обіцянки)', packagingType: 'Палети',
+          contentDescription: 'Спортивний інвентар та килимки (промарковано DF518)', packagingType: 'Палети',
           places: 4, weight: 480, volume: 2.4, length: 120, width: 80, height: 110,
           originCountry: 'Китай', destinationCountry: 'Польща', transport: null, hub: 'Транзитний хаб Польща (Гданськ / Варшава)', logist: 'О. Ковальчук',
           client: 'DF518 (FitPro UA)',
+          dfPromise: 'DF518-101TR',
           markers: ['pkg_pallets', 'fragile'], isFragile: true
         }
       ].map(c => ({
@@ -1293,7 +1295,7 @@ function initSubvoyagesPlannerModule() {
         entityType: 'cargo',
         cargoNumber: c.id,
         dfShipment: c.id,
-        dfPromise: null,
+        dfPromise: c.dfPromise || null,
         isUnlinkedToPromise: true,
         routeStages: [c.originCountry, c.destinationCountry],
         transitSegment: `${c.originCountry} ➔ ${c.destinationCountry}`,
@@ -5281,10 +5283,22 @@ function initSubvoyagesPlannerModule() {
     `;
   }
 
-  // Допоміжна функція пошуку цільового вантажу (вкладеного в Обіцянку/Перевезення або окремого непромаркованого)
+  // Допоміжна функція пошуку цільового вантажу (вкладеного в Обіцянку/Перевезення, окремого непромаркованого або зі списку cargoesData)
   function resolveCargoTarget(entityId, cargoId) {
-    const parentEntity = transportsData.find(t => t.id === entityId);
-    if (!parentEntity) return null;
+    const parentEntity = transportsData.find(t => t.id === entityId || t.dfShipment === entityId || t.cargoNumber === entityId);
+    if (!parentEntity) {
+      const whCargoes = Array.isArray(window.cargoesData) ? window.cargoesData : [];
+      const whCargo = whCargoes.find(c => c.id === entityId || c.cargoCode === entityId || c.dfNumber === entityId);
+      if (whCargo) {
+        return {
+          isStandaloneUnmarked: true,
+          isWarehouseCargo: true,
+          parentEntity: whCargo,
+          cargo: whCargo
+        };
+      }
+      return null;
+    }
 
     if (!cargoId && isUnmarkedCargo(parentEntity)) {
       return {
@@ -5346,15 +5360,147 @@ function initSubvoyagesPlannerModule() {
     tr.volume = Number(totalVol.toFixed(2));
   }
 
-  // --- П.1: Редагування вантажу (Ерайву) ---
+  // --- П.1: Редагування вантажу (Ерайву) — використовує ту саму форму, що й «Створити єрайв» ---
   window.openEditCargoModal = function (entityId, cargoId, event) {
     if (event) event.stopPropagation();
     const target = resolveCargoTarget(entityId, cargoId);
     if (!target) return;
 
-    const { isStandaloneUnmarked, isNew, parentEntity, cargo } = target;
-    const currentNumber = isStandaloneUnmarked ? (cargo.cargoNumber || cargo.id) : cargo.cargoId;
+    const { isStandaloneUnmarked, isWarehouseCargo, isNew, parentEntity, cargo } = target;
+    const currentNumber = isStandaloneUnmarked ? (cargo.cargoNumber || cargo.cargoCode || cargo.id) : cargo.cargoId;
     const currentStatus = cargo.status || 'На складі відправки';
+
+    // Якщо в DOM є уніфікована форма «Створити єрайв» (#modal-arrive), використовуємо її
+    if (typeof window.openArriveModalForEdit === 'function' && document.getElementById('modal-arrive')) {
+      closeCargoModal();
+
+      if (isWarehouseCargo) {
+        window.openArriveModalForEdit(cargo, {
+          title: `Редагувати єрайв ${currentNumber}`
+        });
+        return;
+      }
+
+      const stagePhoto = Array.isArray(cargo.photoStages) && cargo.photoStages.length > 0
+        ? (cargo.photoStages[0].url || (Array.isArray(cargo.photoStages[0].photos) ? cargo.photoStages[0].photos[0] : ''))
+        : '';
+
+      const arriveData = {
+        id: isStandaloneUnmarked ? cargo.id : cargo.cargoId,
+        cargoCode: currentNumber,
+        status: currentStatus,
+        statusCode: cargo.statusCode || '',
+        receiveDate: cargo.receiveDate || cargo.arrivalDate || '',
+        trackNumber: cargo.trackingNumber || cargo.trackNumber || '',
+        isCargo: cargo.isCargo !== undefined ? Boolean(cargo.isCargo) : (parentEntity.cargoType !== 'Фрахт' && parentEntity.cargoType !== 'non_cargo'),
+        dfShipment: isStandaloneUnmarked ? (cargo.dfShipment || '') : (cargo.dfShipment || parentEntity.dfShipment || ''),
+        dfPromise: cargo.dfPromise || parentEntity.dfPromise || '',
+        manager: cargo.manager || parentEntity.manager || '',
+        logist: cargo.logist || parentEntity.logist || '',
+        titleUa: cargo.titleUa || cargo.contentDescription || '',
+        titleEn: cargo.titleEn || cargo.nameEn || '',
+        titleCn: cargo.titleCn || cargo.nameCn || '',
+        places: Number(cargo.places) || 0,
+        weight: Number(isStandaloneUnmarked ? cargo.weight : cargo.grossWeight) || 0,
+        volume: Number(cargo.volume) || 0,
+        packageType: (isStandaloneUnmarked ? (cargo.packagingType || cargo.packageType) : cargo.packageType) || '',
+        oversizeComment: cargo.oversizeComment || '',
+        extraServices: cargo.additionalServices || cargo.extraServices || '',
+        photoUrl: cargo.photoUrl || stagePhoto || '',
+        logistNote: cargo.logistNote || '',
+        closeDocsExporter: cargo.closeDocsExporter !== undefined ? Boolean(cargo.closeDocsExporter) : Boolean(parentEntity.closeExporterDocs)
+      };
+
+      window.openArriveModalForEdit(arriveData, {
+        isNew: Boolean(isNew),
+        title: isNew ? 'Створити єрайв' : `Редагувати єрайв ${currentNumber}`,
+        onSave: (formData) => {
+          const newNum = formData.cargoCode || currentNumber;
+          const newStatus = formData.status || currentStatus;
+          const statusChanged = newStatus !== currentStatus;
+
+          const applyCommonFields = (obj) => {
+            obj.statusCode = formData.statusCode;
+            obj.status = newStatus;
+            obj.statusClass = formData.statusClass;
+            obj.receiveDate = formData.receiveDate;
+            obj.trackingNumber = formData.trackNumber;
+            obj.trackNumber = formData.trackNumber;
+            obj.cargoCode = newNum;
+            obj.isCargo = formData.isCargo;
+            obj.cargoType = formData.cargoType;
+            obj.dfShipment = formData.dfShipment;
+            obj.manager = formData.manager;
+            obj.logist = formData.logist;
+            obj.titleUa = formData.titleUa;
+            obj.contentDescription = formData.titleUa;
+            obj.titleEn = formData.titleEn;
+            obj.nameEn = formData.titleEn;
+            obj.titleCn = formData.titleCn;
+            obj.nameCn = formData.titleCn;
+            obj.places = formData.places;
+            obj.volume = formData.volume;
+            obj.oversizeComment = formData.oversizeComment;
+            obj.isOversized = Boolean(formData.oversizeComment);
+            obj.additionalServices = formData.extraServices;
+            obj.extraServices = formData.extraServices;
+            obj.photoUrl = formData.photoUrl;
+            obj.logistNote = formData.logistNote;
+            obj.closeDocsExporter = formData.closeDocsExporter;
+          };
+
+          if (isStandaloneUnmarked) {
+            cargo.cargoNumber = newNum;
+            cargo.weight = formData.weight;
+            cargo.packagingType = formData.packageType;
+            cargo.packageType = formData.packageType;
+            applyCommonFields(cargo);
+          } else {
+            cargo.cargoId = newNum;
+            cargo.grossWeight = formData.weight;
+            cargo.weight = formData.weight;
+            cargo.packageType = formData.packageType;
+            cargo.packagingType = formData.packageType;
+            applyCommonFields(cargo);
+
+            if (isNew) {
+              parentEntity.cargoes.push(cargo);
+            }
+            recalculateEntityMetricsFromCargoes(parentEntity);
+            if (drawerPlannedMetrics && currentDrawerEntityId === parentEntity.id) {
+              drawerPlannedMetrics.textContent = `${parentEntity.places || 0} місць | ${parentEntity.weight || 0} кг | ${parentEntity.volume || 0} м³`;
+            }
+          }
+
+          if (!Array.isArray(cargo.movementHistory)) cargo.movementHistory = [];
+          if (isNew || statusChanged) {
+            const nowStr = new Date().toISOString().slice(0, 16).replace('T', ' ');
+            cargo.movementHistory.push({
+              step: cargo.movementHistory.length + 1,
+              date: nowStr,
+              warehouse: cargo.warehouse || parentEntity.hub || 'Склад відправки',
+              location: cargo.warehouseLocation || 'Зона A • Стелаж 01',
+              operation: isNew ? 'Первинна реєстрація вантажу на складі' : 'Оновлення даних / статусу вантажу',
+              status: newStatus,
+              operator: formData.logist || parentEntity.logist || 'Оператор складу',
+              transportRef: formData.trackNumber || formData.dfShipment || newNum,
+              comment: formData.logistNote || `Місць: ${formData.places} шт, Вага: ${formData.weight} кг, Об'єм: ${formData.volume} м³`
+            });
+          }
+
+          if (currentDrawerEntityId === parentEntity.id && !isStandaloneUnmarked) {
+            populateDrawerCargoStatusOptions(parentEntity);
+            renderDrawerCargoesSection(parentEntity);
+          }
+          renderAll();
+          if (typeof window.refreshWorkspaceModes === 'function') window.refreshWorkspaceModes();
+          if (typeof window.renderTable === 'function') window.renderTable();
+          showToast(`Вантаж ${newNum} успішно збережено`);
+        }
+      });
+      return;
+    }
+
     const currentWarehouse = cargo.warehouse || parentEntity.hub || 'Склад відправки';
     const currentLocation = cargo.warehouseLocation || 'Зона A • Стелаж 01';
     const currentTitleUa = cargo.titleUa || cargo.contentDescription || '';

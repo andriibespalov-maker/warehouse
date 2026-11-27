@@ -704,32 +704,90 @@ function showToast(message, duration = 2000) {
   }, duration);
 }
 
-function updateCustomDropdown(inputId, value) {
+let customArriveSaveHandler = null;
+
+function resolveArriveStatusCode(statusVal) {
+  if (!statusVal) return 'at_origin_warehouse';
+  const raw = String(statusVal).trim();
+  if (STATUS_CONFIG[raw]) return raw;
+  const matchedEntry = Object.entries(STATUS_CONFIG).find(
+    ([, cfg]) => cfg.title.toLowerCase() === raw.toLowerCase()
+  );
+  if (matchedEntry) return matchedEntry[0];
+  return raw;
+}
+
+function normalizeDateForInput(dateVal) {
+  if (!dateVal) return '';
+  const str = String(dateVal).trim();
+  const isoMatch = str.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (isoMatch) return isoMatch[1];
+  const dmyMatch = str.match(/^(\d{2})\.(\d{2})\.(\d{4})/);
+  if (dmyMatch) return `${dmyMatch[3]}-${dmyMatch[2]}-${dmyMatch[1]}`;
+  return '';
+}
+
+function updateCustomDropdown(inputId, value, fallbackLabel = '') {
   const hiddenInput = document.getElementById(inputId);
   if (!hiddenInput) return;
 
-  hiddenInput.value = value;
+  const strVal = value !== undefined && value !== null ? String(value).trim() : '';
   const wrapper = hiddenInput.closest('.custom-select-wrapper');
-  if (!wrapper) return;
-
-  let targetOption = wrapper.querySelector(`.custom-option[data-value="${value}"]`);
-
-  if (!targetOption) {
-    const allOptions = wrapper.querySelectorAll('.custom-option');
-    targetOption = Array.from(allOptions).find(opt => opt.innerText.includes(value));
+  if (!wrapper) {
+    hiddenInput.value = strVal;
+    return;
   }
 
+  // Скидання пошукового фільтра всередині дропдауну
+  const searchInput = wrapper.querySelector('.custom-dropdown-search');
+  if (searchInput) searchInput.value = '';
+  const allOptions = Array.from(wrapper.querySelectorAll('.custom-option'));
+  allOptions.forEach(opt => opt.classList.remove('hidden'));
+
+  let targetOption = allOptions.find(opt => (opt.dataset.value || '') === strVal);
+
+  if (!targetOption && strVal) {
+    const lowerVal = strVal.toLowerCase();
+    targetOption = allOptions.find(opt => {
+      const optVal = (opt.dataset.value || '').toLowerCase();
+      const optText = opt.innerText.trim().toLowerCase();
+      return optVal === lowerVal || optText === lowerVal ||
+        (optVal && (lowerVal.startsWith(optVal.slice(0, 5)) || optVal.startsWith(lowerVal.slice(0, 5))));
+    });
+  }
+
+  const selectedContent = wrapper.querySelector('.selected-content');
+
   if (targetOption) {
-    const selectedContent = wrapper.querySelector('.selected-content');
+    hiddenInput.value = targetOption.dataset.value !== undefined ? targetOption.dataset.value : strVal;
     const optionContent = targetOption.querySelector('.option-content');
     if (selectedContent && optionContent) {
       selectedContent.innerHTML = optionContent.innerHTML;
     }
 
-    wrapper.querySelectorAll('.custom-option').forEach(opt => {
+    allOptions.forEach(opt => {
       opt.classList.remove('bg-indigo-50', 'text-indigo-700');
     });
     targetOption.classList.add('bg-indigo-50', 'text-indigo-700');
+  } else if (strVal) {
+    hiddenInput.value = strVal;
+    allOptions.forEach(opt => {
+      opt.classList.remove('bg-indigo-50', 'text-indigo-700');
+    });
+    if (selectedContent) {
+      const displayLabel = fallbackLabel || (STATUS_CONFIG[strVal]?.title) || strVal;
+      selectedContent.innerHTML = `<span class="truncate">${displayLabel}</span>`;
+    }
+  } else {
+    hiddenInput.value = '';
+    allOptions.forEach(opt => {
+      opt.classList.remove('bg-indigo-50', 'text-indigo-700');
+    });
+    const emptyOpt = allOptions.find(opt => (opt.dataset.value || '') === '');
+    if (emptyOpt && selectedContent) {
+      const optionContent = emptyOpt.querySelector('.option-content');
+      if (optionContent) selectedContent.innerHTML = optionContent.innerHTML;
+    }
   }
 }
 
@@ -751,24 +809,27 @@ document.addEventListener('input', (e) => {
   }
 });
 
-// 2. Редагування вантажу: показуємо блок
-function editCargo(cargoId) {
-  const cargo = cargoesData.find(c => c.id === cargoId);
+// Уніфіковане відкриття форми редагування єрайву (така сама форма, як і «Створити єрайв»)
+function openArriveModalForEdit(cargo, options = {}) {
   if (!cargo) return;
+
+  customArriveSaveHandler = typeof options.onSave === 'function' ? options.onSave : null;
 
   const setVal = (id, val) => {
     const el = document.getElementById(id);
-    if (el) el.value = val;
+    if (el) el.value = val !== undefined && val !== null ? val : '';
   };
 
+  document.getElementById('form-arrive')?.reset();
+
+  const code = cargo.cargoCode || cargo.cargoNumber || cargo.cargoId || cargo.id || '';
   const titleElem = document.getElementById('m-arrive-title');
-  if (titleElem) titleElem.innerText = `Редагувати ерайв ${cargo.id}`;
+  if (titleElem) {
+    titleElem.innerText = options.title || (options.isNew ? 'Створити єрайв' : `Редагувати єрайв ${code}`);
+  }
 
   const idElem = document.getElementById('arrive-cargo-id');
-  if (idElem) idElem.value = cargo.id;
-
-  const cargoTypeSelect = document.getElementById('arrive-cargo-type');
-  if (cargoTypeSelect) cargoTypeSelect.value = cargo.cargoType || 'cargo';
+  if (idElem) idElem.value = options.isNew ? '' : (cargo.id || cargo.cargoId || '');
 
   populateArriveModalDropdowns(cargo.dfShipment || '', cargo.dfPromise || '');
 
@@ -776,44 +837,64 @@ function editCargo(cargoId) {
   if (closeDocsCb) closeDocsCb.checked = Boolean(cargo.closeDocsExporter);
 
   const isCargoCb = document.getElementById('arrive-is-cargo');
-  if (isCargoCb) isCargoCb.checked = (cargo.isCargo !== false && cargo.cargoType !== 'non_cargo');
+  if (isCargoCb) {
+    isCargoCb.checked = cargo.isCargo !== undefined
+      ? Boolean(cargo.isCargo)
+      : (cargo.cargoType !== 'non_cargo' && cargo.cargoType !== 'Фрахт');
+  }
 
-  setVal('arrive-cargo-code', cargo.id || '');
-  setVal('arrive-track', cargo.trackNumber || '');
-  setVal('arrive-receive-date', cargo.receiveDate || '');
-  setVal('arrive-title-ua', cargo.titleUa || '');
-  setVal('arrive-title-cn', cargo.titleCn || '');
-  setVal('arrive-title-en', cargo.titleEn || '');
-  setVal('arrive-places', cargo.places || 0);
-  setVal('arrive-weight', cargo.weight || 0);
-  setVal('arrive-volume', cargo.volume || 0);
-  setVal('arrive-package-type', cargo.packageType || '');
-  setVal('arrive-extra-services', cargo.extraServices || '');
+  const statusCode = resolveArriveStatusCode(cargo.statusCode || cargo.status || 'at_origin_warehouse');
+  const statusLabel = (STATUS_CONFIG[statusCode]?.title) || cargo.status || '';
+
+  setVal('arrive-cargo-code', code);
+  setVal('arrive-track', cargo.trackNumber || cargo.trackingNumber || '');
+  setVal('arrive-receive-date', normalizeDateForInput(cargo.receiveDate || cargo.arrivalDate || ''));
+  setVal('arrive-title-ua', cargo.titleUa || cargo.contentDescription || '');
+  setVal('arrive-title-cn', cargo.titleCn || cargo.nameCn || '');
+  setVal('arrive-title-en', cargo.titleEn || cargo.nameEn || '');
+  setVal('arrive-places', cargo.places ?? 0);
+  setVal('arrive-weight', cargo.weight ?? cargo.grossWeight ?? 0);
+  setVal('arrive-volume', cargo.volume ?? 0);
+  setVal('arrive-oversize-comment', cargo.oversizeComment || '');
+  setVal('arrive-extra-services', cargo.extraServices || cargo.additionalServices || '');
   setVal('arrive-photo-url', cargo.photoUrl || '');
   setVal('arrive-logist-note', cargo.logistNote || '');
 
-  updateCustomDropdown('arrive-status', cargo.statusCode || 'new');
-  updateCustomDropdown('arrive-manager', cargo.manager || 'О. Ковальчук');
-  updateCustomDropdown('arrive-logist', cargo.logist || 'І. Сидоренко');
+  updateCustomDropdown('arrive-status', statusCode, statusLabel);
+  updateCustomDropdown('arrive-manager', cargo.manager || '');
+  updateCustomDropdown('arrive-logist', cargo.logist || '');
+  updateCustomDropdown('arrive-package-type', cargo.packageType || cargo.packagingType || '');
 
   document.getElementById('modal-arrive')?.classList.remove('hidden');
 }
+window.openArriveModalForEdit = openArriveModalForEdit;
+
+// 2. Редагування вантажу: показуємо уніфіковану форму єрайву
+function editCargo(cargoId) {
+  const cargo = cargoesData.find(c => c.id === cargoId);
+  if (!cargo) return;
+  openArriveModalForEdit(cargo);
+}
+window.editCargo = editCargo;
 
 function openCreateArriveModal() {
+  customArriveSaveHandler = null;
+
   const titleElem = document.getElementById('m-arrive-title');
   if (titleElem) titleElem.innerText = 'Створити єрайв';
 
   const idElem = document.getElementById('arrive-cargo-id');
   if (idElem) idElem.value = '';
 
+  document.getElementById('form-arrive')?.reset();
+
   const isCargoCb = document.getElementById('arrive-is-cargo');
   if (isCargoCb) isCargoCb.checked = true;
 
-  document.getElementById('form-arrive')?.reset();
+  populateArriveModalDropdowns('', '');
 
   // Скидання кастомних дропдаунів
-  updateCustomDropdown('arrive-status', 'new');
-  updateCustomDropdown('arrive-cargo-type', '');
+  updateCustomDropdown('arrive-status', 'at_origin_warehouse');
   updateCustomDropdown('arrive-manager', '');
   updateCustomDropdown('arrive-logist', '');
   updateCustomDropdown('arrive-package-type', '');
@@ -828,8 +909,9 @@ window.openCreateArriveModal = openCreateArriveModal;
 // Збереження (Створення / Оновлення) вантажу
 function handleSaveArrive() {
   const cargoId = document.getElementById('arrive-cargo-id')?.value;
-  const statusCode = document.getElementById('arrive-status')?.value || 'new';
-  const statusCfg = STATUS_CONFIG[statusCode] || { title: 'Новий', class: 'bg-slate-100 text-slate-800' };
+  const rawStatus = document.getElementById('arrive-status')?.value || 'at_origin_warehouse';
+  const statusCode = resolveArriveStatusCode(rawStatus);
+  const statusCfg = STATUS_CONFIG[statusCode] || { title: rawStatus || 'На складі відправки', class: 'bg-slate-100 text-slate-800' };
   const isCargoVal = Boolean(document.getElementById('arrive-is-cargo')?.checked);
 
   const receiveDateValue = document.getElementById('arrive-receive-date')?.value;
@@ -843,32 +925,43 @@ function handleSaveArrive() {
     status: statusCfg.title,
     statusClass: statusCfg.class,
     receiveDate: receiveDateValue,
-    trackNumber: document.getElementById('arrive-track')?.value || '—',
-    cargoCode: document.getElementById('arrive-cargo-code')?.value || '',
+    trackNumber: document.getElementById('arrive-track')?.value.trim() || '',
+    cargoCode: document.getElementById('arrive-cargo-code')?.value.trim() || '',
     isCargo: isCargoVal,
-    cargoType: document.getElementById('arrive-cargo-type')?.value || 'cargo',
+    cargoType: isCargoVal ? 'cargo' : 'non_cargo',
     dfShipment: document.getElementById('arrive-df-shipment')?.value || '',
     manager: document.getElementById('arrive-manager')?.value || '',
     logist: document.getElementById('arrive-logist')?.value || '',
-    titleUa: document.getElementById('arrive-title-ua')?.value || 'Без назви',
-    titleEn: document.getElementById('arrive-title-en')?.value || '',
-    titleCn: document.getElementById('arrive-title-cn')?.value || '',
+    titleUa: document.getElementById('arrive-title-ua')?.value.trim() || 'Без назви',
+    titleEn: document.getElementById('arrive-title-en')?.value.trim() || '',
+    titleCn: document.getElementById('arrive-title-cn')?.value.trim() || '',
     places: parseInt(document.getElementById('arrive-places')?.value, 10) || 0,
     weight: parseFloat(document.getElementById('arrive-weight')?.value) || 0,
     volume: parseFloat(document.getElementById('arrive-volume')?.value) || 0,
     packageType: document.getElementById('arrive-package-type')?.value || '',
-    oversizeComment: document.getElementById('arrive-oversize-comment')?.value || '',
-    extraServices: document.getElementById('arrive-extra-services')?.value || '',
-    photoUrl: document.getElementById('arrive-photo-url')?.value || '',
-    logistNote: document.getElementById('arrive-logist-note')?.value || '',
+    oversizeComment: document.getElementById('arrive-oversize-comment')?.value.trim() || '',
+    extraServices: document.getElementById('arrive-extra-services')?.value.trim() || '',
+    photoUrl: document.getElementById('arrive-photo-url')?.value.trim() || '',
+    logistNote: document.getElementById('arrive-logist-note')?.value.trim() || '',
     closeDocsExporter: Boolean(document.getElementById('arrive-close-docs-exporter')?.checked)
   };
+
+  if (typeof customArriveSaveHandler === 'function') {
+    const handler = customArriveSaveHandler;
+    customArriveSaveHandler = null;
+    document.getElementById('modal-arrive')?.classList.add('hidden');
+    handler(formData);
+    return;
+  }
+
+  if (!formData.trackNumber) formData.trackNumber = '—';
 
   if (cargoId) {
     const cargo = cargoesData.find(c => c.id === cargoId);
     if (cargo) {
       Object.assign(cargo, formData);
-      showToast(`Вантаж ${cargoId} успішно оновлено!`);
+      if (formData.cargoCode) cargo.id = formData.cargoCode;
+      showToast(`Вантаж ${cargo.id} успішно оновлено!`);
     }
   } else {
     const newCode = formData.cargoCode || `DF-${Math.floor(10000 + Math.random() * 90000)}`;
@@ -882,11 +975,12 @@ function handleSaveArrive() {
 
     cargoesData.unshift(newCargo);
     window.cargoesData = cargoesData;
-    if (typeof window.refreshWorkspaceModes === 'function') window.refreshWorkspaceModes();
     showToast(`Створено новий вантаж ${newCode}!`);
   }
 
   document.getElementById('modal-arrive')?.classList.add('hidden');
+  if (typeof window.refreshWorkspaceModes === 'function') window.refreshWorkspaceModes();
+  if (typeof window.refreshSubvoyagesWorkspace === 'function') window.refreshSubvoyagesWorkspace();
   if (typeof renderSubvoyageTabs === 'function') renderSubvoyageTabs();
   if (typeof renderTable === 'function') renderTable();
 }
@@ -1404,8 +1498,17 @@ function renderTable() {
 function populateArriveModalDropdowns(selectedShipment = '', selectedPromise = '') {
   const shipmentSelect = document.getElementById('arrive-df-shipment');
   if (shipmentSelect) {
-    const existingShipments = Array.from(new Set((cargoesData || []).map(c => c.dfShipment).filter(Boolean)));
+    const svTransports = Array.isArray(window.svManagementTransportsRef)
+      ? window.svManagementTransportsRef
+      : (Array.isArray(window.svManagementShipments) ? window.svManagementShipments : []);
+    const existingShipments = Array.from(new Set([
+      ...(cargoesData || []).map(c => c.dfShipment).filter(Boolean),
+      ...svTransports.map(t => t.dfShipment).filter(Boolean)
+    ]));
     if (!existingShipments.includes('DF73-229')) existingShipments.push('DF73-229');
+    if (selectedShipment && !existingShipments.includes(selectedShipment)) {
+      existingShipments.unshift(selectedShipment);
+    }
 
     shipmentSelect.innerHTML = `<option value="">Не обрано (Без перевезення)</option>` +
       existingShipments.map(s => `<option value="${s}" ${s === selectedShipment ? 'selected' : ''}>${s}</option>`).join('');
@@ -1831,11 +1934,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const closeBtn = e.target.closest('.close-modal, .close-modal-field, .close-modal-tpl, .close-modal-edit-tpl, .close-transfer-modal');
     if (closeBtn) {
       const modal = closeBtn.closest('.fixed');
-      if (modal) modal.classList.add('hidden');
+      if (modal) {
+        if (modal.id === 'modal-arrive') customArriveSaveHandler = null;
+        modal.classList.add('hidden');
+      }
       return;
     }
 
     if (e.target.classList.contains('fixed') && e.target.id && e.target.id.startsWith('modal-')) {
+      if (e.target.id === 'modal-arrive') customArriveSaveHandler = null;
       e.target.classList.add('hidden');
     }
   });

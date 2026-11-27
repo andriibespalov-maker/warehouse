@@ -30,12 +30,37 @@
   let trOutboundFiltersInitialized = false;
 
   let opsFilter = 'unmarked'; // 'unmarked' | 'on_warehouse' | 'all'
+  const opsSelectedIds = new Set();
+  let opsClientGroupsCollapsed = false;
+  let opsTransferTargetIds = [];
+  let opsDeleteTargetIds = [];
+  let opsOpenMenuCargoId = null;
+  let opsWarehousesCatalog = [
+    'New FOSHAN',
+    'Shenzhen Hub',
+    'Склад Київ-1',
+    'Склад Холм (Транзит)',
+    'Склад Варшава'
+  ];
   const opsModalFilters = {
     cargoType: 'all',
     logist: 'all',
     modes: new Set(),
     specials: new Set()
   };
+
+  function loadOpsWarehousesCatalog() {
+    fetch('../data/warehouses.json')
+      .catch(() => fetch('data/warehouses.json'))
+      .then(res => (res && res.ok ? res.json() : null))
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          const names = data.map(w => w.name).filter(Boolean);
+          if (names.length > 0) opsWarehousesCatalog = names;
+        }
+      })
+      .catch(() => {});
+  }
 
   function getSubvoyages() {
     return Array.isArray(window.svManagementSubvoyages) ? window.svManagementSubvoyages : [];
@@ -1302,8 +1327,398 @@
     return CARGO_WAREHOUSE_STATUSES.has(c.statusCode) || CARGO_WAREHOUSE_STATUSES.has(c.status);
   }
 
-  function renderCargoOpsMode() {
+  function getOpsCargoKey(c) {
+    return String(c.id || c.cargoNumber || c.cargoCode || c.dfShipment || '');
+  }
+
+  function escapeOpsHtml(val) {
+    return String(val ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function formatOpsNum(val, decimals = 2) {
+    const n = Number(val) || 0;
+    return Number.isInteger(n) ? String(n) : n.toFixed(decimals).replace(/\.?0+$/, '');
+  }
+
+  function closeOpsRowActionMenu() {
+    const menu = document.getElementById('ops-row-action-menu');
+    if (menu) {
+      menu.classList.add('hidden');
+      menu.innerHTML = '';
+    }
+    opsOpenMenuCargoId = null;
+  }
+
+  function findOpsCargoById(cid) {
+    const key = String(cid);
+    return getStorekeeperCargoes().find(c => getOpsCargoKey(c) === key) || null;
+  }
+
+  function syncAfterOpsMutation() {
+    if (typeof window.refreshSubvoyagesWorkspace === 'function') window.refreshSubvoyagesWorkspace();
+    if (window.DashboardModule && typeof window.DashboardModule.updateStats === 'function') {
+      window.DashboardModule.updateStats(window.cargoesData || [], getSubvoyages());
+    }
+    renderCargoOpsMode();
+  }
+
+  function opsCopyCargoData(cid) {
+    const c = findOpsCargoById(cid);
+    if (!c) return;
+    const code = c.cargoNumber || c.cargoCode || c.dfShipment || c.id || '—';
+    const track = c.trackNumber || c.trackingNumber || '—';
+    const promise = c.dfPromise || c.df_promise || '—';
+    const client = c.client || '—';
+    const titleUa = c.titleUa || c.name_ua || c.cargoName || '—';
+    const places = Number(c.places ?? c.places_count ?? 0) || 0;
+    const weight = formatOpsNum(c.weight ?? c.grossWeight ?? c.gross_weight ?? 0, 2);
+    const volume = formatOpsNum(c.volume ?? 0, 3);
+    const warehouse = c.warehouse || '—';
+    const location = c.warehouseLocation || '—';
+
+    const text = [
+      `DF ерайв: ${code}`,
+      `Трек-номер: ${track}`,
+      `DF Обіцянки: ${promise}`,
+      `Клієнт: ${client}`,
+      `Товар: ${titleUa}`,
+      `Місць: ${places} шт | Вага: ${weight} кг | Об'єм: ${volume} м³`,
+      `Склад: ${warehouse}${location !== '—' ? ` (${location})` : ''}`
+    ].join('\n');
+
+    const onSuccess = () => toast(`Дані вантажу ${code} скопійовано`);
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      navigator.clipboard.writeText(text).then(onSuccess).catch(() => {
+        fallbackCopyText(text, onSuccess);
+      });
+    } else {
+      fallbackCopyText(text, onSuccess);
+    }
+  }
+
+  function fallbackCopyText(text, onSuccess) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      if (onSuccess) onSuccess();
+    } catch (e) {
+      toast('Не вдалося скопіювати дані вантажу', true);
+    }
+  }
+
+  function opsOpenTransferModal(cids) {
+    const ids = Array.isArray(cids) ? cids.map(String).filter(Boolean) : [];
+    if (ids.length === 0) return;
+    opsTransferTargetIds = ids;
+
     const allCargoes = getStorekeeperCargoes();
+    const targets = allCargoes.filter(c => ids.includes(getOpsCargoKey(c)));
+
+    const countEl = document.getElementById('ops-transfer-count');
+    if (countEl) countEl.textContent = String(targets.length || ids.length);
+
+    const previewEl = document.getElementById('ops-transfer-preview');
+    if (previewEl) {
+      previewEl.innerHTML = targets.map(c => {
+        const code = c.cargoNumber || c.cargoCode || c.dfShipment || c.id;
+        return `<span class="px-2 py-0.5 rounded bg-white border border-slate-200 font-mono text-[11px] font-semibold text-slate-700">${escapeOpsHtml(code)}</span>`;
+      }).join('');
+    }
+
+    const selectEl = document.getElementById('ops-transfer-warehouse-select');
+    if (selectEl) {
+      const warehouseSet = new Set(opsWarehousesCatalog);
+      allCargoes.forEach(c => { if (c.warehouse) warehouseSet.add(c.warehouse); });
+      const currentWarehouses = new Set(targets.map(c => c.warehouse).filter(Boolean));
+      const list = Array.from(warehouseSet);
+      selectEl.innerHTML = list.map(wh => {
+        const isCurrent = currentWarehouses.size === 1 && currentWarehouses.has(wh);
+        return `<option value="${escapeOpsHtml(wh)}" ${isCurrent ? 'disabled' : ''}>${escapeOpsHtml(wh)}${isCurrent ? ' (поточний)' : ''}</option>`;
+      }).join('');
+      const firstAvailable = list.find(wh => !(currentWarehouses.size === 1 && currentWarehouses.has(wh)));
+      if (firstAvailable) selectEl.value = firstAvailable;
+    }
+
+    document.getElementById('ops-transfer-modal')?.classList.remove('hidden');
+  }
+
+  function opsConfirmTransfer() {
+    const targetWarehouse = document.getElementById('ops-transfer-warehouse-select')?.value;
+    if (!targetWarehouse || opsTransferTargetIds.length === 0) return;
+
+    const idSet = new Set(opsTransferTargetIds);
+    const nowStr = new Date().toLocaleString('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    let movedCount = 0;
+
+    const updateList = (arr) => {
+      if (!Array.isArray(arr)) return;
+      arr.forEach(item => {
+        const key = getOpsCargoKey(item);
+        if (idSet.has(key)) {
+          const prevWarehouse = item.warehouse || 'Не вказано';
+          if (prevWarehouse !== targetWarehouse) {
+            item.warehouse = targetWarehouse;
+            item.warehouseLocation = 'Зона приймання (переміщено)';
+            if (Array.isArray(item.timeline)) {
+              item.timeline.unshift({
+                date: nowStr,
+                title: `Переміщено на склад: ${targetWarehouse}`,
+                desc: `Зі складу «${prevWarehouse}» на «${targetWarehouse}»`,
+                status: 'info'
+              });
+            }
+            if (Array.isArray(item.movementHistory)) {
+              item.movementHistory.unshift({
+                date: nowStr,
+                from: prevWarehouse,
+                to: targetWarehouse,
+                action: 'Переміщення між складами'
+              });
+            }
+          }
+        }
+      });
+    };
+
+    const touched = new Set();
+    getStorekeeperCargoes().forEach(c => {
+      const k = getOpsCargoKey(c);
+      if (idSet.has(k)) touched.add(k);
+    });
+    movedCount = touched.size;
+
+    updateList(window.cargoesData);
+    updateList(window.svManagementTransportsRef);
+    updateList(window.svManagementShipments);
+
+    idSet.forEach(id => opsSelectedIds.delete(id));
+    opsTransferTargetIds = [];
+    document.getElementById('ops-transfer-modal')?.classList.add('hidden');
+    syncAfterOpsMutation();
+    toast(`Переміщено ${movedCount} вантаж(ів) на склад «${targetWarehouse}»`);
+  }
+
+  function opsOpenDeleteModal(cids) {
+    const ids = Array.isArray(cids) ? cids.map(String).filter(Boolean) : [];
+    if (ids.length === 0) return;
+    opsDeleteTargetIds = ids;
+
+    const allCargoes = getStorekeeperCargoes();
+    const targets = allCargoes.filter(c => ids.includes(getOpsCargoKey(c)));
+
+    const countEl = document.getElementById('ops-delete-count');
+    if (countEl) countEl.textContent = String(targets.length || ids.length);
+
+    const previewEl = document.getElementById('ops-delete-preview');
+    if (previewEl) {
+      previewEl.innerHTML = targets.map(c => {
+        const code = c.cargoNumber || c.cargoCode || c.dfShipment || c.id;
+        return `<span class="px-2 py-0.5 rounded bg-white border border-rose-200 font-mono text-[11px] font-semibold text-rose-700">${escapeOpsHtml(code)}</span>`;
+      }).join('');
+    }
+
+    document.getElementById('ops-delete-modal')?.classList.remove('hidden');
+  }
+
+  function opsConfirmDelete() {
+    if (opsDeleteTargetIds.length === 0) return;
+    const idSet = new Set(opsDeleteTargetIds);
+    const deleteCount = idSet.size;
+
+    const removeFromArrayInPlace = (arr) => {
+      if (!Array.isArray(arr)) return;
+      for (let i = arr.length - 1; i >= 0; i--) {
+        if (idSet.has(getOpsCargoKey(arr[i]))) {
+          arr.splice(i, 1);
+        }
+      }
+    };
+
+    removeFromArrayInPlace(window.cargoesData);
+    removeFromArrayInPlace(window.svManagementTransportsRef);
+    removeFromArrayInPlace(window.svManagementShipments);
+
+    idSet.forEach(id => opsSelectedIds.delete(id));
+    opsDeleteTargetIds = [];
+    document.getElementById('ops-delete-modal')?.classList.add('hidden');
+    syncAfterOpsMutation();
+    toast(`Видалено ${deleteCount} вантаж(ів)`);
+  }
+
+  window.toggleOpsRowActionMenu = function (cid, event) {
+    if (event) event.stopPropagation();
+    const menu = document.getElementById('ops-row-action-menu');
+    if (!menu) return;
+
+    const key = String(cid);
+    if (opsOpenMenuCargoId === key && !menu.classList.contains('hidden')) {
+      closeOpsRowActionMenu();
+      return;
+    }
+
+    opsOpenMenuCargoId = key;
+    const safeKey = escapeOpsHtml(key);
+
+    menu.innerHTML = `
+      <button type="button" data-ops-action="edit" data-cid="${safeKey}"
+        class="w-full text-left px-3 py-2 text-slate-800 hover:bg-brand-50 hover:text-brand-700 font-semibold flex items-center gap-2.5 transition cursor-pointer">
+        <i class="fa-solid fa-pen text-brand-600 w-3.5 text-center"></i>
+        <span>Редагувати</span>
+      </button>
+      <button type="button" data-ops-action="history" data-cid="${safeKey}"
+        class="w-full text-left px-3 py-2 text-slate-800 hover:bg-slate-50 font-semibold flex items-center gap-2.5 border-t border-slate-100 transition cursor-pointer">
+        <i class="fa-solid fa-route text-slate-500 w-3.5 text-center"></i>
+        <span>Історія переміщень</span>
+      </button>
+      <button type="button" data-ops-action="copy" data-cid="${safeKey}"
+        class="w-full text-left px-3 py-2 text-slate-800 hover:bg-slate-50 font-semibold flex items-center gap-2.5 border-t border-slate-100 transition cursor-pointer">
+        <i class="fa-regular fa-copy text-slate-500 w-3.5 text-center"></i>
+        <span>Скопіювати дані</span>
+      </button>
+      <button type="button" data-ops-action="transfer" data-cid="${safeKey}"
+        class="w-full text-left px-3 py-2 text-indigo-700 hover:bg-indigo-50 font-semibold flex items-center gap-2.5 border-t border-slate-100 transition cursor-pointer">
+        <i class="fa-solid fa-angles-right text-indigo-600 w-3.5 text-center"></i>
+        <span>Перемістити на інший склад</span>
+      </button>
+      <button type="button" data-ops-action="delete" data-cid="${safeKey}"
+        class="w-full text-left px-3 py-2 text-rose-600 hover:bg-rose-50 font-semibold flex items-center gap-2.5 border-t border-slate-100 transition cursor-pointer">
+        <i class="fa-regular fa-trash-can text-rose-600 w-3.5 text-center"></i>
+        <span>Видалити</span>
+      </button>
+    `;
+
+    menu.classList.remove('hidden');
+
+    const btn = event?.currentTarget;
+    if (btn && typeof btn.getBoundingClientRect === 'function') {
+      const rect = btn.getBoundingClientRect();
+      const menuWidth = menu.offsetWidth || 224;
+      const menuHeight = menu.offsetHeight || 200;
+      let left = rect.right - menuWidth;
+      if (left < 8) left = 8;
+      if (left + menuWidth > window.innerWidth - 8) left = window.innerWidth - menuWidth - 8;
+
+      let top = rect.bottom + 4;
+      if (top + menuHeight > window.innerHeight - 8) {
+        top = Math.max(8, rect.top - menuHeight - 4);
+      }
+
+      menu.style.left = `${left}px`;
+      menu.style.top = `${top}px`;
+    }
+  };
+
+  window.deselectOpsPromiseGroup = function (promiseKeyEncoded) {
+    const promiseKey = decodeURIComponent(promiseKeyEncoded);
+    const allCargoes = getStorekeeperCargoes();
+    allCargoes.forEach(c => {
+      const prRaw = (c.dfPromise || c.df_promise || '').trim();
+      const pr = (prRaw && prRaw !== '—') ? prRaw : 'Без обіцянки';
+      if (pr === promiseKey) {
+        opsSelectedIds.delete(getOpsCargoKey(c));
+      }
+    });
+    renderCargoOpsMode();
+  };
+
+  function formatOpsFixed(val) {
+    const n = Number(val) || 0;
+    return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function renderOpsSelectionBar(allCargoes, filteredCargoes) {
+    const selectAllCb = document.getElementById('ops-select-all');
+    if (selectAllCb) {
+      const visibleIds = filteredCargoes.map(getOpsCargoKey);
+      const selectedVisibleCount = visibleIds.filter(id => opsSelectedIds.has(id)).length;
+      selectAllCb.checked = visibleIds.length > 0 && selectedVisibleCount === visibleIds.length;
+      selectAllCb.indeterminate = selectedVisibleCount > 0 && selectedVisibleCount < visibleIds.length;
+    }
+
+    const bar = document.getElementById('ops-selection-bar');
+    if (!bar) return;
+
+    const selectedCargoes = allCargoes.filter(c => opsSelectedIds.has(getOpsCargoKey(c)));
+    if (selectedCargoes.length === 0) {
+      bar.classList.add('hidden');
+      return;
+    }
+
+    bar.classList.remove('hidden');
+
+    const totalCountEl = document.getElementById('ops-sel-total-count');
+    if (totalCountEl) totalCountEl.textContent = String(selectedCargoes.length);
+
+    const promiseGroupsMap = new Map();
+
+    selectedCargoes.forEach(c => {
+      const places = Number(c.places ?? c.places_count ?? 0) || 0;
+      const weight = Number(c.weight ?? c.grossWeight ?? c.gross_weight ?? 0) || 0;
+      const volume = Number(c.volume ?? 0) || 0;
+      const promiseRaw = (c.dfPromise || c.df_promise || '').trim();
+      const hasPromise = Boolean(promiseRaw && promiseRaw !== '—');
+      const promiseKey = hasPromise ? promiseRaw : 'Інше';
+      const client = (c.client && String(c.client).trim()) ? String(c.client).trim() : '';
+
+      if (!promiseGroupsMap.has(promiseKey)) {
+        promiseGroupsMap.set(promiseKey, {
+          promiseKey,
+          hasPromise,
+          count: 0,
+          clients: new Set(),
+          places: 0,
+          weight: 0,
+          volume: 0
+        });
+      }
+      const grp = promiseGroupsMap.get(promiseKey);
+      grp.count += 1;
+      if (hasPromise && client && client !== '—' && client !== 'Не ідентифіковано') grp.clients.add(client);
+      grp.places += places;
+      grp.weight += weight;
+      grp.volume += volume;
+    });
+
+    const groupsContainer = document.getElementById('ops-sel-promise-groups');
+    if (!groupsContainer) return;
+
+    const sortedGroups = Array.from(promiseGroupsMap.values()).sort((a, b) => {
+      if (a.hasPromise !== b.hasPromise) return a.hasPromise ? -1 : 1;
+      if (b.count !== a.count) return b.count - a.count;
+      return a.promiseKey.localeCompare(b.promiseKey, 'uk');
+    });
+
+    groupsContainer.innerHTML = sortedGroups.map(g => `
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs bg-slate-800/80 border border-slate-700/80 rounded-lg px-3 py-1.5">
+        <span class="font-mono font-bold ${g.hasPromise ? 'text-purple-300' : 'text-slate-300 font-sans'}">
+          ${escapeOpsHtml(g.promiseKey)} - ${g.count} шт:
+        </span>
+        <span class="text-slate-300">Місць - <strong class="font-mono text-white">${formatOpsFixed(g.places)}</strong></span>
+        <span class="text-slate-300">Вага партії брутто - <strong class="font-mono text-amber-300">${formatOpsFixed(g.weight)} кг</strong></span>
+        <span class="text-slate-300">Об'єм - <strong class="font-mono text-emerald-300">${formatOpsFixed(g.volume)} м³</strong></span>
+        <span class="text-slate-300">Унікальні клієнти - <strong class="font-mono text-sky-300">${g.clients.size}</strong></span>
+      </div>
+    `).join('');
+  }
+
+  function renderCargoOpsMode() {
+    closeOpsRowActionMenu();
+    const allCargoes = getStorekeeperCargoes();
+    const existingKeys = new Set(allCargoes.map(getOpsCargoKey));
+    Array.from(opsSelectedIds).forEach(id => {
+      if (!existingKeys.has(id)) opsSelectedIds.delete(id);
+    });
     const query = (document.getElementById('ops-search-input')?.value || '').trim().toLowerCase();
 
     const setBadge = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
@@ -1372,13 +1787,18 @@
     const tbody = document.getElementById('ops-cargo-tbody');
     if (!tbody) return;
 
+    renderOpsSelectionBar(allCargoes, filtered);
+
     if (filtered.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="33" class="py-12 text-center text-slate-400">Вантажів за цим фільтром не знайдено</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="34" class="py-12 text-center text-slate-400">Вантажів за цим фільтром не знайдено</td></tr>`;
       return;
     }
 
     tbody.innerHTML = filtered.map(c => {
-      const cid = c.id || c.cargoNumber || c.cargoCode;
+      const cid = getOpsCargoKey(c);
+      const isSelected = opsSelectedIds.has(cid);
+      const rowBgCls = isSelected ? 'bg-emerald-50/60 hover:bg-emerald-50' : 'hover:bg-slate-50/80';
+      const stickyCellBgCls = isSelected ? 'bg-emerald-50/95' : 'bg-white';
       const code = c.cargoNumber || c.cargoCode || c.dfShipment || c.id || '—';
       const track = c.trackNumber || c.trackingNumber || '—';
       const dfShipment = c.dfShipment || c.related_transportation || '—';
@@ -1429,11 +1849,14 @@
           }).join('')}</div>`;
 
       return `
-        <tr class="hover:bg-slate-50/80 transition">
-          <td class="py-2.5 px-3 font-mono font-bold text-slate-900 sticky left-0 bg-white border-r border-slate-100">${code}</td>
+        <tr class="${rowBgCls} transition">
+          <td class="py-2.5 px-2.5 w-11 min-w-[44px] max-w-[44px] text-center sticky left-0 ${stickyCellBgCls} z-20 border-r border-slate-100">
+            <input type="checkbox" class="ops-row-checkbox rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer" data-cid="${escapeOpsHtml(cid)}" ${isSelected ? 'checked' : ''}>
+          </td>
+          <td class="py-2.5 px-3 font-mono font-bold ${dfPromise !== '—' ? 'text-purple-700' : 'text-slate-400'} sticky left-[44px] ${stickyCellBgCls} z-10 border-r border-slate-100">${dfPromise}</td>
           <td class="py-2.5 px-3 font-mono text-slate-700">${track}</td>
           <td class="py-2.5 px-3 font-mono text-slate-700">${dfShipment}</td>
-          <td class="py-2.5 px-3 font-mono text-purple-700">${dfPromise}</td>
+          <td class="py-2.5 px-3 font-mono font-semibold text-slate-900">${code}</td>
           <td class="py-2.5 px-3 font-semibold text-slate-800">${client}</td>
           <td class="py-2.5 px-3 font-mono text-brand-700">${subvoyage}</td>
           <td class="py-2.5 px-3 text-slate-800">${warehouse}</td>
@@ -1462,19 +1885,12 @@
           <td class="py-2.5 px-3">${statusBadge}</td>
           <td class="py-2.5 px-3">${tasksHtml}</td>
           <td class="py-2.5 px-3 font-mono text-brand-700 font-semibold">${photosCount} фото</td>
-          <td class="py-2.5 px-3 text-right sticky right-0 bg-white border-l border-slate-100">
-            <div class="inline-flex items-center gap-1">
-              <button type="button" onclick="window.openEditCargoModal && window.openEditCargoModal('${cid}', null, event)"
-                class="px-2 py-1 bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 rounded-lg text-[10px] font-bold cursor-pointer"
-                title="Редагувати вантаж">
-                <i class="fa-solid fa-pen"></i> Редагувати
-              </button>
-              <button type="button" onclick="window.openCargoMovementHistoryModal && window.openCargoMovementHistoryModal('${cid}', null, event)"
-                class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg text-[10px] font-bold cursor-pointer"
-                title="Історія переміщень">
-                <i class="fa-solid fa-route"></i>
-              </button>
-            </div>
+          <td class="py-2.5 px-3 text-right sticky right-0 ${stickyCellBgCls} z-10 border-l border-slate-100">
+            <button type="button" onclick="window.toggleOpsRowActionMenu('${escapeOpsHtml(cid)}', event)"
+              class="w-8 h-8 bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 rounded-lg transition inline-flex items-center justify-center cursor-pointer"
+              title="Дії з вантажем">
+              <i class="fa-solid fa-ellipsis-vertical"></i>
+            </button>
           </td>
         </tr>
       `;
@@ -1761,9 +2177,108 @@
         renderCargoOpsMode();
       });
     });
+
+    // Мультивибір вантажів (Комірник)
+    document.getElementById('ops-select-all')?.addEventListener('change', (e) => {
+      const checked = Boolean(e.target.checked);
+      document.querySelectorAll('#ops-cargo-tbody .ops-row-checkbox').forEach(cb => {
+        const cid = cb.getAttribute('data-cid');
+        if (!cid) return;
+        if (checked) opsSelectedIds.add(cid);
+        else opsSelectedIds.delete(cid);
+      });
+      renderCargoOpsMode();
+    });
+
+    document.getElementById('ops-cargo-tbody')?.addEventListener('change', (e) => {
+      const cb = e.target.closest('.ops-row-checkbox');
+      if (!cb) return;
+      const cid = cb.getAttribute('data-cid');
+      if (!cid) return;
+      if (cb.checked) opsSelectedIds.add(cid);
+      else opsSelectedIds.delete(cid);
+      renderCargoOpsMode();
+    });
+
+    document.getElementById('ops-btn-clear-selection')?.addEventListener('click', () => {
+      opsSelectedIds.clear();
+      renderCargoOpsMode();
+    });
+
+    document.getElementById('ops-btn-toggle-client-groups')?.addEventListener('click', () => {
+      opsClientGroupsCollapsed = !opsClientGroupsCollapsed;
+      renderCargoOpsMode();
+    });
+
+    document.getElementById('ops-btn-bulk-transfer')?.addEventListener('click', () => {
+      if (opsSelectedIds.size === 0) return;
+      opsOpenTransferModal(Array.from(opsSelectedIds));
+    });
+
+    document.getElementById('ops-btn-bulk-delete')?.addEventListener('click', () => {
+      if (opsSelectedIds.size === 0) return;
+      opsOpenDeleteModal(Array.from(opsSelectedIds));
+    });
+
+    // Плаваюче меню дій рядка вантажу
+    const opsRowMenu = document.getElementById('ops-row-action-menu');
+    opsRowMenu?.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-ops-action]');
+      if (!btn) return;
+      e.stopPropagation();
+      const action = btn.getAttribute('data-ops-action');
+      const cid = btn.getAttribute('data-cid');
+      closeOpsRowActionMenu();
+      if (!cid) return;
+
+      if (action === 'edit') {
+        if (typeof window.openEditCargoModal === 'function') window.openEditCargoModal(cid, null, e);
+      } else if (action === 'history') {
+        if (typeof window.openCargoMovementHistoryModal === 'function') window.openCargoMovementHistoryModal(cid, null, e);
+      } else if (action === 'copy') {
+        opsCopyCargoData(cid);
+      } else if (action === 'transfer') {
+        opsOpenTransferModal([cid]);
+      } else if (action === 'delete') {
+        opsOpenDeleteModal([cid]);
+      }
+    });
+
+    document.addEventListener('click', () => {
+      closeOpsRowActionMenu();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeOpsRowActionMenu();
+    });
+    document.querySelector('#workspace-mode-cargo-ops .overflow-auto')?.addEventListener('scroll', () => {
+      closeOpsRowActionMenu();
+    }, { passive: true });
+
+    // Модальне вікно переміщення на інший склад
+    const opsTransferModal = document.getElementById('ops-transfer-modal');
+    const closeOpsTransferModal = () => {
+      opsTransferModal?.classList.add('hidden');
+      opsTransferTargetIds = [];
+    };
+    document.getElementById('ops-btn-close-transfer-modal')?.addEventListener('click', closeOpsTransferModal);
+    document.getElementById('ops-btn-cancel-transfer')?.addEventListener('click', closeOpsTransferModal);
+    opsTransferModal?.addEventListener('click', (e) => { if (e.target === opsTransferModal) closeOpsTransferModal(); });
+    document.getElementById('ops-btn-confirm-transfer')?.addEventListener('click', opsConfirmTransfer);
+
+    // Модальне вікно підтвердження видалення
+    const opsDeleteModal = document.getElementById('ops-delete-modal');
+    const closeOpsDeleteModal = () => {
+      opsDeleteModal?.classList.add('hidden');
+      opsDeleteTargetIds = [];
+    };
+    document.getElementById('ops-btn-close-delete-modal')?.addEventListener('click', closeOpsDeleteModal);
+    document.getElementById('ops-btn-cancel-delete')?.addEventListener('click', closeOpsDeleteModal);
+    opsDeleteModal?.addEventListener('click', (e) => { if (e.target === opsDeleteModal) closeOpsDeleteModal(); });
+    document.getElementById('ops-btn-confirm-delete')?.addEventListener('click', opsConfirmDelete);
   }
 
   window.initWorkspaceModes = function () {
+    loadOpsWarehousesCatalog();
     bindEvents();
     renderModeSwitcher();
   };
